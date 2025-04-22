@@ -82,6 +82,22 @@ int main(int argc, char **argv)
 			return (EXIT_FAILURE);
 		}
 		printf("Server received something\n");
+		pid_t child = fork();
+		if (child == -1)
+		{
+			return (EXIT_FAILURE);
+		}
+		if (child == 0)
+		{
+			close(sockfd);
+			if (send(peerfd, "Hello, world!", 13, 0) == -1)
+			{
+				std::cout << "Error\n";
+			}
+			close(peerfd);
+			exit (EXIT_SUCCESS);
+		}
+		close(peerfd);
 	}
 	return (EXIT_SUCCESS);
 }
