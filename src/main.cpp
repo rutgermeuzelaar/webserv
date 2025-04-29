@@ -6,8 +6,10 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <csignal>
+#include <iomanip>
+#include "HTTPResponse.hpp"
 #ifndef TEST_PORT
-# define TEST_PORT "1050"
+# define TEST_PORT "8080"
 #endif
 
 volatile std::sig_atomic_t gSignum;
@@ -16,6 +18,7 @@ bool	gLive = true;
 void signal_handler(int signal)
 {
 	gSignum = signal;
+	gLive = false;
 }
 
 int main(int argc, char **argv)
@@ -73,6 +76,7 @@ int main(int argc, char **argv)
 	{
 		return (EXIT_FAILURE);
 	}
+	// signal(SIGINT, signal_handler);
 	while (gLive)
 	{
 		peer_size = sizeof(peer_addr);
@@ -90,13 +94,24 @@ int main(int argc, char **argv)
 		if (child == 0)
 		{
 			close(sockfd);
-			if (send(peerfd, "Hello, world!", 13, 0) == -1)
+			HTTPResponse response(HTTPStatusCode::OK);
+
+			if (!response.set_body("./html/index.html"))
+			{
+				return (EXIT_FAILURE);
+			}
+			response.m_headers = {{"Server", "webserv"}, {"Content-Type", "text/html"}};
+			const std::string message = response.to_str();
+			if (send(peerfd, message.c_str(), message.length(), 0) == -1)
 			{
 				std::cout << "Error\n";
 			}
 			close(peerfd);
 			exit (EXIT_SUCCESS);
 		}
+		char cheese[1024];
+		const int bytes_read = read(peerfd, cheese, 1024);
+		std::cout << std::setw(bytes_read) << cheese << '\n';
 		close(peerfd);
 	}
 	return (EXIT_SUCCESS);
