@@ -1,3 +1,4 @@
 webserv
 *.o
 .vscode
+parser
