@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 17:11:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/02 14:34:18 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/02 21:09:30 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ void Scanner::skip_whitespace()
 // empty string would overflow
 char Scanner::advance()
 {
-    if (m_index == m_inlen - 1)
+    if (m_index == m_inlen)
     {
         return ('\0');
     }
@@ -130,7 +130,7 @@ void Scanner::scan_token()
 
 bool Scanner::at_end() const
 {
-    return (m_index == m_inlen - 1);
+    return (m_index == m_inlen);
 }
 
 const std::vector<Token>& Scanner::scan()
