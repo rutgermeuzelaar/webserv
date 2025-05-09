@@ -6,7 +6,7 @@
 /*   By: robertrinh <robertrinh@student.codam.nl      +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 15:42:16 by robertrinh    #+#    #+#                 */
-/*   Updated: 2025/05/08 18:55:17 by robertrinh    ########   odam.nl         */
+/*   Updated: 2025/05/09 17:50:44 by qtrinh        ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ Request::~Request()
 
 HTTPMethod Request::StringToMethod(const std::string& method)
 {
-	//? case sensitive. get -> toupper(), do we handle this?
+	//? methods are case sensitive. handle geT/ gEt etc.?
 	if (method == "GET")
 		return HTTPMethod::GET;
 	else if (method == "POST")
@@ -33,7 +33,7 @@ HTTPMethod Request::StringToMethod(const std::string& method)
 
 /**
  * @brief parses Uniform Resource Identifier (URI) from the request line.
- * @param uri alias of the uri to parse
+ * @param uri alias of the raw uri to parse
  * @note query is described after the `?`, and a framework after a `#`
  * @note example URI: https://www.example.com/forum/questions/?tag=networking&order=newest#top
  * @return true if URI is valid and parsing succeeded, false if URI is invalid
@@ -48,7 +48,6 @@ bool Request::parseURI(const std::string& uri)
 	if (queryPos != std::string::npos)
 	{
 		_path = uri.substr(0, queryPos);
-		
 		size_t fragmentPos = uri.find('#', queryPos);
 		if (fragmentPos != std::string::npos)
 		{
@@ -60,7 +59,7 @@ bool Request::parseURI(const std::string& uri)
 	}
 	else
 	{
-		// No query string, check for fragment
+		//* no query string, check for fragment
 		size_t fragmentPos = uri.find('#');
 		if (fragmentPos != std::string::npos)
 		{
@@ -73,43 +72,45 @@ bool Request::parseURI(const std::string& uri)
 	return true;
 }
 
-bool Request::parse(const std::string& str)
+bool Request::parse(const std::string& rawRequest)
 {
-	std::istringstream stream(str);
-	if (!parseRequestLine(str))
+	std::istringstream requestStream(rawRequest);
+	std::string currentLine;
+	
+	if (!std::getline(requestStream, currentLine) || currentLine.empty())
 		return false;
-	if (!parseHeaders(stream))
+	if (!parseRequestLine(currentLine))
 		return false;
-	if (!parseBody(stream))
+	if (!parseHeaders(requestStream))
 		return false;
+	if (_method_type == HTTPMethod::POST)	//? only parse methods with Body? e.g. POST
+	{
+		if (!parseBody(requestStream))
+			return false;	
+	}
+	else
+		_body.clear(); //! GET - DELETE has generally no body, in case it does, ignore?
 	printRequest(); //* for testing
 	return true;
 }
 
-bool Request::parseRequestLine(const std::string& line)
+bool Request::parseRequestLine(const std::string& requestLineStr)
 {
-	std::istringstream lineStream(line);
-	std::string requestLine;
-
-	if (!std::getline(lineStream, requestLine) || requestLine.empty())
-		return false;
-	
-	// Split the request line into method, URI, and HTTP version
-	std::istringstream requestStream(requestLine);
+	std::istringstream lineStream(requestLineStr);
+	std::istringstream requestStream(requestLineStr);
 	std::string methodStr;
+
+	//* split in method, uri and version 
 	if (!(requestStream >> methodStr >> _uri >> _HTTPVersion))
 		return false;
-
-	// Convert method string to enum
 	_method_type = StringToMethod(methodStr);
 	_method = methodStr;
+	if (_method_type == HTTPMethod::UNSUPPORTED)
+		return false; //! throw error not implemented / not supported etc.?
 	if (!parseURI(_uri))
 		return false;
-	if (_HTTPVersion.substr(0, 5) != "HTTP/")
+	if (_HTTPVersion.substr(0, 8) != "HTTP/1.1")
 		return false;
-	if (_method_type == HTTPMethod::UNSUPPORTED)
-		return false; //* throw error?
-
 	return true;
 }
 
@@ -118,26 +119,22 @@ bool Request::parseRequestLine(const std::string& line)
  * @param requestStream string stream containing the HTTP request headers
  * @note headers are in format "Key: Value"
  * @note headers end with a newline
- * @todo handling case insensitivity?
  * @return true if headers were parsed successfully
  */
-bool Request::parseHeaders(const std::istringstream& requestStream)
+bool Request::parseHeaders(std::istream& stream)
 {
 	std::string line;
-	std::istringstream streamCopy(requestStream.str());
 	
-	while (std::getline(streamCopy, line) && !line.empty())
+	while (std::getline(stream, line))
 	{
-		// Remove carriage return if present
-		if (!line.empty() && line[line.length()-1] == '\r')
-			line.erase(line.length()-1);
+		if (!line.empty() && line.back() == '\r') //* C11: back-> return reference to last element
+			line.pop_back(); //* removes last element (carriage return = /r)
 		if (line.empty())
-			continue;
+			break;
 		size_t colonPos = line.find(':');
-		if (colonPos == std::string::npos)
-			continue;
+		if (colonPos == std::string::npos) //* it's a malformed header, no colon
+			return false; //! Malformed header line error
 
-		//* get key and value
 		std::string key = line.substr(0, colonPos);
 		std::string value = line.substr(colonPos + 1);
 
@@ -146,45 +143,59 @@ bool Request::parseHeaders(const std::istringstream& requestStream)
 		key.erase(key.find_last_not_of(" \t\r\n") + 1); //* same, but for last char
 		value.erase(0, value.find_first_not_of(" \t\r\n"));
 		value.erase(value.find_last_not_of(" \t\r\n") + 1);
-		_headers[key] = value;
-	}
 
+		//* converting header keys to lowercase to combat case-insensivity
+		std::string lowerKey = key;
+		std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
+		if (lowerKey.empty())
+			return false; //! invalid header error (empty header key)
+		_headers[lowerKey] = value;
+	}
 	return true;
 }
 
 /**
  * @brief parses the request body based on Content-Length header
- * @param requestStream string stream containing the complete HTTP request including headers and body
+ * @param stream string stream containing the complete HTTP request including headers and body
  * @note stream should contain the entire request data, as we need to skip headers to reach the body
  * @note content-length header is required for POST requests to determine body size
  * @return true if parsing succeeded, false if Content-Length is invalid or body is incomplete
  */
-bool Request::parseBody(const std::istringstream& requestStream)
+bool Request::parseBody(std::istream& stream)
 {
 	//* retrieve content length from header
-	std::string contentLengthStr = getHeader("Content-Length");
+	std::string contentLengthStr = getHeader("content-length");
 	if (contentLengthStr.empty())
-		return true; //* no body! <- GET has no body, so it should return true
-	size_t contentLength; //* will check for how many bytes of data to expect in request, imnportant for POST
-	contentLength = std::stoul(contentLengthStr); //* convert string to unsigned long
-	if (!contentLength)
-		return false; //! Better error hadnling
-
-	//* skip headers
-	std::string line;
-    std::istringstream streamCopy(requestStream.str());
-    while (std::getline(streamCopy, line) && !line.empty()) {
-        if (line == "\r") break;
-    }
-	//* read the body
-	std::string remainingContent;
-	std::getline(streamCopy, remainingContent);
-	if (remainingContent.length() >= contentLength)
 	{
-		_body = remainingContent.substr(0, contentLength);
+		if (_method_type == HTTPMethod::POST)
+			return false; //! POST missing required Content-Length
+		return true; //* no body! <- GET has no body, so it should return true 
+	}
+
+	//* will check for how many bytes of data to expect in request, important for POST
+	unsigned long contentLength; 
+	contentLength = std::stoul(contentLengthStr); //* convert string to unsigned long
+	//! Better error handling -> try catch with malformed length / length too long
+	if (contentLength == 0)
+	{
+		_body.clear();
 		return true;
 	}
-	return false;
+
+	//* reading body
+	_body.resize(contentLength); //* allocate space in internal str buffer
+	char* buffer = &_body[0]; //* C11: pointer to first char in internal (resized) str buffer
+	stream.read(buffer, contentLength); //* reads directly into contentLength, pointed by buffer. efficient because avoids temp + copy
+
+	std::streamsize bytesRead = stream.gcount();
+	if (static_cast<unsigned long>(bytesRead) != contentLength)
+	{
+		//* did not read enough bytes (e.g. client closed connection, or less data than expected)
+		//! error: expected contentlen bytes, but received bytesRead instead
+		_body.clear();
+		return false; //! incomplete body
+	}
+	return true;
 }
 
 std::string Request::getHTTPVersion() const
@@ -225,13 +236,15 @@ std::string Request::getFragment() const
 /**
  * @brief retrieves the value of a specific HTTP header
  * @param key name of the header to retrieve
- * @todo headers are case insensitive, need to be handled?
+ * @note made headers lowcase for handling case insensitivity
  * @return The value of the requested header, or empty string if not found
  */
 std::string Request::getHeader(const std::string& key) const
 {
-	//? HTTP headers are case insensitive. need to be handled?
-	std::map<std::string, std::string>::const_iterator headerIt = _headers.find(key);
+	std::string lowerKey = key;
+	std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
+
+	std::map<std::string, std::string>::const_iterator headerIt = _headers.find(lowerKey);
 	if (headerIt != _headers.end())
 		return headerIt->second;
 	return "";

@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/25 14:18:35 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/08 18:52:01 by robertrinh    ########   odam.nl         */
+/*   Updated: 2025/05/09 16:54:10 by qtrinh        ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,8 +42,8 @@ private:
 
 	HTTPMethod StringToMethod(const std::string& method);
 	bool parseRequestLine(const std::string& line);
-	bool parseHeaders(const std::istringstream& requestStream);
-	bool parseBody(const std::istringstream& requestStream);
+	bool parseHeaders(std::istream& requestStream);
+	bool parseBody(std::istream& requestStream);
 	bool parseURI(const std::string& uri); 
 
 public:
