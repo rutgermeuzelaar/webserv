@@ -9,7 +9,7 @@
 #include "Request.hpp"
 #include <vector>
 #ifndef TEST_PORT
-# define TEST_PORT "1050"
+# define TEST_PORT "8080"
 #endif
 
 volatile std::sig_atomic_t gSignum;
@@ -20,6 +20,58 @@ void testRequestParsing();
 void signal_handler(int signal)
 {
 	gSignum = signal;
+	gLive = false;
+}
+
+void testRequestParsing()
+{
+    std::cout << "\n=== Testing Request Parsing ===\n" << std::endl;
+
+    //* GET
+    std::string getRequest = 
+        "GET /index.html?id=123&name=test#section1 HTTP/1.1\r\n"
+        "Host: www.example.com\r\n"
+        "User-Agent: Mozilla/5.0\r\n"
+        "Accept: text/html\r\n"
+        "\r\n";
+
+    std::cout << "Testing GET request parsing:" << std::endl;
+    Request getReq;
+    if (getReq.parse(getRequest))
+        std::cout << "GET request parsed successfully!" << std::endl;
+    else
+        std::cout << "Failed to parse GET request" << std::endl;
+
+    //* POST
+    std::string postRequest = 
+        "POST /submit-form HTTP/1.1\r\n"
+        "Host: www.example.com\r\n"
+        "Content-Type: application/x-www-form-urlencoded\r\n"
+        "Content-Length: 27\r\n"
+        "\r\n"
+        "username=john&password=secret";
+
+    std::cout << "\nTesting POST request parsing:" << std::endl;
+    Request postReq;
+    if (postReq.parse(postRequest))
+        std::cout << "POST request parsed successfully!" << std::endl;
+    else
+        std::cout << "Failed to parse POST request" << std::endl;
+
+    //* DELETE
+    std::string deleteRequest = 
+        "DELETE /users/123 HTTP/1.1\r\n"
+        "Host: www.example.com\r\n"
+        "\r\n";
+
+    std::cout << "\nTesting DELETE request parsing:" << std::endl;
+    Request deleteReq;
+    if (deleteReq.parse(deleteRequest))
+        std::cout << "DELETE request parsed successfully!" << std::endl;
+    else
+        std::cout << "Failed to parse DELETE request" << std::endl;
+
+    std::cout << "\n=== Request Parsing Tests Completed ===\n" << std::endl;
 }
 
 void testRequestParsing()
@@ -198,6 +250,9 @@ int main(int argc, char **argv)
 			close(peerfd);
 			exit(EXIT_SUCCESS);
 		}
+		char cheese[1024];
+		const int bytes_read = read(peerfd, cheese, 1024);
+		std::cout << std::setw(bytes_read) << cheese << '\n';
 		close(peerfd);
 	}
 

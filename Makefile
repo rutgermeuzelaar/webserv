@@ -1,4 +1,5 @@
-SOURCES_STANDARD := main.cpp Request.cpp
+SOURCES_STANDARD := main.cpp HTTPRequestMethod.cpp HTTPResponse.cpp HTTPStatusCode.cpp \
+HTTPStatusLine.cpp Request.cpp
 NAME := webserv
 
 run: re
