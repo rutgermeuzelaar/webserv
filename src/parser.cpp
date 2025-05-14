@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 13:37:57 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/09 15:35:23 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/14 17:40:09 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,10 +34,7 @@ int main(int argc, char **argv)
     buffer << config.rdbuf();
     Scanner scanner(buffer.str());
     const std::vector<Token>& tokens = scanner.scan();
-    for (const auto& it: tokens)
-    {
-        std::cout << it.m_str << '\n';
-    }
+    scanner.print_tokens();
     Parser parser(tokens);
     try
     {

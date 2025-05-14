@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 16:41:23 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/11 18:04:49 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/14 15:35:26 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,8 @@ enum class TokenType: int
     Root,
     Location,
     Listen,
-    Eof
+    Eof,
+	TokenTypeCount
 };
 
 class Token
@@ -41,5 +42,6 @@ class Token
         std::string m_str;
         Token(TokenType);
         Token(TokenType, std::string);
+		void print(void) const;
 };
 #endif

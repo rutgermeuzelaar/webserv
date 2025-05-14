@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 16:57:18 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/11 17:57:25 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/14 17:47:00 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@ class Scanner
 {
     private:
         size_t m_index;
+		size_t m_linenum;
         const std::string m_in;
         const size_t    m_inlen;
         char advance(void);
@@ -37,5 +38,6 @@ class Scanner
         Scanner(std::string);
         TokenType get_token(void);
         const std::vector<Token>& scan(void);
+		void print_tokens(void) const;
 };
 #endif

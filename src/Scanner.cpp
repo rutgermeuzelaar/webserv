@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 17:11:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/11 18:00:56 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/14 17:58:02 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 
 Scanner::Scanner(std::string in)
     : m_index {0} 
+	, m_linenum {0}
     , m_in {in}
     , m_inlen {in.length()}
 {
@@ -34,20 +35,16 @@ void Scanner::skip_whitespace()
 // empty string would overflow
 char Scanner::advance()
 {
-    if (m_index == m_inlen)
-    {
-        return ('\0');
-    }
     return (m_in[m_index++]);
 }
 
 char Scanner::peek() const
 {
-    if (m_index == m_inlen - 1)
+    if (at_end())
     {
         return ('\0');
     }
-    return (m_in[m_index + 1]);
+    return (m_in[m_index]);
 }
 
 void Scanner::add_token(TokenType token_type)
@@ -69,7 +66,7 @@ void Scanner::scan_string()
     const std::string keyword;
     std::map<std::string, TokenType>::const_iterator it;
 
-    while (m_index < m_inlen && !std::isspace(m_in[m_index]) && \
+    while (!at_end() && !std::isspace(m_in[m_index]) && \
     single_token.find(m_in[m_index]) == std::string::npos)
     {
         advance();
@@ -95,7 +92,7 @@ void Scanner::scan_number()
     const size_t start = m_index;
     std::string substr;
     
-    while (m_index < m_inlen && std::isdigit(m_in[m_index]) && !std::isspace(m_in[m_index]))
+    while (!at_end() && std::isdigit(m_in[m_index]) && !std::isspace(m_in[m_index]))
     {
         advance();
     }
@@ -121,8 +118,6 @@ void Scanner::scan_token()
         case '\0':
             add_token(TokenType::Eof);
             break;
-        case '/':
-        
         default:
             if (std::isdigit(glyph))
             {
@@ -146,10 +141,24 @@ const std::vector<Token>& Scanner::scan()
     {
         throw std::runtime_error("Configuration file cannot be empty.");
     }
-    while (!Scanner::at_end())
+    while (!at_end())
     {
         skip_whitespace();
         scan_token();
     }
+	add_token(TokenType::Eof);
     return m_tokens;
+}
+
+void Scanner::print_tokens(void) const
+{
+	const size_t	size = m_tokens.size();
+	size_t			i;
+	
+	i = 0;
+	while (i < size)
+	{
+		m_tokens[i].print();
+		i++;
+	}
 }
