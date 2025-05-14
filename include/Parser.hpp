@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:54:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/08 20:07:11 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/09 17:13:28 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,12 +26,17 @@ class Parser
         bool                        check(TokenType);
         Token                       advance(void);
         Token                       previous(void);
-        bool                        consume(TokenType, const char *error);
+        Token                       consume(TokenType, const char *error);
         Token                       peek(void);
-        bool                        parse_block(void);
-        bool                        parse_statement(void);
+        void                        parse_block(void);
+        void                        parse_statement(void);
 
-        bool                        parse_server_name(void);
+        // config options
+        void                        parse_server_name(void);
+        void                        parse_error_page(void);
+        void                        parse_listen(void);
+        void                        parse_location(void);
+        void                        parse_root(void);
     public:
         Parser(const std::vector<Token>& tokens);
         void parse(void);

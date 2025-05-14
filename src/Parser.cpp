@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/08 20:11:08 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/09 17:23:14 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,62 +56,95 @@ Token Parser::advance()
     return m_tokens[m_current++];   
 }
 
-bool Parser::consume(TokenType type, const char *error)
+Token Parser::consume(TokenType type, const char *error)
 {
     if (peek().m_token_type == type)
     {
-        advance();
-        return (true);
+        return (advance());
     }
     throw std::runtime_error(error);
-    return (false);
 }
 
-bool Parser::parse_server_name()
+void Parser::parse_server_name()
 {
     consume(TokenType::String, "Expected string after server_name.");
 }
 
-bool Parser::parse_statement()
+void Parser::parse_error_page()
+{
+    while (check(TokenType::Number))
+    {
+        advance();
+    }
+    consume(TokenType::String, "Expected string after status code(s).");
+}
+
+void Parser::parse_listen()
+{
+    while (match({TokenType::Number, TokenType::String}))
+    {
+        advance();   
+    }
+}
+
+void Parser::parse_location()
+{
+    consume(TokenType::String, "Expected string after location.");
+    parse_block();
+}
+
+void Parser::parse_root()
+{
+    consume(TokenType::Path, "Expected path after root.");
+}
+
+void Parser::parse_statement()
 {
     const TokenType current = advance().m_token_type;
     
     switch (current)
     {
         case TokenType::ServerName:
-            
+            parse_server_name();
+            break;
+        case TokenType::ErrorPage:
+            parse_error_page();
+            break;
+        case TokenType::Listen:
+            parse_listen();
+            break;
+        case TokenType::Root:
+            parse_root();
+            break;
+        case TokenType::Location:
+            parse_location();
+            return;
+        default:
+            throw std::runtime_error("Unexpected token.");
     }
+    consume(TokenType::Semicolon, "Expected ';' after statement.");
 }
 
-bool Parser::parse_block()
+void Parser::parse_block()
 {
-    if (consume(TokenType::OpenBrace, "Expected '{'."))
+    consume(TokenType::OpenBrace, "Expected '{'.");
+    while (!check(TokenType::CloseBrace))
     {
-        return (false);
+        parse_statement();
     }
-    while (!at_end() && !match({TokenType::CloseBrace}))
-    {
-        if (!parse_statement())
-        {
-            return (false);
-        };
-    }
-    if (consume(TokenType::CloseBrace, "Expected '}'."))
-    {
-        return (false);
-    }
-    return (true);
+    consume(TokenType::CloseBrace, "Expected '}'.");
 }
 
 void Parser::parse()
 {
-    const int   len = m_tokens.size();
-    TokenType   current;
-    int         open_braces;
-
-    open_braces = 0;
     if (peek().m_token_type != TokenType::Http)
     {
         throw std::runtime_error("Config file should start with a http block.");
+    }
+    advance();
+    parse_block();
+    if (!at_end())
+    {
+        throw std::runtime_error("Expected end of file.");
     }
 }

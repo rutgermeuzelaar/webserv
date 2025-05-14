@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 17:11:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/02 21:09:30 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/11 18:00:56 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,6 +62,7 @@ void Scanner::add_token(TokenType token_type, std::string str)
 
 void Scanner::scan_string()
 {
+    const bool is_path = m_in[m_index] == '/';
     const std::string single_token("{};");
     const size_t start = m_index;
     std::string substr;
@@ -75,7 +76,11 @@ void Scanner::scan_string()
     }
     substr = m_in.substr(start - 1, m_index - start + 1);
     it = keywords.find(substr);
-    if (it != keywords.end())
+    if (is_path)
+    {
+        add_token(TokenType::Path, substr);
+    }
+    else if (it != keywords.end())
     {
         add_token(it->second, it->first);
     }
@@ -116,6 +121,8 @@ void Scanner::scan_token()
         case '\0':
             add_token(TokenType::Eof);
             break;
+        case '/':
+        
         default:
             if (std::isdigit(glyph))
             {

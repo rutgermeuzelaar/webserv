@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 13:37:57 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/02 13:48:59 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/09 15:35:23 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
+#include "Parser.hpp"
 #include "Scanner.hpp"
 
 int main(int argc, char **argv)
@@ -36,6 +37,15 @@ int main(int argc, char **argv)
     for (const auto& it: tokens)
     {
         std::cout << it.m_str << '\n';
+    }
+    Parser parser(tokens);
+    try
+    {
+        parser.parse();
+    }
+    catch (const std::runtime_error& e)
+    {
+        std::cout << "An exception occured: " << e.what() << '\n';
     }
     return (EXIT_SUCCESS);
 }

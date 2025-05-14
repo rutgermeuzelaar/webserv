@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 16:41:23 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/02 12:32:22 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/11 18:04:49 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ enum class TokenType: int
     OpenBrace, // {
     CloseBrace, // }
     Semicolon, // ;
+    Path, // path or uri, begins with /
     String,
     Number,
 
@@ -29,6 +30,7 @@ enum class TokenType: int
     ServerName,
     Root,
     Location,
+    Listen,
     Eof
 };
 
