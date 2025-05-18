@@ -6,18 +6,19 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 17:11:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/14 17:58:02 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/18 20:19:42 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <stdexcept>
 #include <cctype>
+#include <sstream>
 #include "Scanner.hpp"
 #include "ConfigFile.hpp"
 
 Scanner::Scanner(std::string in)
     : m_index {0} 
-	, m_linenum {0}
+	, m_linenum {1}
     , m_in {in}
     , m_inlen {in.length()}
 {
@@ -26,8 +27,12 @@ Scanner::Scanner(std::string in)
 
 void Scanner::skip_whitespace()
 {
-    while (m_in[m_index] && std::isspace(m_in[m_index]))
+    while (!at_end() && std::isspace(m_in[m_index]))
     {
+        if (m_in[m_index] == '\n')
+        {
+            m_linenum++;
+        }
         m_index++;
     }
 }
@@ -49,17 +54,17 @@ char Scanner::peek() const
 
 void Scanner::add_token(TokenType token_type)
 {
-    m_tokens.push_back(Token(token_type));
+    m_tokens.push_back(Token(token_type, m_linenum));
 }
 
 void Scanner::add_token(TokenType token_type, std::string str)
 {
-    m_tokens.push_back(Token(token_type, str));
+    m_tokens.push_back(Token(token_type, str, m_linenum));
 }
 
 void Scanner::scan_string()
 {
-    const bool is_path = m_in[m_index] == '/';
+    const bool is_path = (m_in[m_index - 1] == '/');
     const std::string single_token("{};");
     const size_t start = m_index;
     std::string substr;
@@ -115,9 +120,6 @@ void Scanner::scan_token()
         case ';':
             add_token(TokenType::Semicolon);
             break;
-        case '\0':
-            add_token(TokenType::Eof);
-            break;
         default:
             if (std::isdigit(glyph))
             {
@@ -132,12 +134,16 @@ void Scanner::scan_token()
 
 bool Scanner::at_end() const
 {
-    return (m_index == m_inlen);
+    if (m_index >= m_inlen)
+    {
+        return (true);
+    }
+    return (false);
 }
 
 const std::vector<Token>& Scanner::scan()
 {
-    if (m_inlen == 0)
+    if (at_end())
     {
         throw std::runtime_error("Configuration file cannot be empty.");
     }

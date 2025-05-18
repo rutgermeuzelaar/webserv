@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 16:41:23 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/14 15:35:26 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/18 17:53:06 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,10 +38,13 @@ enum class TokenType: int
 class Token
 {
     public:
+        const int m_linenum;
         TokenType m_token_type;
         std::string m_str;
-        Token(TokenType);
-        Token(TokenType, std::string);
+        Token(TokenType, int);
+        Token(TokenType, std::string, int);
 		void print(void) const;
 };
+
+std::string stringify(TokenType type);
 #endif

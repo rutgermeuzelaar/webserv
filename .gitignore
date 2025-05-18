@@ -2,3 +2,4 @@ webserv
 *.o
 .vscode
 parser
+conf/

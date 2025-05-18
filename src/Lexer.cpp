@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 12:33:07 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/14 17:45:01 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/18 20:41:24 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,20 +17,38 @@
 #include <algorithm>
 #include "Lexer.hpp"
 
-Token::Token(TokenType token_type)
-    : m_token_type {token_type}
+const std::string single_token_char(TokenType TokenType)
+{
+	switch (TokenType)
+	{
+		case TokenType::OpenBrace:
+			return "{";
+		case TokenType::CloseBrace:
+			return "}";
+		case TokenType::Semicolon:
+			return ";";
+		default:
+			return "";
+	}
+}
+
+Token::Token(TokenType token_type, int linenum)
+	: m_linenum {linenum}
+    , m_token_type {token_type}
+	, m_str {single_token_char(token_type)}
 {
     
 }
 
-Token::Token(TokenType token_type, std::string str)
-    : m_token_type {token_type}
+Token::Token(TokenType token_type, std::string str, int linenum)
+	: m_linenum {linenum}
+    , m_token_type {token_type}
     , m_str {str}
 {
 
 }
 
-static const std::string stringify(TokenType type)
+std::string stringify(TokenType type)
 {
 	switch (type)
 	{

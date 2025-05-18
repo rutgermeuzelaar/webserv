@@ -6,11 +6,13 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/09 17:23:14 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/18 20:41:10 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <sstream>
 #include <stdexcept>
+#include <iostream>
 #include "Parser.hpp"
 
 Parser::Parser(const std::vector<Token>& tokens)
@@ -46,7 +48,7 @@ bool Parser::match(const std::vector<TokenType> types)
     return (false);
 }
 
-Token Parser::peek()
+Token Parser::peek() const
 {
     return (m_tokens[m_current]);
 }
@@ -56,13 +58,23 @@ Token Parser::advance()
     return m_tokens[m_current++];   
 }
 
+const Token& Parser::previous() const
+{
+    if (m_current == 0)
+    {
+        return (m_tokens[m_current]);
+    }
+    return (m_tokens[m_current - 1]);
+}
+
 Token Parser::consume(TokenType type, const char *error)
 {
     if (peek().m_token_type == type)
     {
         return (advance());
     }
-    throw std::runtime_error(error);
+    log_error(error);
+    throw Error();
 }
 
 void Parser::parse_server_name()
@@ -76,7 +88,7 @@ void Parser::parse_error_page()
     {
         advance();
     }
-    consume(TokenType::String, "Expected string after status code(s).");
+    consume(TokenType::Path, "Expected path after status code(s).");
 }
 
 void Parser::parse_listen()
@@ -89,13 +101,23 @@ void Parser::parse_listen()
 
 void Parser::parse_location()
 {
-    consume(TokenType::String, "Expected string after location.");
+    consume(TokenType::Path, "Expected path after location.");
     parse_block();
 }
 
 void Parser::parse_root()
 {
     consume(TokenType::Path, "Expected path after root.");
+}
+
+void Parser::parse_client_max_body_size()
+{
+    consume(TokenType::Number, "Expected number after client_max_body_size.");
+}
+
+void Parser::parse_server()
+{
+    parse_block();
 }
 
 void Parser::parse_statement()
@@ -119,8 +141,15 @@ void Parser::parse_statement()
         case TokenType::Location:
             parse_location();
             return;
+        case TokenType::Server:
+            parse_server();
+            return;
+        case TokenType::ClientMaxBodySize:
+            parse_client_max_body_size();
+            break;
         default:
-            throw std::runtime_error("Unexpected token.");
+            log_error("Unexpected token.");
+            throw Error();
     }
     consume(TokenType::Semicolon, "Expected ';' after statement.");
 }
@@ -139,12 +168,30 @@ void Parser::parse()
 {
     if (peek().m_token_type != TokenType::Http)
     {
-        throw std::runtime_error("Config file should start with a http block.");
+        log_error("Config file should start with a http block.");
+        throw Error();
     }
     advance();
     parse_block();
     if (!at_end())
     {
-        throw std::runtime_error("Expected end of file.");
+        log_error("Expected end of file.");
+        throw Error();
     }
+}
+
+void Parser::log_error(const char *reason) const
+{
+    const Token& token = previous();
+    std::stringstream stream;
+    
+    stream << "Parsing error occured near token \'" << token.m_str <<"\' of type \'" \
+    << stringify(token.m_token_type) << "\', at line " << token.m_linenum << ": " << reason;
+    std::cerr << stream.str() << '\n';
+}
+
+Parser::Error::Error()
+    : std::runtime_error("A parsing error occured.")
+{
+      
 }
