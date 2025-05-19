@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/25 14:18:35 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/09 16:54:10 by qtrinh        ########   odam.nl         */
+/*   Updated: 2025/05/19 15:55:49 by robertrinh    ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,12 +18,28 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include "HTTPStatusCode.hpp"
 
 enum class HTTPMethod {
 	GET,
 	POST,
 	DELETE,
 	UNSUPPORTED
+};
+
+class HTTPException : public std::exception {
+private:
+	HTTPStatusCode _status_code;
+	std::string _message;
+
+public:
+	HTTPException(HTTPStatusCode status_code, const std::string& message = "")
+		: _status_code(status_code), _message(message) {}
+
+	HTTPStatusCode getStatusCode() const { return _status_code; }
+	const char* what() const noexcept override {
+		return _message.empty() ? get_http_status_text(_status_code) : _message.c_str();
+	}
 };
 
 class Request
@@ -41,16 +57,16 @@ private:
 	std::string _body;
 
 	HTTPMethod StringToMethod(const std::string& method);
-	bool parseRequestLine(const std::string& line);
-	bool parseHeaders(std::istream& requestStream);
-	bool parseBody(std::istream& requestStream);
-	bool parseURI(const std::string& uri); 
+	void parseRequestLine(const std::string& line);
+	void parseHeaders(std::istream& requestStream);
+	void parseBody(std::istream& requestStream);
+	void parseURI(const std::string& uri); 
 
 public:
 	Request();
 	~Request(); 
 	
-	bool parse(const std::string& str);
+	void parse(const std::string& str);
 
 	//* getters
 	HTTPMethod getMethodType() const;
