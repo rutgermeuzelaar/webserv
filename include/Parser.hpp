@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:54:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/18 20:30:09 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/20 19:57:06 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 # define PARSER_HPP
 # include <stdexcept>
 # include <vector>
+# include <optional>
 # include "Lexer.hpp"
 # include "Expression.hpp"
 
@@ -28,16 +29,21 @@ class Parser
         const std::vector<Token>&   m_tokens;
         int                         m_current;
         bool                        at_end(void);
+        bool                        at_end(void) const;
         bool                        match(const std::vector<TokenType>);
         bool                        check(TokenType);
-        Token                       advance(void);
+        const Token&                advance(void);
         const Token&                previous(void) const;
-        Token                       consume(TokenType, const char *error);
-        Token                       peek(void) const;
-        void                        log_error(const char*) const;
+        const Token&                consume(TokenType, const char *error);
+        const Token&                peek(void) const;
+        const Token&                next(void) const;
+        void                        log_error(const std::string, const Token&) const;
+        void                        log_error(const std::string) const;
         void                        parse_block(void);
         void                        parse_statement(void);
-        
+        bool                        is_valid_dir_path(const std::string) const;
+        bool                        is_valid_file_path(const std::string) const;
+       
         // config options
         void                        parse_server_name(void);
         void                        parse_error_page(void);
@@ -53,4 +59,5 @@ class Parser::Error: public std::runtime_error
     public:
         Error();
 };
+
 #endif

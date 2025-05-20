@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 17:11:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/18 20:19:42 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/20 19:05:46 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ void Scanner::add_token(TokenType token_type, std::string str)
 
 void Scanner::scan_string()
 {
-    const bool is_path = (m_in[m_index - 1] == '/');
+    const bool is_path = (m_in.compare(m_index - 1, 2, "./") == 0);    
     const std::string single_token("{};");
     const size_t start = m_index;
     std::string substr;

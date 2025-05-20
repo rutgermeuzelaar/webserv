@@ -6,13 +6,14 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/18 20:41:10 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/20 20:00:37 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <sstream>
 #include <stdexcept>
 #include <iostream>
+#include <filesystem>
 #include "Parser.hpp"
 
 Parser::Parser(const std::vector<Token>& tokens)
@@ -23,6 +24,11 @@ Parser::Parser(const std::vector<Token>& tokens)
 }
 
 bool Parser::at_end()
+{
+    return peek().m_token_type == TokenType::Eof;
+}
+
+bool Parser::at_end() const
 {
     return peek().m_token_type == TokenType::Eof;
 }
@@ -48,12 +54,21 @@ bool Parser::match(const std::vector<TokenType> types)
     return (false);
 }
 
-Token Parser::peek() const
+const Token& Parser::peek() const
 {
     return (m_tokens[m_current]);
 }
 
-Token Parser::advance()
+const Token& Parser::next() const
+{
+    if (at_end())
+    {
+        return (peek());           
+    }
+    return (m_tokens[m_current + 1]);
+}
+
+const Token& Parser::advance()
 {
     return m_tokens[m_current++];   
 }
@@ -67,7 +82,7 @@ const Token& Parser::previous() const
     return (m_tokens[m_current - 1]);
 }
 
-Token Parser::consume(TokenType type, const char *error)
+const Token& Parser::consume(TokenType type, const char *error)
 {
     if (peek().m_token_type == type)
     {
@@ -89,6 +104,10 @@ void Parser::parse_error_page()
         advance();
     }
     consume(TokenType::Path, "Expected path after status code(s).");
+    if (!is_valid_file_path(previous().m_str))
+    {
+        throw Parser::Error();
+    }
 }
 
 void Parser::parse_listen()
@@ -102,12 +121,20 @@ void Parser::parse_listen()
 void Parser::parse_location()
 {
     consume(TokenType::Path, "Expected path after location.");
+    if (!is_valid_dir_path(previous().m_str))
+    {
+        throw Parser::Error();
+    }
     parse_block();
 }
 
 void Parser::parse_root()
 {
     consume(TokenType::Path, "Expected path after root.");
+    if (!is_valid_dir_path(previous().m_str))
+    {
+        throw Parser::Error();
+    }
 }
 
 void Parser::parse_client_max_body_size()
@@ -180,9 +207,18 @@ void Parser::parse()
     }
 }
 
-void Parser::log_error(const char *reason) const
+void Parser::log_error(const std::string reason) const
 {
     const Token& token = previous();
+    std::stringstream stream;
+    
+    stream << "Parsing error occured near token \'" << token.m_str <<"\' of type \'" \
+    << stringify(token.m_token_type) << "\', at line " << token.m_linenum << ": " << reason;
+    std::cerr << stream.str() << '\n';
+}
+
+void Parser::log_error(const std::string reason, const Token& token) const
+{
     std::stringstream stream;
     
     stream << "Parsing error occured near token \'" << token.m_str <<"\' of type \'" \
@@ -194,4 +230,50 @@ Parser::Error::Error()
     : std::runtime_error("A parsing error occured.")
 {
       
+}
+
+static bool owner_read(const std::filesystem::path& path)
+{
+    std::filesystem::perms perms = std::filesystem::status(path).permissions();
+    if (std::filesystem::perms::none == (std::filesystem::perms::owner_read & perms))
+    {
+        return (false);
+    }
+    return (true);
+}
+
+bool Parser::is_valid_dir_path(const std::string path) const
+{
+    const std::filesystem::path path_obj(path);
+    std::error_code             error;
+    
+    if (!std::filesystem::is_directory(path_obj, error))
+    {
+        log_error(error.message(), next());
+        return (false); 
+    }
+    if (!owner_read(path_obj))
+    {
+        log_error("Missing read rights for owner.", previous());
+        return (false);
+    }
+    return (true);
+}
+
+bool Parser::is_valid_file_path(const std::string path) const
+{
+    const std::filesystem::path path_obj(path);
+    std::error_code             error;
+    
+    if (!std::filesystem::is_regular_file(path_obj, error))
+    {
+        log_error(error.message(), previous());
+        return (false); 
+    }
+    if (!owner_read(path_obj))
+    {
+        log_error("Missing read rights for owner.", previous());
+        return (false);
+    }
+    return (true);
 }
