@@ -1,8 +1,7 @@
-SOURCES_STANDARD := main.cpp HTTPRequestMethod.cpp HTTPResponse.cpp HTTPStatusCode.cpp \
-HTTPStatusLine.cpp Request.cpp
+SOURCES_STANDARD := parseTests.cpp HTTPStatusCode.cpp HTTPStatusLine.cpp Request.cpp Response.cpp
 NAME := webserv
 
-run: re
+run: $(NAME)
 	./$(NAME)
 
 include common.mk
