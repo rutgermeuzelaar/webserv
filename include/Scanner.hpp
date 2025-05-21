@@ -6,12 +6,13 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 16:57:18 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/14 17:47:00 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/21 17:58:57 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef SCANNER_HPP
 # define SCANNER_HPP
+# include <optional>
 # include <string>
 # include <vector>
 # include "Lexer.hpp"
@@ -26,10 +27,12 @@ class Scanner
         char advance(void);
         char peek(void) const;
         void skip_whitespace(void);
+		bool compare_token(const std::string) const;
         std::vector<Token> m_tokens;
         void scan_token(void);
         void scan_string(void);
         void scan_number(void);
+		bool scan_on_off(void);
         void add_token(TokenType);
         void add_token(TokenType, std::string);
         TokenType get_token_type(const std::string& str);

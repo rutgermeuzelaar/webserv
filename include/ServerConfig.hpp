@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/11 14:15:37 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/20 20:28:37 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/21 17:20:23 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,16 @@ class ServerName
         std::string m_name;
 };
 
+class Listen
+{
+	public:
+		const int32_t m_ipv4;
+		const int32_t m_port;
+		Listen();
+		Listen(const std::string ipv4);
+		Listen(const std::string ipv4, const std::string port);
+};
+
 class ServerConfig
 {
     public:
@@ -54,6 +64,8 @@ class ServerConfig
         std::optional<ClientMaxBodySize> m_client_max_body_size;
         std::optional<Location> m_location;
         std::optional<ServerName> m_server_name;
+		Listen m_listen;
+		bool validate() const;
 };
 
 #endif

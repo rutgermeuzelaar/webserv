@@ -6,13 +6,14 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 17:11:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/20 19:05:46 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/21 18:01:48 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <stdexcept>
 #include <cctype>
 #include <sstream>
+#include <utility>
 #include "Scanner.hpp"
 #include "ConfigFile.hpp"
 
@@ -64,7 +65,8 @@ void Scanner::add_token(TokenType token_type, std::string str)
 
 void Scanner::scan_string()
 {
-    const bool is_path = (m_in.compare(m_index - 1, 2, "./") == 0);    
+    const bool is_path = (m_in.compare(m_index - 1, 2, "./") == 0);
+	const bool is_uri = (m_in.compare(m_index - 1, 1, "/") == 0);
     const std::string single_token("{};");
     const size_t start = m_index;
     std::string substr;
@@ -82,6 +84,10 @@ void Scanner::scan_string()
     {
         add_token(TokenType::Path, substr);
     }
+	else if (is_uri)
+	{
+		add_token(TokenType::Uri, substr);
+	}
     else if (it != keywords.end())
     {
         add_token(it->second, it->first);
@@ -92,11 +98,69 @@ void Scanner::scan_string()
     }
 }
 
+static size_t consume_octet(const std::string& str, size_t pos)
+{
+	const size_t len = str.length();
+	size_t i;
+	
+	i = 0;
+	while (i < len && i < 3 && std::isdigit(str.at(pos + i)))
+	{
+		i++;
+	}
+	return i;
+}
+
+static std::pair<bool, size_t> is_ipv4(const std::string& str, size_t pos)
+{
+	const size_t len = str.length();
+	size_t octet_count;
+	size_t octet_len;
+	size_t i;
+	
+	i = pos;
+	octet_count = 0;
+	if (str.compare(pos, 10, "localhost") == 0)
+	{
+		return std::pair<bool, size_t>(true, 10);
+	}
+	while (i < len && octet_count < 4)
+	{
+		octet_len = consume_octet(str, i);
+		if (octet_len == 0)
+		{
+			return std::pair<bool, size_t>(false, 0);
+		}
+		i += octet_len;
+		if (str.at(i) == '.' && octet_count < 3)
+		{
+			i++;
+		}
+		else if (octet_count != 3)
+		{
+			return std::pair<bool, size_t>(false, 0);
+		}
+		octet_count++;
+	}
+	return (std::pair<bool, size_t>(true, i - pos));
+}
+
 void Scanner::scan_number()
 {
     const size_t start = m_index;
+	const std::pair<bool, size_t> ipv4 = is_ipv4(m_in, m_index - 1);
     std::string substr;
-    
+
+	if (ipv4.first)
+	{
+		while ((m_index - start) < ipv4.second)
+		{
+			advance();
+		}
+		substr = m_in.substr(start - 1, ipv4.second);
+		add_token(TokenType::IPv4, substr);
+		return;
+	}
     while (!at_end() && std::isdigit(m_in[m_index]) && !std::isspace(m_in[m_index]))
     {
         advance();
@@ -104,6 +168,35 @@ void Scanner::scan_number()
     substr = m_in.substr(start - 1, m_index - start + 1);
     add_token(TokenType::Number, substr);
 }
+
+bool Scanner::compare_token(const std::string str) const
+{
+	const size_t remain = m_inlen - m_index;
+	
+	if (remain < (str.length() + 1))
+	{
+		return (false);
+	}
+	//
+	return (true);
+}
+
+// bool Scanner::scan_on_off(void)
+// {
+// 	if (m_in.compare(m_index, 1, "n") == 0)
+// 	{
+// 		advance();
+// 		add_token(TokenType::On, "on");
+// 		return (true);
+// 	}
+// 	if (m_in.compare(m_index, 2 , "ff") == 0)
+// 	{
+// 		advance();
+// 		advance();
+// 		add_token();
+// 		return (true);
+// 	}
+// }
 
 void Scanner::scan_token()
 {
@@ -120,6 +213,8 @@ void Scanner::scan_token()
         case ';':
             add_token(TokenType::Semicolon);
             break;
+		case 'o':
+			
         default:
             if (std::isdigit(glyph))
             {

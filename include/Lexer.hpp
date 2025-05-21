@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 16:41:23 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/18 17:53:06 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/21 17:31:43 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,9 +18,13 @@ enum class TokenType: int
     OpenBrace, // {
     CloseBrace, // }
     Semicolon, // ;
-    Path, // path or uri, begins with /
+    Path,
+	Uri,
     String,
     Number,
+	IPv4,
+	On,
+	Off,
 
     // NGINX keywords
     ClientMaxBodySize,
@@ -32,6 +36,9 @@ enum class TokenType: int
     Location,
     Listen,
     Eof,
+	Return,
+	AutoIndex,
+	//
 	TokenTypeCount
 };
 

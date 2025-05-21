@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 12:33:07 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/18 20:41:24 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/21 17:33:16 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,6 +67,12 @@ std::string stringify(TokenType type)
 		case TokenType::Location: return "Location";
 		case TokenType::Listen: return "Listen";
 		case TokenType::Eof: return "Eof";
+		case TokenType::IPv4: return "IPv4";
+		case TokenType::Uri: return "Uri";
+		case TokenType::AutoIndex: return "AutoIndex";
+		case TokenType::Return: return "Return";
+		case TokenType::On: return "On";
+		case TokenType::Off: return "Off";
 		default: assert(false);
 	}
 }

@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/20 20:00:37 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/21 16:25:03 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,9 @@
 #include <filesystem>
 #include "Parser.hpp"
 
-Parser::Parser(const std::vector<Token>& tokens)
+Parser::Parser(const std::vector<Token>& tokens, HttpConfig& http_config)
     : m_tokens {tokens}
+	, m_http_config {http_config}
     , m_current {0}
 {
     
@@ -120,11 +121,7 @@ void Parser::parse_listen()
 
 void Parser::parse_location()
 {
-    consume(TokenType::Path, "Expected path after location.");
-    if (!is_valid_dir_path(previous().m_str))
-    {
-        throw Parser::Error();
-    }
+    consume(TokenType::Uri, "Expected URI after location.");
     parse_block();
 }
 

@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 13:37:57 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/14 17:40:09 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/21 16:29:58 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,11 +14,13 @@
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
+#include "HttpConfig.hpp"
 #include "Parser.hpp"
 #include "Scanner.hpp"
 
 int main(int argc, char **argv)
 {
+	HttpConfig http_config;
     if (argc != 2)
     {
         std::cout << "Please supply exactly one configuration file.\n";
@@ -35,7 +37,7 @@ int main(int argc, char **argv)
     Scanner scanner(buffer.str());
     const std::vector<Token>& tokens = scanner.scan();
     scanner.print_tokens();
-    Parser parser(tokens);
+    Parser parser(tokens, http_config);
     try
     {
         parser.parse();

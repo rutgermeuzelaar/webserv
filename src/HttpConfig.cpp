@@ -1,28 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        ::::::::            */
-/*   HttpConfig.hpp                                     :+:    :+:            */
+/*   HttpConfig.cpp                                     :+:    :+:            */
 /*                                                     +:+                    */
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
-/*   Created: 2025/05/11 14:16:14 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/21 16:39:50 by rmeuzela      ########   odam.nl         */
+/*   Created: 2025/05/21 16:27:41 by rmeuzela      #+#    #+#                 */
+/*   Updated: 2025/05/21 16:28:03 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef HTTP_CONFIG_HPP
-# define HTTP_CONFIG_HPP
-# include <vector>
-# include "ServerConfig.hpp"
-class HttpConfig
-{
-    private:
-		size_t						m_server_index;
-        std::vector <ServerConfig>	m_servers;
-    
-    public:
-		HttpConfig();
-        void validate(void) const;
-};
+#include "HttpConfig.hpp"
 
-#endif
+HttpConfig::HttpConfig()
+{
+	
+}
