@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/22 16:41:14 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 17:17:05 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,7 +143,13 @@ void Parser::parse_listen()
 void Parser::parse_location()
 {
     consume(TokenType::Uri, "Expected URI after location.");
-    parse_block();
+    if (push_context(ContextName::Location))
+    {
+        parse_block();
+        pop_context();
+        return;
+    }
+    throw Error();
 }
 
 void Parser::parse_return()
@@ -177,7 +183,13 @@ void Parser::parse_client_max_body_size()
 
 void Parser::parse_server()
 {
-    parse_block();
+    if (push_context(ContextName::Server))
+    {
+        parse_block();
+        pop_context();
+        return;
+    }
+    throw Error();
 }
 
 void Parser::parse_statement()
@@ -237,8 +249,10 @@ void Parser::parse()
         log_error("Config file should start with a http block.");
         throw Error();
     }
+    push_context(ContextName::Http);
     advance();
     parse_block();
+    pop_context();
     if (!at_end())
     {
         log_error("Expected end of file.");
@@ -315,4 +329,37 @@ bool Parser::is_valid_file_path(const std::string path) const
         return (false);
     }
     return (true);
+}
+
+bool Parser::push_context(ContextName context)
+{
+    ContextName top;
+    if (m_contexts.size() == 0)
+    {
+        m_contexts.push(context);
+        return (true);
+    }
+    top = m_contexts.top();
+    if (top == context)
+    {
+        log_error("Nested blocks of the same type are not allowed.");
+        return (false);
+    }
+    if (m_contexts.size() > 0 && context == ContextName::Http)
+    {
+        log_error("Only one http block is allowed.");
+        return (false);
+    }
+    if (top == ContextName::Location && context == ContextName::Server)
+    {
+        log_error("Server block is not allowed in location block.");
+        return (false);
+    }
+    m_contexts.push(context);
+    return (true);
+}
+
+void Parser::pop_context(void)
+{
+    m_contexts.pop();
 }

@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:54:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/22 16:40:58 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 17:02:42 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,17 @@
 # define PARSER_HPP
 # include <stdexcept>
 # include <vector>
+# include <stack>
 # include <optional>
 # include "HttpContext.hpp"
 # include "Lexer.hpp"
+
+enum class ContextName
+{
+    Http,
+    Server,
+    Location
+};
 
 class Parser
 {
@@ -27,7 +35,10 @@ class Parser
 
     private:
         const std::vector<Token>&   m_tokens;
-		HttpContext&					m_http_config;
+        std::stack<ContextName>     m_contexts;
+        bool                        push_context(ContextName);
+        void                        pop_context(void);
+		HttpContext&				m_http_config;
         int                         m_current;
         bool                        at_end(void);
         bool                        at_end(void) const;
