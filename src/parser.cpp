@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 13:37:57 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/21 16:29:58 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 16:41:32 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,13 +14,13 @@
 #include <stdlib.h>
 #include <sstream>
 #include <fstream>
-#include "HttpConfig.hpp"
+#include "HttpContext.hpp"
 #include "Parser.hpp"
 #include "Scanner.hpp"
 
 int main(int argc, char **argv)
 {
-	HttpConfig http_config;
+	HttpContext http_config;
     if (argc != 2)
     {
         std::cout << "Please supply exactly one configuration file.\n";

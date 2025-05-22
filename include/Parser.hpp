@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:54:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/22 15:53:37 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 16:40:58 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,19 +15,19 @@
 # include <stdexcept>
 # include <vector>
 # include <optional>
-# include "HttpConfig.hpp"
+# include "HttpContext.hpp"
 # include "Lexer.hpp"
 
 class Parser
 {
     public:
         class                       Error;
-        Parser(const std::vector<Token>& tokens, HttpConfig& http_config);
+        Parser(const std::vector<Token>& tokens, HttpContext& http_config);
         void parse(void);
 
     private:
         const std::vector<Token>&   m_tokens;
-		HttpConfig&					m_http_config;
+		HttpContext&					m_http_config;
         int                         m_current;
         bool                        at_end(void);
         bool                        at_end(void) const;

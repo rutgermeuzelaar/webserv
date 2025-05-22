@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/22 16:10:08 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 16:41:14 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 #include <filesystem>
 #include "Parser.hpp"
 
-Parser::Parser(const std::vector<Token>& tokens, HttpConfig& http_config)
+Parser::Parser(const std::vector<Token>& tokens, HttpContext& http_config)
     : m_tokens {tokens}
 	, m_http_config {http_config}
     , m_current {0}

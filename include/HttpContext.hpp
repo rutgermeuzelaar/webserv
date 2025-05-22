@@ -1,27 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        ::::::::            */
-/*   HttpConfig.hpp                                     :+:    :+:            */
+/*   HttpContext.hpp                                    :+:    :+:            */
 /*                                                     +:+                    */
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/11 14:16:14 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/21 16:39:50 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 16:36:15 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef HTTP_CONFIG_HPP
-# define HTTP_CONFIG_HPP
+#ifndef HTTP_CONTEXT_HPP
+# define HTTP_CONTEXT_HPP
 # include <vector>
-# include "ServerConfig.hpp"
-class HttpConfig
+# include "ServerContext.hpp"
+class HttpContext
 {
     private:
 		size_t						m_server_index;
-        std::vector <ServerConfig>	m_servers;
+    std::vector <ServerContext>	m_servers;
     
     public:
-		HttpConfig();
+		HttpContext();
         void validate(void) const;
 };
 

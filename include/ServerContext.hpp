@@ -1,17 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        ::::::::            */
-/*   ServerConfig.hpp                                   :+:    :+:            */
+/*   ServerContext.hpp                                  :+:    :+:            */
 /*                                                     +:+                    */
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/11 14:15:37 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/21 17:20:23 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 16:37:36 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SERVER_CONFIG_HPP
-# define SERVER_CONFIG_HPP
+#ifndef SERVER_CONTEXT_HPP
+# define SERVER_CONTEXT_HPP
 # include <string>
 # include <vector>
 # include <map>
@@ -57,10 +57,10 @@ class Listen
 		Listen(const std::string ipv4, const std::string port);
 };
 
-class ServerConfig
+class ServerContext
 {
     public:
-        ServerConfig();
+        ServerContext();
         std::optional<ClientMaxBodySize> m_client_max_body_size;
         std::optional<Location> m_location;
         std::optional<ServerName> m_server_name;
