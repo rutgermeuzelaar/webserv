@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 12:33:07 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/21 17:33:16 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 15:39:00 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,8 @@ const std::string single_token_char(TokenType TokenType)
 			return "}";
 		case TokenType::Semicolon:
 			return ";";
+		case TokenType::Colon:
+			return ":";
 		default:
 			return "";
 	}
@@ -55,6 +57,7 @@ std::string stringify(TokenType type)
 		case TokenType::OpenBrace: return "OpenBrace";
 		case TokenType::CloseBrace: return "CloseBrace";
 		case TokenType::Semicolon: return "Semicolon";
+		case TokenType::Colon: return "Colon";
 		case TokenType::Path: return "Path";
 		case TokenType::String: return "String";
 		case TokenType::Number: return "Number";

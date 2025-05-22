@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 16:41:23 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/21 17:31:43 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 15:43:14 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ enum class TokenType: int
     OpenBrace, // {
     CloseBrace, // }
     Semicolon, // ;
+    Colon, // :
     Path,
 	Uri,
     String,
@@ -35,10 +36,10 @@ enum class TokenType: int
     Root,
     Location,
     Listen,
-    Eof,
 	Return,
 	AutoIndex,
 	//
+    Eof,
 	TokenTypeCount
 };
 

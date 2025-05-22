@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 11:24:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/11 17:51:35 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 16:09:03 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,10 @@ const std::map<std::string, TokenType> keywords {
     {"server_name", TokenType::ServerName},
     {"root", TokenType::Root},
     {"location", TokenType::Location},
-    {"listen", TokenType::Listen}
+    {"listen", TokenType::Listen},
+    {"return", TokenType::Return},
+    {"autoindex", TokenType::AutoIndex},
+    {"on", TokenType::On},
+    {"off", TokenType::Off}
 };
 #endif

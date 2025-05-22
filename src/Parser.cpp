@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/21 16:25:03 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 16:10:08 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,6 +83,16 @@ const Token& Parser::previous() const
     return (m_tokens[m_current - 1]);
 }
 
+const Token& Parser::consume(std::vector<TokenType> types, const char *error)
+{
+    if (match(types))
+    {
+        return (advance());
+    }
+    log_error(error);
+    throw Error();
+}
+
 const Token& Parser::consume(TokenType type, const char *error)
 {
     if (peek().m_token_type == type)
@@ -100,6 +110,7 @@ void Parser::parse_server_name()
 
 void Parser::parse_error_page()
 {
+    consume(TokenType::Number, "Expected status code.");
     while (check(TokenType::Number))
     {
         advance();
@@ -113,16 +124,41 @@ void Parser::parse_error_page()
 
 void Parser::parse_listen()
 {
-    while (match({TokenType::Number, TokenType::String}))
+    const TokenType next = peek().m_token_type;
+
+    if (next == TokenType::Number)
     {
-        advance();   
+        consume(TokenType::Number, "Expected port number.");
+        return ;
     }
+    consume(TokenType::IPv4, "Expected IPv4 address.");
+    if (peek().m_token_type == TokenType::Semicolon)
+    {
+        return ;
+    }
+    consume(TokenType::Colon, "Expected colon after IPv4 address.");
+    consume(TokenType::Number, "Expected port number after IPv$ address.");
 }
 
 void Parser::parse_location()
 {
     consume(TokenType::Uri, "Expected URI after location.");
     parse_block();
+}
+
+void Parser::parse_return()
+{
+    consume(TokenType::Number, "Expected status code.");
+    while (check(TokenType::Number))
+    {
+        advance();
+    }
+    consume(TokenType::String, "Expected URL after status code(s).");
+}
+
+void Parser::parse_autoindex()
+{
+    consume({TokenType::On, TokenType::Off}, "Expected 'on' or 'off'.");
 }
 
 void Parser::parse_root()
@@ -161,6 +197,12 @@ void Parser::parse_statement()
             break;
         case TokenType::Root:
             parse_root();
+            break;
+        case TokenType::AutoIndex:
+            parse_autoindex();
+            break;
+        case TokenType::Return:
+            parse_return();
             break;
         case TokenType::Location:
             parse_location();

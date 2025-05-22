@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:54:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/21 16:24:00 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 15:53:37 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@
 # include <optional>
 # include "HttpConfig.hpp"
 # include "Lexer.hpp"
-# include "Expression.hpp"
 
 class Parser
 {
@@ -37,6 +36,7 @@ class Parser
         const Token&                advance(void);
         const Token&                previous(void) const;
         const Token&                consume(TokenType, const char *error);
+        const Token&                consume(std::vector<TokenType>, const char *error);
         const Token&                peek(void) const;
         const Token&                next(void) const;
         void                        log_error(const std::string, const Token&) const;
@@ -54,6 +54,8 @@ class Parser
         void                        parse_root(void);
         void                        parse_client_max_body_size(void);
         void                        parse_server(void);
+        void                        parse_return(void);
+        void                        parse_autoindex(void);
 };
 
 class Parser::Error: public std::runtime_error

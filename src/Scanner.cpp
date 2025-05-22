@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 17:11:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/21 18:01:48 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 16:18:47 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -153,7 +153,7 @@ void Scanner::scan_number()
 
 	if (ipv4.first)
 	{
-		while ((m_index - start) < ipv4.second)
+		while ((m_index - start) < ipv4.second - 1)
 		{
 			advance();
 		}
@@ -168,35 +168,6 @@ void Scanner::scan_number()
     substr = m_in.substr(start - 1, m_index - start + 1);
     add_token(TokenType::Number, substr);
 }
-
-bool Scanner::compare_token(const std::string str) const
-{
-	const size_t remain = m_inlen - m_index;
-	
-	if (remain < (str.length() + 1))
-	{
-		return (false);
-	}
-	//
-	return (true);
-}
-
-// bool Scanner::scan_on_off(void)
-// {
-// 	if (m_in.compare(m_index, 1, "n") == 0)
-// 	{
-// 		advance();
-// 		add_token(TokenType::On, "on");
-// 		return (true);
-// 	}
-// 	if (m_in.compare(m_index, 2 , "ff") == 0)
-// 	{
-// 		advance();
-// 		advance();
-// 		add_token();
-// 		return (true);
-// 	}
-// }
 
 void Scanner::scan_token()
 {
@@ -213,8 +184,9 @@ void Scanner::scan_token()
         case ';':
             add_token(TokenType::Semicolon);
             break;
-		case 'o':
-			
+        case ':':
+            add_token(TokenType::Colon);
+            break;            
         default:
             if (std::isdigit(glyph))
             {

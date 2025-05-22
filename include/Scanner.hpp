@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 16:57:18 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/21 17:58:57 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/22 16:18:35 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,6 @@ class Scanner
         char advance(void);
         char peek(void) const;
         void skip_whitespace(void);
-		bool compare_token(const std::string) const;
         std::vector<Token> m_tokens;
         void scan_token(void);
         void scan_string(void);
