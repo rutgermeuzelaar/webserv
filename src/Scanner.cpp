@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/01 17:11:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/22 16:18:47 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/23 11:39:37 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include <sstream>
 #include <utility>
 #include "Scanner.hpp"
-#include "ConfigFile.hpp"
+#include "Config.hpp"
 
 Scanner::Scanner(std::string in)
     : m_index {0} 

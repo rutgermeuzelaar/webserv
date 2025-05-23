@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:54:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/22 17:02:42 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/23 13:14:03 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 # include <optional>
 # include "HttpContext.hpp"
 # include "Lexer.hpp"
+# include "Config.hpp"
 
 enum class ContextName
 {
@@ -30,7 +31,7 @@ class Parser
 {
     public:
         class                       Error;
-        Parser(const std::vector<Token>& tokens, HttpContext& http_config);
+        Parser(const std::vector<Token>& tokens, Config& config);
         void parse(void);
 
     private:
@@ -38,7 +39,7 @@ class Parser
         std::stack<ContextName>     m_contexts;
         bool                        push_context(ContextName);
         void                        pop_context(void);
-		HttpContext&				m_http_config;
+		Config&                     m_config;
         int                         m_current;
         bool                        at_end(void);
         bool                        at_end(void) const;
@@ -56,7 +57,8 @@ class Parser
         void                        parse_statement(void);
         bool                        is_valid_dir_path(const std::string) const;
         bool                        is_valid_file_path(const std::string) const;
-       
+        void                        require_context(ContextName) const;
+        void                        require_context(const std::vector<ContextName>) const;
         // config options
         void                        parse_server_name(void);
         void                        parse_error_page(void);

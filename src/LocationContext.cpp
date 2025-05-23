@@ -1,25 +1,24 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        ::::::::            */
-/*   LocationContext.hpp                                :+:    :+:            */
+/*   LocationContext.cpp                                :+:    :+:            */
 /*                                                     +:+                    */
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
-/*   Created: 2025/05/22 16:36:22 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/23 12:48:35 by rmeuzela      ########   odam.nl         */
+/*   Created: 2025/05/23 12:40:28 by rmeuzela      #+#    #+#                 */
+/*   Updated: 2025/05/23 12:49:14 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef LOCATION_CONTEXT_HPP
-# define LOCATION_CONTEXT_HPP
-# include <string>
+#include "LocationContext.hpp"
 
-class LocationContext
+LocationContext::LocationContext(std::string uri)
+    : m_uri {uri}
 {
-    public:
-        const std::string m_uri;
-        LocationContext(std::string); 
-};
+    
+}
 
-bool operator==(const LocationContext&, const LocationContext&);
-#endif
+bool operator==(const LocationContext& a, const LocationContext& b)
+{
+    return (a.m_uri == b.m_uri);    
+}

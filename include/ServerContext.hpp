@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/11 14:15:37 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/22 16:37:36 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/23 12:34:01 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,54 +18,22 @@
 # include <filesystem>
 # include <optional>
 # include "Lexer.hpp"
-
-class Root
-{
-    public:
-        std::filesystem::path m_path;
-        Root();
-};
-
-class ClientMaxBodySize
-{
-    public:
-        size_t    m_size;
-        ClientMaxBodySize();
-};
-
-class Location
-{
-    public:
-        std::string m_uri;
-        std::optional<Root> m_root;
-        Location();
-};
-
-class ServerName
-{
-    public:
-        std::string m_name;
-};
-
-class Listen
-{
-	public:
-		const int32_t m_ipv4;
-		const int32_t m_port;
-		Listen();
-		Listen(const std::string ipv4);
-		Listen(const std::string ipv4, const std::string port);
-};
+# include "ConfigStatement.hpp"
+# include "LocationContext.hpp"
 
 class ServerContext
 {
+    private:
+        std::vector<LocationContext> m_location_contexts;
     public:
         ServerContext();
-        std::optional<ClientMaxBodySize> m_client_max_body_size;
-        std::optional<Location> m_location;
-        std::optional<ServerName> m_server_name;
-		Listen m_listen;
-		bool validate() const;
+        ServerName m_server_name;
+        void add_location(std::string);
+        LocationContext& get_location(void);
+        // std::optional<ClientMaxBodySize> m_client_max_body_size;
+        // std::optional<ServerName> m_server_name;
+		// Listen m_listen;
+		// bool validate() const;
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/22 17:17:05 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/23 13:35:35 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,9 +16,9 @@
 #include <filesystem>
 #include "Parser.hpp"
 
-Parser::Parser(const std::vector<Token>& tokens, HttpContext& http_config)
+Parser::Parser(const std::vector<Token>& tokens, Config& config)
     : m_tokens {tokens}
-	, m_http_config {http_config}
+	, m_config {config}
     , m_current {0}
 {
     
@@ -105,11 +105,22 @@ const Token& Parser::consume(TokenType type, const char *error)
 
 void Parser::parse_server_name()
 {
+    require_context(ContextName::Server);
     consume(TokenType::String, "Expected string after server_name.");
+    try
+    {
+        m_config.get_server().m_server_name.set_name(previous().m_str);
+    }
+    catch (const std::runtime_error& error)
+    {
+        log_error(error.what());
+        throw Error();
+    }
 }
 
 void Parser::parse_error_page()
 {
+    require_context({ContextName::Http, ContextName::Server, ContextName::Location});
     consume(TokenType::Number, "Expected status code.");
     while (check(TokenType::Number))
     {
@@ -126,6 +137,7 @@ void Parser::parse_listen()
 {
     const TokenType next = peek().m_token_type;
 
+    require_context(ContextName::Server);
     if (next == TokenType::Number)
     {
         consume(TokenType::Number, "Expected port number.");
@@ -142,9 +154,11 @@ void Parser::parse_listen()
 
 void Parser::parse_location()
 {
+    require_context({ContextName::Server, ContextName::Location});
     consume(TokenType::Uri, "Expected URI after location.");
     if (push_context(ContextName::Location))
     {
+        m_config.get_server().add_location(previous().m_str);
         parse_block();
         pop_context();
         return;
@@ -154,6 +168,7 @@ void Parser::parse_location()
 
 void Parser::parse_return()
 {
+    require_context({ContextName::Server, ContextName::Location});
     consume(TokenType::Number, "Expected status code.");
     while (check(TokenType::Number))
     {
@@ -164,11 +179,13 @@ void Parser::parse_return()
 
 void Parser::parse_autoindex()
 {
+    require_context({ContextName::Http, ContextName::Server, ContextName::Location});
     consume({TokenType::On, TokenType::Off}, "Expected 'on' or 'off'.");
 }
 
 void Parser::parse_root()
 {
+    require_context({ContextName::Http, ContextName::Server, ContextName::Location});
     consume(TokenType::Path, "Expected path after root.");
     if (!is_valid_dir_path(previous().m_str))
     {
@@ -178,13 +195,16 @@ void Parser::parse_root()
 
 void Parser::parse_client_max_body_size()
 {
+    require_context({ContextName::Http, ContextName::Server, ContextName::Location});
     consume(TokenType::Number, "Expected number after client_max_body_size.");
 }
 
 void Parser::parse_server()
 {
+    require_context(ContextName::Http);
     if (push_context(ContextName::Server))
     {
+        m_config.add_server();
         parse_block();
         pop_context();
         return;
@@ -362,4 +382,26 @@ bool Parser::push_context(ContextName context)
 void Parser::pop_context(void)
 {
     m_contexts.pop();
+}
+
+void Parser::require_context(ContextName allowed_context) const
+{
+    if (m_contexts.top() != allowed_context)
+    {
+        log_error("Keyword not allowed in current block.");
+        throw Error();
+    }
+}
+
+void Parser::require_context(const std::vector<ContextName> allowed_context) const
+{
+    for (const ContextName& i: allowed_context)
+    {
+        if (m_contexts.top() == i)
+        {
+            return ;
+        }
+    }   
+    log_error("Keyword not allowed in current block.");
+    throw Error();
 }

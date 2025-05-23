@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 13:37:57 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/22 16:41:32 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/23 11:54:19 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,24 +20,24 @@
 
 int main(int argc, char **argv)
 {
-	HttpContext http_config;
+	Config config;
     if (argc != 2)
     {
         std::cout << "Please supply exactly one configuration file.\n";
         return (EXIT_FAILURE);
     }
-    std::ifstream config(argv[1]);
+    std::ifstream config_file(argv[1]);
     std::stringstream buffer;
 
-    if (config.fail())
+    if (config_file.fail())
     {
         std::cout << "Failed to open file, please try again.\n";
     }
-    buffer << config.rdbuf();
+    buffer << config_file.rdbuf();
     Scanner scanner(buffer.str());
     const std::vector<Token>& tokens = scanner.scan();
     scanner.print_tokens();
-    Parser parser(tokens, http_config);
+    Parser parser(tokens, config);
     try
     {
         parser.parse();
