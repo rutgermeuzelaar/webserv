@@ -1,16 +1,27 @@
 #include "../include/Socket.hpp"
 
 /**
- * @brief Constructor for the socket clsas
- * @details If you want to bind to a specific local IP address, drop the AI_PASSIVE
- * @details and put an IP address in for the first argument to getaddrinfo().
+ * @brief Constructor for the Socket class
+ * @details Initializes a new Socket instance with the following:
+ *          - Sets up address hints for socket creation:
+ *            * AF_UNSPEC: Supports both IPv4 and IPv6
+ *            * SOCK_STREAM: TCP connection-oriented protocol
+ *            * AI_PASSIVE: Socket will be used for binding
+ *          - Initializes member variables:
+ *            * _isRunning: Set to false (server not running)
+ *            * _backlog: Maximum length of pending connections queue
+ *            * _optval: Set to 1 for socket options
+ *            * _peerSize: Size of peer address structure
+ * @param backlog The maximum number of pending connections that can be queued
+ * @note The AI_PASSIVE flag means the socket will be bound to all available interfaces.
+ *       To bind to a specific interface, remove AI_PASSIVE and provide the IP address.
  */
 Socket::Socket(int backlog) : _isRunning(false), _backlog(backlog), _optval(1)
 {
 	std::memset(&_hints, 0, sizeof(_hints));
-	_hints.ai_family = AF_UNSPEC; //* Dont care if ipv4 or ipv6
-	_hints.ai_socktype = SOCK_STREAM; //* TCP Stream sockets
-	_hints.ai_flags = AI_PASSIVE; //* assign the address of local host to the socket structures
+	_hints.ai_family = AF_UNSPEC;
+	_hints.ai_socktype = SOCK_STREAM;
+	_hints.ai_flags = AI_PASSIVE;
 	_peerSize = sizeof(_peerAddr);
 }
 
@@ -18,6 +29,19 @@ Socket::~Socket() {
 	closeAllSockets();
 }
 
+/**
+ * @brief Creates and initializes a server socket
+ * @details This function performs the following steps:
+ *          1. Gets address information using getaddrinfo
+ *          2. Creates a socket with the appropriate family and type
+ *          3. Sets socket options (SO_REUSEADDR)
+ *          4. Binds the socket to the specified port
+ *          5. Sets the socket to listen for incoming connections
+ * @param port The port number to bind the socket to
+ * @return int The file descriptor of the created socket
+ * @throw SocketException if any step fails (getaddrinfo, socket creation, 
+ *        setsockopt, bind, or listen)
+ */
 int Socket::createSocket(const std::string& port)
 {
 	//*define struct
@@ -43,15 +67,11 @@ int Socket::createSocket(const std::string& port)
 			freeaddrinfo(server_addr);
 			throw SocketException("Failed to set socket options: " + std::string(strerror(errno)));
 		}
-
-		//* bind
 		if (bind(socketFD, node->ai_addr, node->ai_addrlen) == -1)
 		{
 			close(socketFD);
 			continue ;
 		}
-
-		//* listen
 		if (listen(socketFD, _backlog) == -1)
 		{
 			close(socketFD);
