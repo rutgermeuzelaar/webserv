@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/23 13:35:35 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/25 16:34:59 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <filesystem>
+#include <cassert>
 #include "Parser.hpp"
 
 Parser::Parser(const std::vector<Token>& tokens, Config& config)
@@ -109,7 +110,7 @@ void Parser::parse_server_name()
     consume(TokenType::String, "Expected string after server_name.");
     try
     {
-        m_config.get_server().m_server_name.set_name(previous().m_str);
+        set_server_name(ServerName(previous().m_str));
     }
     catch (const std::runtime_error& error)
     {
@@ -120,16 +121,27 @@ void Parser::parse_server_name()
 
 void Parser::parse_error_page()
 {
+    std::vector<std::string> codes;
+
     require_context({ContextName::Http, ContextName::Server, ContextName::Location});
-    consume(TokenType::Number, "Expected status code.");
+    codes.push_back(consume(TokenType::Number, "Expected status code.").m_str);
     while (check(TokenType::Number))
     {
-        advance();
+        codes.push_back(advance().m_str);
     }
     consume(TokenType::Path, "Expected path after status code(s).");
     if (!is_valid_file_path(previous().m_str))
     {
         throw Parser::Error();
+    }
+    try
+    {
+        set_error_page(ErrorPage(codes, std::filesystem::path(previous().m_str)));
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what());
+        throw Error();
     }
 }
 
@@ -141,24 +153,51 @@ void Parser::parse_listen()
     if (next == TokenType::Number)
     {
         consume(TokenType::Number, "Expected port number.");
+        try
+        {
+            set_listen(Listen("127.0.0.1", previous().m_str));
+        }
+        catch (const std::runtime_error& error)
+        {
+            log_error(error.what());
+            throw Error();
+        }
         return ;
     }
     consume(TokenType::IPv4, "Expected IPv4 address.");
     if (peek().m_token_type == TokenType::Semicolon)
     {
+        try
+        {
+            set_listen(Listen(previous().m_str));
+        }
+        catch (const std::runtime_error& error)
+        {
+            log_error(error.what());
+            throw Error();
+        }
         return ;
     }
     consume(TokenType::Colon, "Expected colon after IPv4 address.");
-    consume(TokenType::Number, "Expected port number after IPv$ address.");
+    consume(TokenType::Number, "Expected port number after IPv4 address.");
+    try
+    {
+        set_listen(Listen(m_tokens[m_current - 3].m_str, previous().m_str));
+    }
+    catch (const std::runtime_error& error)
+    {
+        log_error(error.what());
+        throw Error();
+    }
 }
 
 void Parser::parse_location()
 {
-    require_context({ContextName::Server, ContextName::Location});
+    require_context({ContextName::Server});
     consume(TokenType::Uri, "Expected URI after location.");
     if (push_context(ContextName::Location))
     {
-        m_config.get_server().add_location(previous().m_str);
+        m_config.get_server().m_location_contexts.add_unique(LocationContext(previous().m_str));
         parse_block();
         pop_context();
         return;
@@ -204,7 +243,7 @@ void Parser::parse_server()
     require_context(ContextName::Http);
     if (push_context(ContextName::Server))
     {
-        m_config.add_server();
+        m_config.m_http_context.m_servers.add(ServerContext());
         parse_block();
         pop_context();
         return;
@@ -404,4 +443,32 @@ void Parser::require_context(const std::vector<ContextName> allowed_context) con
     }   
     log_error("Keyword not allowed in current block.");
     throw Error();
+}
+
+void Parser::set_server_name(ServerName server_name)
+{
+    assert(m_contexts.top() == ContextName::Server);
+    set_statement_unique(m_config.get_server().m_server_name, server_name);
+}
+
+void Parser::set_error_page(ErrorPage error_page)
+{
+    switch (m_contexts.top())
+    {
+        case ContextName::Http:
+            m_config.m_http_context.m_error_pages.add(error_page);
+            return;
+        case ContextName::Server:
+            m_config.get_server().m_error_pages.add(error_page);
+            return;
+        case ContextName::Location:
+            m_config.get_server().get_location().m_error_pages.add(error_page);
+            return;
+    }
+}
+
+void Parser::set_listen(Listen listen)
+{
+    assert(m_contexts.top() == ContextName::Server);
+    set_statement_unique(m_config.get_server().m_listen, listen);
 }

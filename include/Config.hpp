@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 11:24:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/23 12:25:53 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/23 19:00:38 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,12 +38,9 @@ const std::map<std::string, TokenType> keywords {
 
 class Config
 {
-    private:
-        HttpContext m_http_context;
-        std::vector<ServerContext> m_server_contexts;
     public:
+        HttpContext m_http_context;
         Config();
-        void add_server(void);
         ServerContext& get_server(void);
 };
 

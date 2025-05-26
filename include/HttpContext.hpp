@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/11 14:16:14 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/22 16:36:15 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/23 20:09:23 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,15 +14,14 @@
 # define HTTP_CONTEXT_HPP
 # include <vector>
 # include "ServerContext.hpp"
+# include "ConfigCollection.hpp"
+
 class HttpContext
 {
-    private:
-		size_t						m_server_index;
-    std::vector <ServerContext>	m_servers;
-    
-    public:
-		HttpContext();
-        void validate(void) const;
+  public:
+    ConfigCollection<ServerContext> m_servers;
+    ConfigCollection<ErrorPage> m_error_pages;
+    HttpContext();
+    void validate(void) const;
 };
-
 #endif

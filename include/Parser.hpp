@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:54:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/23 13:14:03 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/25 16:26:41 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,6 +59,7 @@ class Parser
         bool                        is_valid_file_path(const std::string) const;
         void                        require_context(ContextName) const;
         void                        require_context(const std::vector<ContextName>) const;
+        void                        set_option(TokenType);
         // config options
         void                        parse_server_name(void);
         void                        parse_error_page(void);
@@ -69,6 +70,17 @@ class Parser
         void                        parse_server(void);
         void                        parse_return(void);
         void                        parse_autoindex(void);
+
+        // set
+        void                        set_server_name(ServerName);
+        void                        set_error_page(ErrorPage);
+        void                        set_listen(Listen);
+        void                        set_location(void);
+        void                        set_root(void);
+        void                        set_client_max_body_size(void);
+        void                        set_server(void);
+        void                        set_return(void);
+        void                        set_autoindex(void);
 };
 
 class Parser::Error: public std::runtime_error
