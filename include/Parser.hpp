@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:54:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/25 16:26:41 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/27 18:55:52 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,12 +75,12 @@ class Parser
         void                        set_server_name(ServerName);
         void                        set_error_page(ErrorPage);
         void                        set_listen(Listen);
-        void                        set_location(void);
-        void                        set_root(void);
-        void                        set_client_max_body_size(void);
-        void                        set_server(void);
-        void                        set_return(void);
-        void                        set_autoindex(void);
+        void                        set_location(LocationContext);
+        void                        set_root(Root);
+        void                        set_client_max_body_size(ClientMaxBodySize);
+        void                        set_server(ServerContext);
+        void                        set_return(Return);
+        void                        set_autoindex(AutoIndex);
 };
 
 class Parser::Error: public std::runtime_error

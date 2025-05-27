@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/25 16:34:59 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/27 19:19:14 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -195,9 +195,9 @@ void Parser::parse_location()
 {
     require_context({ContextName::Server});
     consume(TokenType::Uri, "Expected URI after location.");
+    set_location(LocationContext(previous().m_str));
     if (push_context(ContextName::Location))
     {
-        m_config.get_server().m_location_contexts.add_unique(LocationContext(previous().m_str));
         parse_block();
         pop_context();
         return;
@@ -230,20 +230,36 @@ void Parser::parse_root()
     {
         throw Parser::Error();
     }
+    try
+    {
+        set_root(Root(previous().m_str));
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what(), previous());
+    }
 }
 
 void Parser::parse_client_max_body_size()
 {
     require_context({ContextName::Http, ContextName::Server, ContextName::Location});
     consume(TokenType::Number, "Expected number after client_max_body_size.");
+    try
+    {
+        set_client_max_body_size(ClientMaxBodySize(previous().m_str));
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what(), previous());
+    }
 }
 
 void Parser::parse_server()
 {
     require_context(ContextName::Http);
+    set_server(ServerContext());
     if (push_context(ContextName::Server))
     {
-        m_config.m_http_context.m_servers.add(ServerContext());
         parse_block();
         pop_context();
         return;
@@ -361,7 +377,7 @@ bool Parser::is_valid_dir_path(const std::string path) const
     
     if (!std::filesystem::is_directory(path_obj, error))
     {
-        log_error(error.message(), next());
+        log_error(error.message(), previous());
         return (false); 
     }
     if (!owner_read(path_obj))
@@ -471,4 +487,47 @@ void Parser::set_listen(Listen listen)
 {
     assert(m_contexts.top() == ContextName::Server);
     set_statement_unique(m_config.get_server().m_listen, listen);
+}
+
+void Parser::set_location(LocationContext location)
+{
+    assert(m_contexts.top() == ContextName::Server);
+    m_config.get_server().m_location_contexts.add(location);
+}
+
+void Parser::set_root(Root root)
+{
+    switch (m_contexts.top())
+    {
+        case ContextName::Http:
+            set_statement_unique(m_config.m_http_context.m_root, root);
+            return;
+        case ContextName::Server:
+            set_statement_unique(m_config.get_server().m_root, root);
+            return;
+        case ContextName::Location:
+            set_statement_unique(m_config.get_server().get_location().m_root, root);
+            return;
+    }
+}
+
+void Parser::set_client_max_body_size(ClientMaxBodySize client_max_body_size)
+{
+    switch (m_contexts.top())
+    {
+        case ContextName::Http:
+            set_statement_unique(m_config.m_http_context.m_client_max_body_size, client_max_body_size);
+            return;
+        case ContextName::Server:
+            set_statement_unique(m_config.get_server().m_client_max_body_size, client_max_body_size);
+            return;
+        case ContextName::Location:
+            set_statement_unique(m_config.get_server().get_location().m_client_max_body_size, client_max_body_size);
+    }
+}
+
+void Parser::set_server(ServerContext server)
+{
+    assert(m_contexts.top() == ContextName::Http);
+    m_config.m_http_context.m_servers.add(server);
 }

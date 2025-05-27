@@ -6,13 +6,14 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/23 12:15:27 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/26 18:48:06 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/27 19:09:39 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <stdexcept>
 #include <string>
 #include <algorithm>
+#include <limits>
 #include "ConfigStatement.hpp"
 #include "HTTPStatusCode.hpp"
 
@@ -46,8 +47,26 @@ Root::Root(std::filesystem::path path)
     
 }
 
+size_t ClientMaxBodySize::from_string(const std::string& size) const
+{
+    long body_size;
+    
+    body_size = std::stol(size);
+    if (body_size < 0|| static_cast<size_t>(body_size) > std::numeric_limits<size_t>::max())
+    {
+        throw std::runtime_error("Invalid client max body size.");
+    }
+    return body_size;
+}
+
 ClientMaxBodySize::ClientMaxBodySize(size_t size)
     : m_size {size}
+{
+    
+}
+
+ClientMaxBodySize::ClientMaxBodySize(const std::string& size)
+    : m_size {from_string(size)}
 {
     
 }

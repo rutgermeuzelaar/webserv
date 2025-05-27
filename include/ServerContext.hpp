@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/11 14:15:37 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/25 16:28:43 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/27 18:59:10 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,9 +31,8 @@ class ServerContext
         ConfigCollection<ErrorPage> m_error_pages;
         std::optional<ServerName> m_server_name;
         std::optional<Listen> m_listen;
-        // std::optional<ClientMaxBodySize> m_client_max_body_size;
-        // std::optional<ServerName> m_server_name;
-		// Listen m_listen;
+        std::optional<Root> m_root;
+        std::optional<ClientMaxBodySize> m_client_max_body_size;
 		// bool validate() const;
 };
 

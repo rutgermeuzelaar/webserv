@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/23 12:13:09 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/26 18:46:58 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/27 19:03:45 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,8 @@ class ClientMaxBodySize
     public:
         const size_t    m_size;
         ClientMaxBodySize(size_t);
+        ClientMaxBodySize(const std::string&);
+        size_t from_string(const std::string&) const;
 };
 
 class ServerName
