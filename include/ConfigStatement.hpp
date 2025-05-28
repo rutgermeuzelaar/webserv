@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/23 12:13:09 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/27 19:03:45 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/28 16:08:41 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,12 +69,21 @@ bool operator==(const ErrorPage&, const ErrorPage&);
 
 class Return
 {
-    
+    private:
+        std::vector<HTTPStatusCode> codes_from_string(const std::vector<std::string>&) const;
+    public:
+        const std::vector<HTTPStatusCode> m_status_codes;
+        const std::string m_uri;
+        Return(const std::vector<std::string>&, const std::string);
 };
+
+bool operator==(const Return&, const Return&);
 
 class AutoIndex
 {
-    
+    public:
+        const bool m_on;
+        AutoIndex(const std::string&);
 };
 
 template <typename T>

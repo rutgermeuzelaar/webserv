@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/11 14:16:14 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/27 18:58:50 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/28 16:21:04 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@ class HttpContext
     ConfigCollection<ErrorPage> m_error_pages;
     std::optional<Root> m_root;
     std::optional<ClientMaxBodySize> m_client_max_body_size;
+    std::optional<AutoIndex> m_auto_index;
     HttpContext();
     void validate(void) const;
 };

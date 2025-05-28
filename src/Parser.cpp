@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/27 19:19:14 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/28 16:24:20 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -207,19 +207,38 @@ void Parser::parse_location()
 
 void Parser::parse_return()
 {
+    std::vector<std::string> tokens;
+
     require_context({ContextName::Server, ContextName::Location});
     consume(TokenType::Number, "Expected status code.");
+    tokens.push_back(previous().m_str);
     while (check(TokenType::Number))
     {
-        advance();
+        tokens.push_back(advance().m_str);
     }
     consume(TokenType::String, "Expected URL after status code(s).");
+    try
+    {
+        set_return(Return(tokens, previous().m_str));
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what(), previous());
+    }
 }
 
 void Parser::parse_autoindex()
 {
     require_context({ContextName::Http, ContextName::Server, ContextName::Location});
     consume({TokenType::On, TokenType::Off}, "Expected 'on' or 'off'.");
+    try
+    {
+        set_autoindex(AutoIndex(previous().m_str));
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what(), previous());
+    }
 }
 
 void Parser::parse_root()
@@ -530,4 +549,35 @@ void Parser::set_server(ServerContext server)
 {
     assert(m_contexts.top() == ContextName::Http);
     m_config.m_http_context.m_servers.add(server);
+}
+
+void Parser::set_return(Return return_obj)
+{
+    switch (m_contexts.top())
+    {
+        case ContextName::Server:
+            m_config.get_server().m_returns.add_unique(return_obj);
+            return;
+        case ContextName::Location:
+            m_config.get_server().get_location().m_returns.add_unique(return_obj);
+            return;
+        default:
+            assert(false);  
+    }
+}
+
+void Parser::set_autoindex(AutoIndex auto_index)
+{
+    switch (m_contexts.top())
+    {
+        case ContextName::Http:
+            set_statement_unique(m_config.m_http_context.m_auto_index, auto_index);
+            return;
+        case ContextName::Server:
+            set_statement_unique(m_config.get_server().m_auto_index, auto_index);
+            return;
+        case ContextName::Location:
+            set_statement_unique(m_config.get_server().get_location().m_auto_index, auto_index);
+            return;
+    }
 }

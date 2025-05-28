@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/23 12:15:27 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/27 19:09:39 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/28 16:09:52 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,14 +99,54 @@ ErrorPage::ErrorPage(const std::vector<std::string>& codes, const std::filesyste
     
 }
 
-bool operator==(const ErrorPage& a, const ErrorPage& b)
+static bool status_codes_overlap(const std::vector<HTTPStatusCode>& a, const std::vector<HTTPStatusCode>& b)
 {
-    for (const HTTPStatusCode& it: a.m_status_codes)
+     for (const auto& it: a)
     {
-        if (std::find(b.m_status_codes.begin(), b.m_status_codes.end(), it) != b.m_status_codes.end())
+        if (std::find(b.begin(), b.end(), it) != b.end())
         {
             return (true);
         }
     }
     return (false);
+}
+
+bool operator==(const ErrorPage& a, const ErrorPage& b)
+{
+    return (status_codes_overlap(a.m_status_codes, b.m_status_codes));
+}
+
+std::vector<HTTPStatusCode> Return::codes_from_string(const std::vector<std::string>& codes_str) const
+{
+    std::vector<HTTPStatusCode> codes;
+    int int_rep;
+
+    for (const auto& it: codes_str)
+    {
+        int_rep = std::stoi(it);
+        if (!is_http_status_code(int_rep))
+        {
+            throw std::runtime_error("Not a HTTP status code.");
+        }
+        codes.push_back(static_cast<HTTPStatusCode>(int_rep));
+    }
+    return codes;
+}
+
+Return::Return(const std::vector<std::string>& codes_str, const std::string uri)
+    : m_status_codes {codes_from_string(codes_str)}
+    , m_uri {uri}
+{
+    
+}
+
+bool operator==(const Return& a, const Return& b)
+{
+    return (status_codes_overlap(a.m_status_codes, b.m_status_codes));
+}
+
+AutoIndex::AutoIndex(const std::string& status)
+    : m_on {status == "on"}
+{
+   
 }

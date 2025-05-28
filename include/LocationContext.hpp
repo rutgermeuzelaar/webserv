@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/22 16:36:22 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/27 17:35:48 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/28 16:21:17 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ class LocationContext
         LocationContext(const std::string&); 
         std::optional<Root> m_root;
         ConfigCollection<ErrorPage> m_error_pages;
-        std::optional<Return> m_return;
+        ConfigCollection<Return> m_returns;
         std::optional<AutoIndex> m_auto_index;
         std::optional<ClientMaxBodySize> m_client_max_body_size;
 };
