@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/28 16:24:20 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/28 16:31:49 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -196,13 +196,9 @@ void Parser::parse_location()
     require_context({ContextName::Server});
     consume(TokenType::Uri, "Expected URI after location.");
     set_location(LocationContext(previous().m_str));
-    if (push_context(ContextName::Location))
-    {
-        parse_block();
-        pop_context();
-        return;
-    }
-    throw Error();
+    push_context(ContextName::Location);
+    parse_block();
+    pop_context();
 }
 
 void Parser::parse_return()
@@ -277,13 +273,9 @@ void Parser::parse_server()
 {
     require_context(ContextName::Http);
     set_server(ServerContext());
-    if (push_context(ContextName::Server))
-    {
-        parse_block();
-        pop_context();
-        return;
-    }
-    throw Error();
+    push_context(ContextName::Server);
+    parse_block();
+    pop_context();
 }
 
 void Parser::parse_statement()
@@ -425,32 +417,9 @@ bool Parser::is_valid_file_path(const std::string path) const
     return (true);
 }
 
-bool Parser::push_context(ContextName context)
+void Parser::push_context(ContextName context)
 {
-    ContextName top;
-    if (m_contexts.size() == 0)
-    {
-        m_contexts.push(context);
-        return (true);
-    }
-    top = m_contexts.top();
-    if (top == context)
-    {
-        log_error("Nested blocks of the same type are not allowed.");
-        return (false);
-    }
-    if (m_contexts.size() > 0 && context == ContextName::Http)
-    {
-        log_error("Only one http block is allowed.");
-        return (false);
-    }
-    if (top == ContextName::Location && context == ContextName::Server)
-    {
-        log_error("Server block is not allowed in location block.");
-        return (false);
-    }
     m_contexts.push(context);
-    return (true);
 }
 
 void Parser::pop_context(void)

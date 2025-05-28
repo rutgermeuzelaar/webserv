@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:54:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/27 18:55:52 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/05/28 16:30:13 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ class Parser
     private:
         const std::vector<Token>&   m_tokens;
         std::stack<ContextName>     m_contexts;
-        bool                        push_context(ContextName);
+        void                        push_context(ContextName);
         void                        pop_context(void);
 		Config&                     m_config;
         int                         m_current;
