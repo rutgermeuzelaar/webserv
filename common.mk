@@ -1,7 +1,7 @@
-CC := c++
+CC := g++
 INC_DIRS := include
 INC := $(foreach dir, $(INC_DIRS), -I$(dir))
-CFLAGS := -Wall -Wextra -Werror -Wshadow $(INC) -g -std=c++11
+CFLAGS := -Wall -Wextra -Werror -Wshadow $(INC) -g -std=c++17
 LDFLAGS :=
 SRCDIR := src
 OBJDIR := build

@@ -6,7 +6,7 @@
 /*   By: robertrinh <robertrinh@student.codam.nl      +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 15:42:16 by robertrinh    #+#    #+#                 */
-/*   Updated: 2025/05/09 17:50:44 by qtrinh        ########   odam.nl         */
+/*   Updated: 2025/05/19 16:10:40 by robertrinh    ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,6 @@ Request::~Request()
 
 HTTPMethod Request::StringToMethod(const std::string& method)
 {
-	//? methods are case sensitive. handle geT/ gEt etc.?
 	if (method == "GET")
 		return HTTPMethod::GET;
 	else if (method == "POST")
@@ -28,7 +27,7 @@ HTTPMethod Request::StringToMethod(const std::string& method)
 	else if (method == "DELETE")
 		return HTTPMethod::DELETE;
 	else
-		return HTTPMethod::UNSUPPORTED; //! should have HTTP error codes
+		throw HTTPException(HTTPStatusCode::MethodNotAllowed, "Unsupported HTTP method: " + method);
 }
 
 /**
@@ -38,10 +37,12 @@ HTTPMethod Request::StringToMethod(const std::string& method)
  * @note example URI: https://www.example.com/forum/questions/?tag=networking&order=newest#top
  * @return true if URI is valid and parsing succeeded, false if URI is invalid
  */
-bool Request::parseURI(const std::string& uri)
+void Request::parseURI(const std::string& uri)
 {
 	if (uri.empty() || uri[0] != '/')
-		return false;
+		throw HTTPException(HTTPStatusCode::BadRequest, "Invalid URI format");
+	if (uri.length() > 2048) //* common URI length limit
+		throw HTTPException(HTTPStatusCode::URITooLong, "URI exceeds maximum length");
 	_uri = uri;
 
 	size_t queryPos = uri.find('?');
@@ -69,49 +70,38 @@ bool Request::parseURI(const std::string& uri)
 		else
 			_path = uri;
 	}
-	return true;
 }
 
-bool Request::parse(const std::string& rawRequest)
+void Request::parse(const std::string& rawRequest)
 {
 	std::istringstream requestStream(rawRequest);
 	std::string currentLine;
 	
 	if (!std::getline(requestStream, currentLine) || currentLine.empty())
-		return false;
-	if (!parseRequestLine(currentLine))
-		return false;
-	if (!parseHeaders(requestStream))
-		return false;
-	if (_method_type == HTTPMethod::POST)	//? only parse methods with Body? e.g. POST
-	{
-		if (!parseBody(requestStream))
-			return false;	
-	}
+		throw HTTPException(HTTPStatusCode::BadRequest, "Empty request line");
+	parseRequestLine(currentLine);
+	parseHeaders(requestStream);
+	if (_method_type == HTTPMethod::POST)
+		parseBody(requestStream);
 	else
-		_body.clear(); //! GET - DELETE has generally no body, in case it does, ignore?
+		_body.clear();
 	printRequest(); //* for testing
-	return true;
 }
 
-bool Request::parseRequestLine(const std::string& requestLineStr)
+void Request::parseRequestLine(const std::string& requestLineStr)
 {
-	std::istringstream lineStream(requestLineStr);
 	std::istringstream requestStream(requestLineStr);
 	std::string methodStr;
 
 	//* split in method, uri and version 
 	if (!(requestStream >> methodStr >> _uri >> _HTTPVersion))
-		return false;
+		throw HTTPException(HTTPStatusCode::BadRequest, "Invalid request line format");
+	
 	_method_type = StringToMethod(methodStr);
 	_method = methodStr;
-	if (_method_type == HTTPMethod::UNSUPPORTED)
-		return false; //! throw error not implemented / not supported etc.?
-	if (!parseURI(_uri))
-		return false;
+	parseURI(_uri);
 	if (_HTTPVersion.substr(0, 8) != "HTTP/1.1")
-		return false;
-	return true;
+		throw HTTPException(HTTPStatusCode::HTTPVersionNotSupported, "Unsupported HTTP version: " + _HTTPVersion);
 }
 
 /**
@@ -121,9 +111,11 @@ bool Request::parseRequestLine(const std::string& requestLineStr)
  * @note headers end with a newline
  * @return true if headers were parsed successfully
  */
-bool Request::parseHeaders(std::istream& stream)
+void Request::parseHeaders(std::istream& stream)
 {
 	std::string line;
+	size_t totalHeaderSize = 0;
+	const size_t MAX_HEADER_SIZE = 8192; //* common header size limit
 	
 	while (std::getline(stream, line))
 	{
@@ -131,27 +123,29 @@ bool Request::parseHeaders(std::istream& stream)
 			line.pop_back(); //* removes last element (carriage return = /r)
 		if (line.empty())
 			break;
+		totalHeaderSize += line.length();
+		if (totalHeaderSize > MAX_HEADER_SIZE)
+			throw HTTPException(HTTPStatusCode::RequestHeaderFieldsTooLarge, "Request header fields too large");
 		size_t colonPos = line.find(':');
-		if (colonPos == std::string::npos) //* it's a malformed header, no colon
-			return false; //! Malformed header line error
+		if (colonPos == std::string::npos)
+			throw HTTPException(HTTPStatusCode::BadRequest, "Malformed header line: " + line);
 
 		std::string key = line.substr(0, colonPos);
 		std::string value = line.substr(colonPos + 1);
-
+		
 		//* trim whitespace from key and value
 		key.erase(0, key.find_first_not_of(" \t\r\n")); //* searches str for first char that does not match the given chars
 		key.erase(key.find_last_not_of(" \t\r\n") + 1); //* same, but for last char
 		value.erase(0, value.find_first_not_of(" \t\r\n"));
 		value.erase(value.find_last_not_of(" \t\r\n") + 1);
-
+		
 		//* converting header keys to lowercase to combat case-insensivity
 		std::string lowerKey = key;
 		std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
 		if (lowerKey.empty())
-			return false; //! invalid header error (empty header key)
+			throw HTTPException(HTTPStatusCode::BadRequest, "Empty header key");
 		_headers[lowerKey] = value;
 	}
-	return true;
 }
 
 /**
@@ -161,25 +155,23 @@ bool Request::parseHeaders(std::istream& stream)
  * @note content-length header is required for POST requests to determine body size
  * @return true if parsing succeeded, false if Content-Length is invalid or body is incomplete
  */
-bool Request::parseBody(std::istream& stream)
+void Request::parseBody(std::istream& stream)
 {
-	//* retrieve content length from header
 	std::string contentLengthStr = getHeader("content-length");
 	if (contentLengthStr.empty())
-	{
-		if (_method_type == HTTPMethod::POST)
-			return false; //! POST missing required Content-Length
-		return true; //* no body! <- GET has no body, so it should return true 
-	}
+		throw HTTPException(HTTPStatusCode::LengthRequired, "Content-Length header required for POST request");
 
 	//* will check for how many bytes of data to expect in request, important for POST
-	unsigned long contentLength; 
-	contentLength = std::stoul(contentLengthStr); //* convert string to unsigned long
-	//! Better error handling -> try catch with malformed length / length too long
+	unsigned long contentLength;
+	try {
+		contentLength = std::stoul(contentLengthStr);
+	} catch (const std::exception& e) {
+		throw HTTPException(HTTPStatusCode::BadRequest, "Invalid Content-Length value");
+	}
 	if (contentLength == 0)
 	{
 		_body.clear();
-		return true;
+		return;
 	}
 
 	//* reading body
@@ -189,13 +181,7 @@ bool Request::parseBody(std::istream& stream)
 
 	std::streamsize bytesRead = stream.gcount();
 	if (static_cast<unsigned long>(bytesRead) != contentLength)
-	{
-		//* did not read enough bytes (e.g. client closed connection, or less data than expected)
-		//! error: expected contentlen bytes, but received bytesRead instead
-		_body.clear();
-		return false; //! incomplete body
-	}
-	return true;
+		throw HTTPException(HTTPStatusCode::BadRequest, "Incomplete request body");
 }
 
 std::string Request::getHTTPVersion() const
