@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        ::::::::            */
+/*   main.cpp                                           :+:    :+:            */
+/*                                                     +:+                    */
+/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
+/*                                                   +#+                      */
+/*   Created: 2025/04/28 15:42:16 by rmeuzela      #+#    #+#                 */
+/*   Updated: 2025/05/19 16:51:06 by robertrinh    ########   odam.nl         */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <stdlib.h>
 #include <cstring>
 #include <iostream>
@@ -10,6 +22,8 @@
 #include "Request.hpp"
 #include "Socket.hpp"
 #include <vector>
+#include <iomanip>
+
 #ifndef TEST_PORT
 # define TEST_PORT "1050"
 #endif
@@ -65,7 +79,6 @@ int main(int argc, char **argv)
 				server.closeSocket(peerfd);
 				continue;
 			}
-
 			if (child == 0) {
 				//* close all server sockets
 				for (int sock : serverSockets) {

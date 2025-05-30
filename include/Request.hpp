@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/25 14:18:35 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/19 15:55:49 by robertrinh    ########   odam.nl         */
+/*   Updated: 2025/05/19 16:54:57 by robertrinh    ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,9 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <fstream>
+#include <stdexcept>
+#include "defines.h"
 #include "HTTPStatusCode.hpp"
 
 enum class HTTPMethod {
