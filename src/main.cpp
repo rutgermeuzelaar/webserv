@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 			std::cerr << "Failed to initialize server socket" << std::endl;
 			return (EXIT_FAILURE);
 		}
-
+		int peerfd;
 		while (gLive)
 		{
 			//* get the server socket
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 			}
 
 			//* accept connection on the first server socket
-			int peerfd = server.acceptConnection(serverSockets[0]);
+			peerfd = server.acceptConnection(serverSockets[0]);
 			if (peerfd == -1) {
 				if (gLive)
 					std::cout << "accept failed: " << strerror(errno) << std::endl;
@@ -91,30 +91,32 @@ int main(int argc, char **argv)
 
 				std::cout << "Received request data: " << requestData << std::endl;
 				Request request;
-				if (request.parse(requestData)) {
+				try {
+					request.parse(requestData); 
 					std::string response = "HTTP/1.1 200 OK\r\n"
-										 "Content-Type: text/plain\r\n"
-										 "Content-Length: 13\r\n"
-										 "\r\n"
-										 "Hello, world!";
+											"Content-Type: text/plain\r\n"
+											"Content-Length: 13\r\n"
+											"\r\n"
+											"Hello, world!";
 					if (send(peerfd, response.c_str(), response.length(), 0) == -1)
 						std::cout << "Error sending response: " << strerror(errno) << std::endl;
-				} else {
-					std::cout << "Failed to parse request\n";
-					std::string errorResponse = "HTTP/1.1 400 Bad Request\r\n"
-											  "Content-Type: text/plain\r\n"
-											  "Content-Length: 15\r\n"
-											  "\r\n"
-											  "Invalid request";
-					send(peerfd, errorResponse.c_str(), errorResponse.length(), 0);
+					} 
+					catch (std::exception& e){ 
+						std::cout << "Failed to parse request\n";
+						std::string errorResponse = "HTTP/1.1 400 Bad Request\r\n"
+												  "Content-Type: text/plain\r\n"
+												  "Content-Length: 15\r\n"
+												  "\r\n"
+												  "Invalid request";
+						send(peerfd, errorResponse.c_str(), errorResponse.length(), 0);
+					}
+					server.closeSocket(peerfd);
+					exit(EXIT_SUCCESS);
 				}
-				server.closeSocket(peerfd);
-				exit(EXIT_SUCCESS);
-			}
 
+			}
 			//* parent process
 			server.closeSocket(peerfd);
-		}
 
 		std::cout << "Server shutting down" << std::endl;
 		return (EXIT_SUCCESS);
