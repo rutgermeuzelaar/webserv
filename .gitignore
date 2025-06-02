@@ -2,4 +2,4 @@ webserv
 *.o
 .vscode
 parser
-conf/
+__pycache__
