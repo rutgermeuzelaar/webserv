@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 15:42:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/19 16:51:06 by robertrinh    ########   odam.nl         */
+/*   Updated: 2025/06/04 17:52:59 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,11 +19,12 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <csignal>
-#include "Request.hpp"
-#include "Socket.hpp"
 #include <vector>
 #include <iomanip>
-
+#include "Request.hpp"
+#include "Socket.hpp"
+#include "Scanner.hpp"
+#include "Config.hpp"
 #ifndef TEST_PORT
 # define TEST_PORT "1050"
 #endif
@@ -39,13 +40,21 @@ void signal_handler(int signal)
 
 int main(int argc, char **argv)
 {
-	(void)argv;
-	if (argc > 2)
+	if (argc != 2)
 	{
-		std::cout << "Too many arguments. Usage: ./webserv [config_file]" << std::endl;
+		std::cout << "Wrong arguments. Usage: ./webserv [config_file]" << std::endl;
 		return (EXIT_FAILURE);
 	}
-
+	Config config;
+	try
+	{
+		read_config_file(config, argv[1]);
+	}
+	catch (const std::exception& error)
+	{
+		std::cerr << "A problem occured whilst processing configuration file: " << error.what() << '\n';
+		return (EXIT_FAILURE);
+	}
 	try {
 		//* initialize socket with backlog of 10
 		Socket server(10);

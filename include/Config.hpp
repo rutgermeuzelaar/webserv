@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 11:24:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/23 19:00:38 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/04 17:38:12 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,4 +44,5 @@ class Config
         ServerContext& get_server(void);
 };
 
+void read_config_file(Config& config, const char *path);
 #endif
