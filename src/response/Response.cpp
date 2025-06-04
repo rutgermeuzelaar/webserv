@@ -87,12 +87,12 @@ void Response::setServer(const std::string& server)
 
 HTTPStatusCode Response::getStatusCode() const
 {
-    return _status_line.m_status_code;
+    return _status_line.getStatusCode();
 }
 
 std::string Response::getStatusText() const
 {
-    return _status_line.m_status_text;
+    return _status_line.getStatusText();
 }
 
 std::string Response::getHeader(const std::string& key) const
@@ -133,7 +133,7 @@ const std::string& Response::to_str()
 void Response::printResponse() const
 {
     std::cout << "\n--- Response Details ---" << std::endl;
-    std::cout << "Status: " << static_cast<int>(_status_line.m_status_code) << " " << _status_line.m_status_text << std::endl;
+    std::cout << "Status: " << static_cast<int>(_status_line.getStatusCode()) << " " << _status_line.getStatusText() << std::endl;
     
     std::cout << "\nHeaders:" << std::endl;
     for (const auto& header : _headers)
