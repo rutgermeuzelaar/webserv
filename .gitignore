@@ -3,3 +3,4 @@ webserv
 .vscode
 parser
 __pycache__
+cgi
