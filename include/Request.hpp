@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/25 14:18:35 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/19 16:54:57 by robertrinh    ########   odam.nl         */
+/*   Updated: 2025/06/04 14:02:55 by robertrinh    ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,27 +22,13 @@
 #include <stdexcept>
 #include "defines.h"
 #include "HTTPStatusCode.hpp"
+#include "HTTPException.hpp"
 
 enum class HTTPMethod {
 	GET,
 	POST,
 	DELETE,
 	UNSUPPORTED
-};
-
-class HTTPException : public std::exception {
-private:
-	HTTPStatusCode _status_code;
-	std::string _message;
-
-public:
-	HTTPException(HTTPStatusCode status_code, const std::string& message = "")
-		: _status_code(status_code), _message(message) {}
-
-	HTTPStatusCode getStatusCode() const { return _status_code; }
-	const char* what() const noexcept override {
-		return _message.empty() ? get_http_status_text(_status_code) : _message.c_str();
-	}
 };
 
 class Request

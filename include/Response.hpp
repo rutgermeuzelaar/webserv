@@ -9,18 +9,8 @@
 #include <stdexcept>
 #include "HTTPStatusCode.hpp"
 #include "HTTPStatusLine.hpp"
+#include "HTTPException.hpp"
 #include "defines.h"
-
-class HTTPException : public std::runtime_error {
-private:
-    HTTPStatusCode _status_code;
-
-public:
-    HTTPException(HTTPStatusCode status_code, const std::string& message)
-        : std::runtime_error(message), _status_code(status_code) {}
-    
-    HTTPStatusCode getStatusCode() const { return _status_code; }
-};
 
 class Response
 {
