@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/23 11:38:40 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/04 17:53:36 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/05 13:40:19 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,8 @@ void read_config_file(Config& config, const char *path)
 
     if (config_file.fail())
     {
-        std::cout << "Failed to open file, please try again.\n";
+		throw std::runtime_error("An error occured when opening the supplied"
+		" configuration file.");
     }
     buffer << config_file.rdbuf();
     Scanner scanner(buffer.str());
