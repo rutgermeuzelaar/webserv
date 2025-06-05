@@ -11,6 +11,14 @@ Response::Response(HTTPStatusCode status_code)
     setDate();
 }
 
+// Complete copy constructor
+Response::Response(const Response& src)
+	: _status_line(src._status_line)
+	, _body {src.getBody()}
+{
+
+}
+
 Response::~Response()
 {}
 

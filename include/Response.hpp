@@ -23,6 +23,7 @@ private:
 
 public:
     Response(HTTPStatusCode status_code = HTTPStatusCode::OK);
+	Response(const Response& src);
     ~Response();
 
     //* setters
