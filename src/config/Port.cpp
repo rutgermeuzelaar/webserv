@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/26 18:41:35 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 14:46:08 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 18:56:10 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,4 +43,9 @@ Port::Port(const std::string& port_str)
 bool operator==(const Port& a, const Port& b)
 {
     return a.m_port == b.m_port;
+}
+
+const std::string Port::to_string(void) const
+{
+    return std::to_string(m_port);
 }
