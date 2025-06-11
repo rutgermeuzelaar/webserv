@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/26 18:38:52 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/26 18:41:30 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 14:45:31 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,4 +22,6 @@ class Port
         Port(const std::string&);
         Port(uint16_t);
 };
+
+bool operator==(const Port&, const Port&);
 #endif

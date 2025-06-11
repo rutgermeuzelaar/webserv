@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/25 16:47:25 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/04 16:16:14 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 14:45:03 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,4 +46,9 @@ Ipv4Address::Ipv4Address(const std::string ipv4_str)
     : m_address {from_string(ipv4_str)}
 {
         
+}
+
+bool operator==(const Ipv4Address& a, const Ipv4Address& b)
+{
+    return a.m_address == b.m_address;
 }
