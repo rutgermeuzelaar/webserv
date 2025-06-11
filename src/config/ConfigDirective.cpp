@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        ::::::::            */
-/*   ConfigStatement.cpp                                :+:    :+:            */
+/*   ConfigDirective.cpp                                :+:    :+:            */
 /*                                                     +:+                    */
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/23 12:15:27 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/28 16:09:52 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 14:46:53 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,35 +14,63 @@
 #include <string>
 #include <algorithm>
 #include <limits>
-#include "ConfigStatement.hpp"
+#include "ConfigDirective.hpp"
 #include "HTTPStatusCode.hpp"
 
+ConfigDirective::ConfigDirective(bool is_unique)
+    : m_is_unique {is_unique}
+{
+    
+}
+
+bool ConfigDirective::is_unique() const
+{
+    return (m_is_unique);
+}
+
 Listen::Listen()
+    : ConfigDirective(true)
 {
     
 }
 
 Listen::Listen(const std::string ipv4_str)
-    : m_ipv4 {Ipv4Address(ipv4_str)}
+    : ConfigDirective(true)
+    , m_ipv4 {Ipv4Address(ipv4_str)}
 {
     
 }
 
 Listen::Listen(const std::string ipv4_str, const std::string port_str)
-    : m_ipv4 {Ipv4Address(ipv4_str)}
+    : ConfigDirective(true)
+    , m_ipv4 {Ipv4Address(ipv4_str)}
     , m_port {Port(port_str)}
 {
     
 }
 
+bool operator==(const Listen& a, const Listen& b)
+{
+    if (a.m_ipv4.has_value() && a.m_port.has_value() && b.m_ipv4.has_value() && b.m_port.has_value())
+    {
+        if (a.m_ipv4.value() == b.m_ipv4.value() && \
+        a.m_port.value() == b.m_port.value())
+        {
+            return (true);
+        }
+    }
+    return (false);
+}
 ServerName::ServerName(std::string name)
-    : m_name {name}
+    : ConfigDirective(true)
+    , m_name {name}
 {
     
 }
 
 Root::Root(std::filesystem::path path)
-    : m_path {path}
+    : ConfigDirective(false)
+    , m_path {path}
 {
     
 }
@@ -60,13 +88,15 @@ size_t ClientMaxBodySize::from_string(const std::string& size) const
 }
 
 ClientMaxBodySize::ClientMaxBodySize(size_t size)
-    : m_size {size}
+    : ConfigDirective(true)
+    , m_size {size}
 {
     
 }
 
 ClientMaxBodySize::ClientMaxBodySize(const std::string& size)
-    : m_size {from_string(size)}
+    : ConfigDirective(true)
+    , m_size {from_string(size)}
 {
     
 }
@@ -93,7 +123,8 @@ std::vector<HTTPStatusCode> ErrorPage::create_status_codes(const std::vector<std
 }
 
 ErrorPage::ErrorPage(const std::vector<std::string>& codes, const std::filesystem::path& path)
-    : m_status_codes {create_status_codes(codes)}
+    : ConfigDirective(true)
+    , m_status_codes {create_status_codes(codes)}
     , m_path {path}
 {
     
@@ -134,7 +165,8 @@ std::vector<HTTPStatusCode> Return::codes_from_string(const std::vector<std::str
 }
 
 Return::Return(const std::vector<std::string>& codes_str, const std::string uri)
-    : m_status_codes {codes_from_string(codes_str)}
+    : ConfigDirective(true)
+    , m_status_codes {codes_from_string(codes_str)}
     , m_uri {uri}
 {
     
@@ -146,7 +178,8 @@ bool operator==(const Return& a, const Return& b)
 }
 
 AutoIndex::AutoIndex(const std::string& status)
-    : m_on {status == "on"}
+    : ConfigDirective(true)
+    , m_on {status == "on"}
 {
    
 }

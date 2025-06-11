@@ -4,3 +4,4 @@ webserv
 parser
 __pycache__
 cgi
+!cgi/

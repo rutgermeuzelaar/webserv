@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/11 14:15:37 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/28 16:21:34 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 16:21:55 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,24 +18,24 @@
 # include <filesystem>
 # include <optional>
 # include "Lexer.hpp"
-# include "ConfigStatement.hpp"
+# include "ConfigDirective.hpp"
 # include "LocationContext.hpp"
-# include "ConfigCollection.hpp"
 
-class ServerContext
+class ConfigDirective;
+class ServerContext: public ConfigDirective
 {
     public:
         ServerContext();
         LocationContext& get_location(void);
-        ConfigCollection<LocationContext> m_location_contexts;
-        ConfigCollection<ErrorPage> m_error_pages;
-        ConfigCollection<Return> m_returns;
+        std::vector<LocationContext> m_location_contexts;
+        std::vector<ErrorPage> m_error_pages;
+        std::vector<Return> m_returns;
         std::optional<ServerName> m_server_name;
         std::optional<Listen> m_listen;
         std::optional<Root> m_root;
         std::optional<ClientMaxBodySize> m_client_max_body_size;
         std::optional<AutoIndex> m_auto_index;
-		// bool validate() const;
 };
 
+bool operator==(const ServerContext&, const ServerContext&);
 #endif

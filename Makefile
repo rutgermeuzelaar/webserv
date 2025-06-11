@@ -5,7 +5,7 @@ CFLAGS := -Wall -Wextra -Werror -Wshadow $(INC) -g -std=c++17
 LDFLAGS :=
 OBJDIR := build
 VPATH = $(shell find src/ -maxdepth 1 -mindepth 1)
-SOURCES_STANDARD := Config.cpp ConfigStatement.cpp HttpContext.cpp Ipv4Address.cpp Lexer.cpp \
+SOURCES_STANDARD := Config.cpp ConfigDirective.cpp HttpContext.cpp Ipv4Address.cpp Lexer.cpp \
 LocationContext.cpp Parser.cpp Port.cpp Scanner.cpp ServerContext.cpp HTTPException.cpp \
 HTTPStatusCode.cpp main.cpp Request.cpp HTTPStatusLine.cpp Response.cpp socket.cpp \
 Utilities.cpp RequestHandler.cpp

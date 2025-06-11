@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/28 16:31:49 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 15:02:12 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,7 +106,6 @@ const Token& Parser::consume(TokenType type, const char *error)
 
 void Parser::parse_server_name()
 {
-    require_context(ContextName::Server);
     consume(TokenType::String, "Expected string after server_name.");
     try
     {
@@ -123,7 +122,6 @@ void Parser::parse_error_page()
 {
     std::vector<std::string> codes;
 
-    require_context({ContextName::Http, ContextName::Server, ContextName::Location});
     codes.push_back(consume(TokenType::Number, "Expected status code.").m_str);
     while (check(TokenType::Number))
     {
@@ -149,7 +147,6 @@ void Parser::parse_listen()
 {
     const TokenType next = peek().m_token_type;
 
-    require_context(ContextName::Server);
     if (next == TokenType::Number)
     {
         consume(TokenType::Number, "Expected port number.");
@@ -193,9 +190,16 @@ void Parser::parse_listen()
 
 void Parser::parse_location()
 {
-    require_context({ContextName::Server});
     consume(TokenType::Uri, "Expected URI after location.");
-    set_location(LocationContext(previous().m_str));
+    try
+    {
+        set_location(LocationContext(previous().m_str));
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what());
+        throw Parser::Error();
+    }
     push_context(ContextName::Location);
     parse_block();
     pop_context();
@@ -205,7 +209,6 @@ void Parser::parse_return()
 {
     std::vector<std::string> tokens;
 
-    require_context({ContextName::Server, ContextName::Location});
     consume(TokenType::Number, "Expected status code.");
     tokens.push_back(previous().m_str);
     while (check(TokenType::Number))
@@ -220,26 +223,26 @@ void Parser::parse_return()
     catch (const std::exception& error)
     {
         log_error(error.what(), previous());
+        throw Parser::Error();
     }
 }
 
 void Parser::parse_autoindex()
 {
-    require_context({ContextName::Http, ContextName::Server, ContextName::Location});
     consume({TokenType::On, TokenType::Off}, "Expected 'on' or 'off'.");
     try
     {
-        set_autoindex(AutoIndex(previous().m_str));
+        set_auto_index(AutoIndex(previous().m_str));
     }
     catch (const std::exception& error)
     {
         log_error(error.what(), previous());
+        throw Parser::Error();
     }
 }
 
 void Parser::parse_root()
 {
-    require_context({ContextName::Http, ContextName::Server, ContextName::Location});
     consume(TokenType::Path, "Expected path after root.");
     if (!is_valid_dir_path(previous().m_str))
     {
@@ -252,12 +255,12 @@ void Parser::parse_root()
     catch (const std::exception& error)
     {
         log_error(error.what(), previous());
+        throw Parser::Error();
     }
 }
 
 void Parser::parse_client_max_body_size()
 {
-    require_context({ContextName::Http, ContextName::Server, ContextName::Location});
     consume(TokenType::Number, "Expected number after client_max_body_size.");
     try
     {
@@ -266,13 +269,21 @@ void Parser::parse_client_max_body_size()
     catch (const std::exception& error)
     {
         log_error(error.what(), previous());
+        throw Parser::Error();
     }
 }
 
 void Parser::parse_server()
 {
-    require_context(ContextName::Http);
-    set_server(ServerContext());
+    try
+    {
+        set_server(ServerContext());
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what());
+        throw Parser::Error();
+    }
     push_context(ContextName::Server);
     parse_block();
     pop_context();
@@ -427,126 +438,150 @@ void Parser::pop_context(void)
     m_contexts.pop();
 }
 
-void Parser::require_context(ContextName allowed_context) const
-{
-    if (m_contexts.top() != allowed_context)
-    {
-        log_error("Keyword not allowed in current block.");
-        throw Error();
-    }
-}
-
-void Parser::require_context(const std::vector<ContextName> allowed_context) const
-{
-    for (const ContextName& i: allowed_context)
-    {
-        if (m_contexts.top() == i)
-        {
-            return ;
-        }
-    }   
-    log_error("Keyword not allowed in current block.");
-    throw Error();
-}
+static const std::string context_forbidden = "Keyword not allowed in current context";
 
 void Parser::set_server_name(ServerName server_name)
 {
-    assert(m_contexts.top() == ContextName::Server);
-    set_statement_unique(m_config.get_server().m_server_name, server_name);
+    const ContextName context = m_contexts.top();
+
+    switch (context)
+    {
+        case ContextName::Server:
+            add_to_context<ServerName>(m_config.get_server().m_server_name, server_name);
+            return;
+        default:
+            throw std::runtime_error(context_forbidden);
+    }
 }
 
 void Parser::set_error_page(ErrorPage error_page)
 {
-    switch (m_contexts.top())
+    const ContextName context = m_contexts.top();
+
+    switch (context)
     {
         case ContextName::Http:
-            m_config.m_http_context.m_error_pages.add(error_page);
+            add_to_context<ErrorPage>(m_config.m_http_context.m_error_pages, error_page);
             return;
         case ContextName::Server:
-            m_config.get_server().m_error_pages.add(error_page);
+            add_to_context<ErrorPage>(m_config.get_server().m_error_pages, error_page);
             return;
         case ContextName::Location:
-            m_config.get_server().get_location().m_error_pages.add(error_page);
+            add_to_context<ErrorPage>(m_config.get_server().get_location().m_error_pages, error_page);
             return;
     }
 }
 
 void Parser::set_listen(Listen listen)
 {
-    assert(m_contexts.top() == ContextName::Server);
-    set_statement_unique(m_config.get_server().m_listen, listen);
-}
+    const ContextName context = m_contexts.top();
 
+    switch (context)
+    {
+        case ContextName::Server:
+            add_to_context<Listen>(m_config.get_server().m_listen, listen);
+            return;
+        default:
+            throw std::runtime_error(context_forbidden);
+    }
+}
 void Parser::set_location(LocationContext location)
 {
-    assert(m_contexts.top() == ContextName::Server);
-    m_config.get_server().m_location_contexts.add(location);
+    const ContextName context = m_contexts.top();
+
+    switch (context)
+    {
+        case ContextName::Server:
+            add_to_context<LocationContext>(m_config.get_server().m_location_contexts, location);
+            return;
+        // location in location is allowed according to NGINX but we won't implement that
+        default:
+            throw std::runtime_error(context_forbidden);
+    }
 }
+
 
 void Parser::set_root(Root root)
 {
-    switch (m_contexts.top())
+    const ContextName context = m_contexts.top();
+
+    switch (context)
     {
         case ContextName::Http:
-            set_statement_unique(m_config.m_http_context.m_root, root);
+            add_to_context<Root>(m_config.m_http_context.m_root, root);
             return;
         case ContextName::Server:
-            set_statement_unique(m_config.get_server().m_root, root);
+            add_to_context<Root>(m_config.get_server().m_root, root);
             return;
-        case ContextName::Location:
-            set_statement_unique(m_config.get_server().get_location().m_root, root);
+       case ContextName::Location:
+            add_to_context<Root>(m_config.get_server().get_location().m_root, root);
             return;
     }
 }
 
 void Parser::set_client_max_body_size(ClientMaxBodySize client_max_body_size)
 {
-    switch (m_contexts.top())
+    const ContextName context = m_contexts.top();
+
+    switch (context)
     {
         case ContextName::Http:
-            set_statement_unique(m_config.m_http_context.m_client_max_body_size, client_max_body_size);
+            add_to_context<ClientMaxBodySize>(m_config.m_http_context.m_client_max_body_size, client_max_body_size);
             return;
         case ContextName::Server:
-            set_statement_unique(m_config.get_server().m_client_max_body_size, client_max_body_size);
+            add_to_context<ClientMaxBodySize>(m_config.get_server().m_client_max_body_size, client_max_body_size);
             return;
         case ContextName::Location:
-            set_statement_unique(m_config.get_server().get_location().m_client_max_body_size, client_max_body_size);
-    }
+            add_to_context<ClientMaxBodySize>(m_config.get_server().get_location().m_client_max_body_size, client_max_body_size);
+            return;
+        }
 }
 
 void Parser::set_server(ServerContext server)
 {
-    assert(m_contexts.top() == ContextName::Http);
-    m_config.m_http_context.m_servers.add(server);
+    const ContextName context = m_contexts.top();
+
+    switch (context)
+    {
+        case ContextName::Http:
+            add_to_context<ServerContext>(m_config.m_servers, server);
+            return;
+        default:
+            throw std::runtime_error(context_forbidden);
+    }
 }
 
 void Parser::set_return(Return return_obj)
 {
-    switch (m_contexts.top())
+    const ContextName context = m_contexts.top();
+
+    switch (context)
     {
         case ContextName::Server:
-            m_config.get_server().m_returns.add_unique(return_obj);
+            add_to_context<Return>(m_config.get_server().m_returns, return_obj);
             return;
         case ContextName::Location:
-            m_config.get_server().get_location().m_returns.add_unique(return_obj);
+            add_to_context<Return>(m_config.get_server().get_location().m_returns, return_obj);
             return;
         default:
-            assert(false);  
-    }
+            throw std::runtime_error(context_forbidden);
+        }
 }
 
-void Parser::set_autoindex(AutoIndex auto_index)
+void Parser::set_auto_index(AutoIndex auto_index)
 {
-    switch (m_contexts.top())
+    const ContextName context = m_contexts.top();
+
+    switch (context)
     {
         case ContextName::Http:
-            set_statement_unique(m_config.m_http_context.m_auto_index, auto_index);
+            add_to_context<AutoIndex>(m_config.m_http_context.m_auto_index, auto_index);
             return;
         case ContextName::Server:
-            set_statement_unique(m_config.get_server().m_auto_index, auto_index);
+            add_to_context<AutoIndex>(m_config.get_server().m_auto_index, auto_index);
             return;
         case ContextName::Location:
-            set_statement_unique(m_config.get_server().get_location().m_auto_index, auto_index);
+            add_to_context<AutoIndex>(m_config.get_server().get_location().m_auto_index, auto_index);
             return;
     }
 }

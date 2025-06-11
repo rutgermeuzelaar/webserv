@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 15:42:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/04 17:52:59 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 16:59:31 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,15 +40,16 @@ void signal_handler(int signal)
 
 int main(int argc, char **argv)
 {
+    std::vector<ServerContext> server_configs;
+
 	if (argc != 2)
 	{
 		std::cout << "Wrong arguments. Usage: ./webserv [config_file]" << std::endl;
 		return (EXIT_FAILURE);
 	}
-	Config config;
 	try
 	{
-		read_config_file(config, argv[1]);
+		server_configs = get_server_config(argv[1]);
 	}
 	catch (const std::exception& error)
 	{
