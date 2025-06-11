@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 15:42:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/04 17:52:59 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 17:29:53 by robertrinh    ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,11 +20,15 @@
 #include <unistd.h>
 #include <csignal>
 #include <vector>
-#include <iomanip>
 #include "Request.hpp"
 #include "Socket.hpp"
 #include "Scanner.hpp"
 #include "Config.hpp"
+#include "Response.hpp"
+#include "RequestHandler.hpp"
+#include "ServerContext.hpp"
+#include "ConfigStatement.hpp"
+#include "Server.hpp"
 #ifndef TEST_PORT
 # define TEST_PORT "1050"
 #endif
@@ -63,7 +67,6 @@ int main(int argc, char **argv)
 			std::cerr << "Failed to initialize server socket" << std::endl;
 			return (EXIT_FAILURE);
 		}
-		int peerfd;
 		while (gLive)
 		{
 			//* get the server socket
@@ -73,8 +76,8 @@ int main(int argc, char **argv)
 				break;
 			}
 
-			//* accept connection on the first server socket
-			peerfd = server.acceptConnection(serverSockets[0]);
+			//* accept connection
+			int peerfd = server.acceptConnection(serverSockets[0]);
 			if (peerfd == -1) {
 				if (gLive)
 					std::cout << "accept failed: " << strerror(errno) << std::endl;
@@ -111,34 +114,33 @@ int main(int argc, char **argv)
 					exit(EXIT_FAILURE);
 				}
 
-				std::cout << "Received request data: " << requestData << std::endl;
-				Request request;
 				try {
-					request.parse(requestData); 
-					std::string response = "HTTP/1.1 200 OK\r\n"
-											"Content-Type: text/plain\r\n"
-											"Content-Length: 13\r\n"
-											"\r\n"
-											"Hello, world!";
-					if (send(peerfd, response.c_str(), response.length(), 0) == -1)
+					//* parse the request
+					Request request;
+					request.parse(requestData);
+					
+					//* handle the request and generate response
+					RequestHandler handler(config);
+					Response response = handler.handle_get(request);
+					
+					//* send the response
+					std::string responseStr = response.to_str();
+					if (send(peerfd, responseStr.c_str(), responseStr.length(), 0) == -1)
 						std::cout << "Error sending response: " << strerror(errno) << std::endl;
-					} 
-					catch (std::exception& e){ 
-						std::cout << "Failed to parse request\n";
-						std::string errorResponse = "HTTP/1.1 400 Bad Request\r\n"
-												  "Content-Type: text/plain\r\n"
-												  "Content-Length: 15\r\n"
-												  "\r\n"
-												  "Invalid request";
-						send(peerfd, errorResponse.c_str(), errorResponse.length(), 0);
-					}
-					server.closeSocket(peerfd);
-					exit(EXIT_SUCCESS);
+				} 
+				catch (const HTTPException& e) {
+					Response errorResponse(e.getStatusCode());
+					errorResponse.setBody(e.what());
+					std::string errorStr = errorResponse.to_str();
+					send(peerfd, errorStr.c_str(), errorStr.length(), 0);
 				}
-
+				server.closeSocket(peerfd);
+				exit(EXIT_SUCCESS);
 			}
+
 			//* parent process
 			server.closeSocket(peerfd);
+		}
 
 		std::cout << "Server shutting down" << std::endl;
 		return (EXIT_SUCCESS);
