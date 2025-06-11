@@ -11,13 +11,12 @@ Response::Response(HTTPStatusCode status_code)
     setDate();
 }
 
-// Complete copy constructor
 Response::Response(const Response& src)
 	: _status_line(src._status_line)
-	, _body {src.getBody()}
-{
-
-}
+	, _headers {src._headers}
+	, _body {src._body}
+	, _raw_response {src._raw_response}
+{}
 
 Response::~Response()
 {}
@@ -119,7 +118,7 @@ std::string Response::getBody() const
     return _body;
 }
 
-const std::string& Response::to_str()
+const std::string& Response::to_str() const
 {
     std::ostringstream stream;
 
