@@ -2,39 +2,51 @@
 
 #include "Config.hpp"
 #include "Socket.hpp"
-#include "Epoll.hpp"
+// #include "Epoll.hpp" 
 #include "Request.hpp"
 #include "Response.hpp"
 #include "RequestHandler.hpp"
 #include <map>
 #include <string>
 #include <memory>
+#include <vector>
 
-// Forward declarations
 class Server;
 
 class Client {
 private:
-	int m_fd;
-	Request m_request;
-	bool m_request_complete;
 	Server& m_server;
+	//* network connection
+	int m_socket_fd;
+	bool m_is_connected;
 
+	//* request handling
+	Request m_request;
+	std::string m_buffer; //* raw data buffer
+	bool m_request_complete;
 public:
-	Client(int fd, Server& server);
-	void appendData(const char* data, size_t len);
-	bool isRequestComplete() const;
+	Client(int socket_fd, Server& server);
+	~Client();
+
+	//* connection management
+	void disconnect();
+	bool isConnected() const;
+	int getSocketFD() const;
+
+	//* data handling
+	void receiveData(const char* data, size_t len);
+	bool hasCompleteRequest() const;
 	const Request& getRequest() const;
 	void clearRequest();
-	int getFD() const;
+	void reset();  //* for re-use
 };
 
 class Server
 {
 private:
 	Config m_config;
-	Socket m_socket;
-	Epoll m_epoll;
+	std::vector<Socket> m_listening_sockets;
+	// Epoll m_epoll;
 	std::map<int, Client> m_clients;
 	bool m_running;
 	RequestHandler m_request_handler;
@@ -42,7 +54,6 @@ private:
 	//* server initialization
 	void initializeServerSockets();
 	void setupServerSockets();
-	void setupSignalHandling();
 
 	//* connection handling
 	void handleNewConnection();
@@ -63,13 +74,25 @@ public:
 	~Server();
 
 	//* server control
+	void start();
 	void run();
 	void stop();
 	bool isRunning() const;
 
-	//* accessors for Client
-	const Config& getConfig() const { return m_config; }
-	RequestHandler& getRequestHandler() { return m_request_handler; }
-	void removeClient(int fd) { m_clients.erase(fd); }
+	//* client management
+	void addClient(int fd);
+	void removeClient(int fd);
+	Client& getClient(int fd);
+	
+	//* socket management
+	void addListeningSocket(const std::string& port);
+	Socket& getListeningSocket(size_t index);
+	size_t getListeningSocketCount() const;
+
+	//* request handling
+	void processRequest(int client_fd, const Request& request);
+	void sendResponseToClient(int client_fd, const Response& response);
+	const Config& getConfig() const;
+	RequestHandler& getRequestHandler();
 };
 

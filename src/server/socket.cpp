@@ -106,8 +106,6 @@ bool Socket::initTestSocket(const std::string& port)
 		_serverSockets.push_back(socketFD);
 		_socketToServer[socketFD] = "TestServer";
 		_isRunning = true;
-		
-		std::cout << "Server is listening on port " << port << std::endl;
 		return true;
 	} 
 	catch (const SocketException& e)
@@ -119,20 +117,20 @@ bool Socket::initTestSocket(const std::string& port)
 
 int	Socket::acceptConnection(int serverSocket)
 {
-	//? Nonblocking? how
 	int peerFD = accept(serverSocket, (struct sockaddr*)&_peerAddr, &_peerSize);
-	if (peerFD == -1) {
+	if (peerFD == -1) 
 		throw SocketException("Accept failed: " + std::string(strerror(errno)));
-	}
 	return peerFD;
 }
 
 void Socket::closeSocket(int socketFD)
 {
-	if (close(socketFD) == -1) {
-		throw SocketException("Failed to close socket: " + std::string(strerror(errno)));
-	}
-	
+	if (socketFD == -1)
+		return;
+		
+	if (close(socketFD) == -1)
+			throw SocketException("Failed to close socket: " + std::string(strerror(errno)));
+
 	//* remove from server sockets if it's a server socket
 	for (auto it = _serverSockets.begin(); it != _serverSockets.end(); ++it) {
 		if (*it == socketFD) {
