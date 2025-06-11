@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/06 19:38:37 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 19:51:31 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include "RequestHandler.hpp"
 #include "Response.hpp"
 
-RequestHandler::RequestHandler(const Config& config)
+RequestHandler::RequestHandler(const ServerContext& config)
 	: m_config {config}
 {
 
@@ -46,11 +46,10 @@ static std::filesystem::path& resolve_overlap(std::filesystem::path& root, const
 
 std::optional<std::string> RequestHandler::map_uri(std::string uri)
 {
-	const ServerContext& server = m_config.m_http_context.m_servers.m_vector.at(0);
 	std::string filename;
 	std::filesystem::path uri_path(uri);
 	// get server
-	if (server.m_location_contexts.m_vector.size() == 0)
+	if (m_config.m_location_contexts.size() == 0)
 	{
 		// defer to default value
 	}
@@ -63,7 +62,7 @@ std::optional<std::string> RequestHandler::map_uri(std::string uri)
 	// if received URI like this '/' '/dir/' we look for an index.html file
 	// if it doesn't exist check if autoindex is enabled, if it isn't error otherwise generate directory listing
 	// filename = uri.substr(last_slash_pos, uri.size() - last_slash_pos);
-	for (auto& it :server.m_location_contexts.m_vector)
+	for (auto& it :m_config.m_location_contexts)
 	{
 		if (folder_path.compare(0, it.m_uri.size(), it.m_uri) == 0)
 		{
@@ -109,22 +108,31 @@ Response RequestHandler::handle_get(const Request& request)
 	// if file does not exist
 }
 
-// for now URI and method only
-void RequestHandler::handle(const Request& request, int client_fd)
+Response RequestHandler::handle_delete(const Request& request)
 {
-	(void)client_fd;
+    (void)request;
+    return Response();
+}
+
+Response RequestHandler::handle_post(const Request& request)
+{
+    (void)request;
+    return Response();
+}
+
+// for now URI and method only
+Response RequestHandler::handle(const Request& request)
+{
 	switch (request.getMethodType())
 	{
 		case HTTPMethod::GET:
-		{
-			
-		}
-		return;
+			return handle_get(request);
 		case HTTPMethod::DELETE:
-		return;
+			return handle_delete(request);
 		case HTTPMethod::POST:
-		return;
-		default:
-		assert(false);
+			return handle_post(request);
+        default:
+            throw std::runtime_error("Unsupported HTTP method.");
 	}
+    throw std::runtime_error("Unsupported HTTP method.");
 }
