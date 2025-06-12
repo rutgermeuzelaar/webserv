@@ -2,7 +2,7 @@
 
 #include "Config.hpp"
 #include "Socket.hpp"
-// #include "Epoll.hpp" 
+#include "Epoll.hpp"
 #include "Request.hpp"
 #include "Response.hpp"
 #include "RequestHandler.hpp"
@@ -46,7 +46,7 @@ class Server
 private:
 	Config m_config;
 	std::vector<Socket> m_listening_sockets;
-	// Epoll m_epoll;
+	Epoll m_epoll;
 	std::map<int, Client> m_clients;
 	bool m_running;
 	RequestHandler m_request_handler;
