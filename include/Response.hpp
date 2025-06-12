@@ -25,6 +25,7 @@ public:
     Response(HTTPStatusCode status_code = HTTPStatusCode::OK);
 	Response(const Response& src);
     ~Response();
+	Response(const Response& src);
 
     //* setters
     void setHeader(const std::string& key, const std::string& value);
