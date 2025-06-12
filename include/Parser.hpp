@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:54:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/28 16:30:13 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 14:20:58 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,13 +19,7 @@
 # include "HttpContext.hpp"
 # include "Lexer.hpp"
 # include "Config.hpp"
-
-enum class ContextName
-{
-    Http,
-    Server,
-    Location
-};
+# include "ContextName.hpp"
 
 class Parser
 {
@@ -57,10 +51,7 @@ class Parser
         void                        parse_statement(void);
         bool                        is_valid_dir_path(const std::string) const;
         bool                        is_valid_file_path(const std::string) const;
-        void                        require_context(ContextName) const;
-        void                        require_context(const std::vector<ContextName>) const;
-        void                        set_option(TokenType);
-        // config options
+        
         void                        parse_server_name(void);
         void                        parse_error_page(void);
         void                        parse_listen(void);
@@ -70,8 +61,7 @@ class Parser
         void                        parse_server(void);
         void                        parse_return(void);
         void                        parse_autoindex(void);
-
-        // set
+        
         void                        set_server_name(ServerName);
         void                        set_error_page(ErrorPage);
         void                        set_listen(Listen);
@@ -80,7 +70,7 @@ class Parser
         void                        set_client_max_body_size(ClientMaxBodySize);
         void                        set_server(ServerContext);
         void                        set_return(Return);
-        void                        set_autoindex(AutoIndex);
+        void                        set_auto_index(AutoIndex);
 };
 
 class Parser::Error: public std::runtime_error

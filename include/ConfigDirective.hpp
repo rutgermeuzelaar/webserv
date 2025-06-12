@@ -1,33 +1,63 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        ::::::::            */
-/*   ConfigStatement.hpp                                :+:    :+:            */
+/*   ConfigDirective.hpp                                :+:    :+:            */
 /*                                                     +:+                    */
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
-/*   Created: 2025/05/23 12:13:09 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/28 16:08:41 by rmeuzela      ########   odam.nl         */
+/*   Created: 2025/06/07 07:43:50 by rmeuzela      #+#    #+#                 */
+/*   Updated: 2025/06/11 15:04:30 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef CONFIG_STATEMENT_HPP
-# define CONFIG_STATEMENT_HPP
-# include <filesystem>
-# include <string>
-# include <optional>
+#ifndef CONFIG_DIRECTIVE_HPP
+# define CONFIG_DIRECTIVE_HPP
 # include <vector>
-# include "HTTPStatusCode.hpp"
+# include <filesystem>
+# include <optional>
+# include <algorithm>
 # include "Ipv4Address.hpp"
 # include "Port.hpp"
+# include "ContextName.hpp"
+# include "HTTPStatusCode.hpp"
 
-class Root
+class ConfigDirective
+{
+    private:
+        const bool  m_is_unique; // it's only allowed to be set once in a given context
+    public:
+        ConfigDirective(bool);
+        bool is_unique(void) const;
+
+};
+
+template <typename T> void add_to_context(std::optional<T>& opt_ref, T directive)
+{
+    if (directive.is_unique() && opt_ref.has_value())
+    {
+        throw std::runtime_error("Value must be unique in the current context.");
+    }
+    opt_ref.emplace(directive);
+}
+
+template <typename T> void add_to_context(std::vector<T>& collection, T directive)
+{
+    if (directive.is_unique() && \
+    std::find(collection.begin(), collection.end(), directive) != collection.end())
+    {
+        throw std::runtime_error("Value must be unique in the current context.");
+    }
+    collection.push_back(directive);
+}
+
+class Root: public ConfigDirective
 {
     public:
         const std::filesystem::path m_path;
         Root(std::filesystem::path);
 };
 
-class ClientMaxBodySize
+class ClientMaxBodySize: public ConfigDirective
 {
     public:
         const size_t    m_size;
@@ -36,16 +66,14 @@ class ClientMaxBodySize
         size_t from_string(const std::string&) const;
 };
 
-class ServerName
+class ServerName: public ConfigDirective
 {
-    private:
-        const std::string m_name;
-    
     public:
+        const std::string m_name;
         ServerName(std::string);
 };
 
-class Listen
+class Listen: public ConfigDirective
 {
 	public:
 		std::optional<Ipv4Address> m_ipv4;
@@ -55,7 +83,9 @@ class Listen
 		Listen(const std::string ipv4, const std::string port);
 };
 
-class ErrorPage
+bool operator==(const Listen&, const Listen&);
+
+class ErrorPage: public ConfigDirective
 {
     private:
         std::vector<HTTPStatusCode> create_status_codes(const std::vector<std::string>&);
@@ -67,7 +97,7 @@ class ErrorPage
 
 bool operator==(const ErrorPage&, const ErrorPage&);
 
-class Return
+class Return: public ConfigDirective
 {
     private:
         std::vector<HTTPStatusCode> codes_from_string(const std::vector<std::string>&) const;
@@ -79,25 +109,10 @@ class Return
 
 bool operator==(const Return&, const Return&);
 
-class AutoIndex
+class AutoIndex: public ConfigDirective
 {
     public:
         const bool m_on;
         AutoIndex(const std::string&);
-};
-
-template <typename T>
-void set_statement_unique(std::optional<T>&member, T object)
-{
-    if (member.has_value())
-    {
-        throw std::runtime_error("Property already set.");
-    }
-    member.emplace(object);
-};
-template <typename T>
-void set_statement(std::optional<T>&member, T object)
-{
-    member.emplace(object);
 };
 #endif

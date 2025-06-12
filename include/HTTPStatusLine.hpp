@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 21:27:25 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/12 15:30:55 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/12 15:36:10 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,12 +19,18 @@
 class HTTPStatusLine
 {
     private:
+<<<<<<< HEAD
+        static std::string    m_protocol;
+        std::string           m_status_text;           
+=======
         static const std::string    m_protocol;
         std::string           		m_status_text;           
+>>>>>>> main
         HTTPStatusCode              m_status_code;
 
     public:
         HTTPStatusLine(HTTPStatusCode status_code);
+		HTTPStatusLine(const HTTPStatusLine& src);
         HTTPStatusLine& operator=(const HTTPStatusLine& other);
 		HTTPStatusLine(const HTTPStatusLine& src);
         
