@@ -4,6 +4,8 @@
 # include <stdexcept>
 # include <vector>
 # include <map>
+# include <iostream>
+# include <cstring>
 # include "Config.hpp"
 # include "Socket.hpp"
 # include "Request.hpp"
@@ -31,8 +33,8 @@ public:
 	void modifyFD(int fd, int events);
 	void removeFD(int fd);
 	int wait();
+	void close_epoll_instance();
 	const std::vector<struct epoll_event>& getEvents() const;
-	void close();
 
 	bool isServerSocket(int fd, const std::vector<int>& server_sockets) const;
 	bool isReadEvent(const epoll_event& event) const;
