@@ -11,6 +11,13 @@ Response::Response(HTTPStatusCode status_code)
     setDate();
 }
 
+Response::Response(const Response& src)
+	: _status_line(src._status_line)
+	, _headers(src._headers)
+	, _body(src._body)
+	, _raw_response(src._raw_response)
+{}
+
 Response::~Response()
 {}
 
