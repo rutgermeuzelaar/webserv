@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:13:45 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 19:26:36 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/12 12:45:17 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ class RequestHandler
 
 	public:
 		RequestHandler(const ServerContext&);
-		std::optional<std::string> map_uri(std::string uri);
+		std::string map_uri(std::string uri);
 		Response handle(const Request& request);
 };
 #endif

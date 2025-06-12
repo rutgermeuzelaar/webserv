@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 19:51:31 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/12 12:46:04 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,15 +44,21 @@ static std::filesystem::path& resolve_overlap(std::filesystem::path& root, const
 	return root;
 }
 
-std::optional<std::string> RequestHandler::map_uri(std::string uri)
+static std::string map_uri_helper(std::filesystem::path root_path, std::filesystem::path& uri_path)
+{
+	if (uri_path.is_absolute())
+	{
+		uri_path = uri_path.relative_path();
+	}
+	resolve_overlap(root_path, uri_path);
+	return root_path;
+}
+
+std::string RequestHandler::map_uri(std::string uri)
 {
 	std::string filename;
 	std::filesystem::path uri_path(uri);
-	// get server
-	if (m_config.m_location_contexts.size() == 0)
-	{
-		// defer to default value
-	}
+	
 	if (uri_path.string().back() == '/')
 	{
 		// hardcode index.html
@@ -69,18 +75,11 @@ std::optional<std::string> RequestHandler::map_uri(std::string uri)
 			// check if it has root block
 			if (it.m_root.has_value())
 			{
-				std::filesystem::path root_path = it.m_root.value().m_path;
-				if (uri_path.is_absolute())
-				{
-					uri_path = uri_path.relative_path();
-				}
-				resolve_overlap(root_path, uri_path);
-				std::cout << root_path << '\n';
-				return std::optional<std::string>(root_path);
+				return map_uri_helper(it.m_root.value().m_path, uri_path);
 			}
 		}
 	}
-	return std::nullopt;
+	return map_uri_helper(m_config.m_root.value().m_path, uri_path);
 }
 
 Response RequestHandler::handle_get(const Request& request)
@@ -100,7 +99,7 @@ Response RequestHandler::handle_get(const Request& request)
 	}
 	Response response(HTTPStatusCode::OK);
 	response.setBodyFromFile(local_path.value());
-	std::cout << map_uri(uri).value();
+	std::cout << map_uri(uri) << '\n';
 	return response;
 		// create 
 	// if file exists
