@@ -14,12 +14,36 @@ Epoll::~Epoll()
 	close_epoll_instance();
 }
 
+Epoll::Epoll(const Epoll& src) : m_epoll_fd(-1)
+{
+	m_epoll_fd = epoll_create(m_max_events);
+	if (m_epoll_fd == -1)
+		throw EpollException("Failed to create epoll in copy constructor: " + std::string(strerror(errno)));
+	m_events = src.m_events;
+	std::cout << "Epoll instance created in copy constructor with fd: " << m_epoll_fd << std::endl;
+}
+
+Epoll& Epoll::operator=(const Epoll& src)
+{
+	if (this != &src)
+	{
+		close_epoll_instance();
+		m_epoll_fd = epoll_create(m_max_events);
+		if (m_epoll_fd == -1)
+			throw EpollException("Failed to create epoll in assignment operator: " + std::string(strerror(errno)));
+		m_events.resize(m_max_events);
+		std::cout << "Epoll instance created in assignment operator with fd: " << m_epoll_fd << std::endl;
+	}
+	return *this;
+}
+
 void Epoll::addFd(int fd, int events)
 {
 	struct epoll_event event;
 	event.events = events;
 	event.data.fd = fd;
 
+	std::cout << "fd before epoll_ctl: " << fd << std::endl; //! TEST
 	if (epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
 		throw EpollException("Failed to add fd " + std::to_string(fd) + " to epoll: " + std::string(strerror(errno)));
 	std::cout << "Added fd " << fd << " to epoll with events: " << events << std::endl;
@@ -56,7 +80,7 @@ void Epoll::close_epoll_instance()
 	{
 		if (close(m_epoll_fd) == -1)
 			std::cerr << "failed to close epollfd error" << std::endl; //TODO use correct exception
-		m_epoll_fd == -1;
+		m_epoll_fd = -1;
 		std::cout << "Epoll instance closed" << std::endl;
 	}
 
@@ -75,17 +99,7 @@ bool Epoll::isServerSocket(int fd, const std::vector<int>& server_sockets) const
 	return false;
 }
 
-bool Epoll::isReadEvent(const epoll_event& event) const
+bool Epoll::isTypeEvent(const epoll_event& event, int event_type) const
 {
-	return event.events & EPOLLIN;
-}
-
-bool Epoll::isErrorEvent(const epoll_event& event) const
-{
-	return event.events & EPOLLERR;
-}
-
-bool Epoll::isHangupEvent(const epoll_event& event) const
-{
-	return event.events & EPOLLHUP;
+	return event.events & event_type;
 }

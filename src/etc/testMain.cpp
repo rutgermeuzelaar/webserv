@@ -1,5 +1,3 @@
-
-
 #include <iostream>
 #include <csignal>
 #include "Server.hpp"
@@ -36,15 +34,7 @@ int main(int argc, char **argv)
         Server server(config);
         std::cout << "Starting server..." << std::endl;
         server.start();
-
-        // Add test socket
-        server.addListeningSocket("1050");
-
-        // Keep server running until interrupted
-        // while (gLive)
-        // {
 		server.run();
-        // }
 
         // Cleanup
         std::cout << "Shutting down server..." << std::endl;

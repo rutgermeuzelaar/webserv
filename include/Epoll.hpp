@@ -27,6 +27,8 @@ private:
 public:
 	Epoll();
 	~Epoll();
+	Epoll(const Epoll& src);
+	Epoll& operator=(const Epoll& src);
 
 	//* epoll operations
 	void addFd(int fd, int events);
@@ -37,7 +39,5 @@ public:
 	const std::vector<struct epoll_event>& getEvents() const;
 
 	bool isServerSocket(int fd, const std::vector<int>& server_sockets) const;
-	bool isReadEvent(const epoll_event& event) const;
-	bool isErrorEvent(const epoll_event& event) const;
-	bool isHangupEvent(const epoll_event& event) const;
+	bool isTypeEvent(const epoll_event& event, int event_type) const;
 };
