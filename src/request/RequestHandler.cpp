@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/12 12:46:04 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/13 13:24:28 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,14 @@
 #include <filesystem>
 #include "RequestHandler.hpp"
 #include "Response.hpp"
+
+const std::string get_mime_type(const std::filesystem::path& extension)
+{
+    if (extension == ".css") return "text/css";
+    if (extension == ".html") return "text/html";
+    if (extension == ".ico") return "image/x-icon";
+    return "text/plain";
+}
 
 RequestHandler::RequestHandler(const ServerContext& config)
 	: m_config {config}
@@ -44,7 +52,7 @@ static std::filesystem::path& resolve_overlap(std::filesystem::path& root, const
 	return root;
 }
 
-static std::string map_uri_helper(std::filesystem::path root_path, std::filesystem::path& uri_path)
+static std::filesystem::path map_uri_helper(std::filesystem::path root_path, std::filesystem::path& uri_path)
 {
 	if (uri_path.is_absolute())
 	{
@@ -54,7 +62,7 @@ static std::string map_uri_helper(std::filesystem::path root_path, std::filesyst
 	return root_path;
 }
 
-std::string RequestHandler::map_uri(std::string uri)
+std::filesystem::path RequestHandler::map_uri(std::string uri)
 {
 	std::string filename;
 	std::filesystem::path uri_path(uri);
@@ -89,17 +97,20 @@ Response RequestHandler::handle_get(const Request& request)
 
 	// write to the specified connection
 	// m_config.m_http_context.m_servers.m_vector.at(0);
-	std::optional<std::string> local_path = map_uri(uri);
-	if (!local_path.has_value() || !std::filesystem::exists(local_path.value()))
+	std::filesystem::path local_path = map_uri(uri);
+    std::cout << "request uri: " << uri << '\n';
+    std::cout << "local_path: " << local_path << '\n';
+	if (!std::filesystem::exists(local_path))
 	{
 		std::cout << "Could not map URI.";
 		Response response(HTTPStatusCode::NotFound);
 		response.setBodyFromFile("./root/pages/404.html");
+        response.setContentType("text/html");
 		return response;
 	}
 	Response response(HTTPStatusCode::OK);
-	response.setBodyFromFile(local_path.value());
-	std::cout << map_uri(uri) << '\n';
+	response.setBodyFromFile(local_path);
+    response.setContentType(get_mime_type(local_path.extension()));
 	return response;
 		// create 
 	// if file exists
