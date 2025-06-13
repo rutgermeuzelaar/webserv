@@ -1,83 +1,11 @@
 #include "Server.hpp"
+#include "Client.hpp"
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
 
-Client::Client(int socket_fd, Server& server) 
-	: m_socket_fd(socket_fd)
-	, m_is_connected(true)
-	, m_request_complete(false)
-	, m_server(server)
-{
-	m_buffer.clear();
-}
-
-Client::~Client()
-{
-	disconnect();
-}
-
-void Client::disconnect()
-{
-	if (m_is_connected)
-	{
-		if (close(m_socket_fd) == -1) 
-			std::cerr << "Warning: Error closing client socket: " << strerror(errno) << std::endl;
-		m_is_connected = false;
-		reset();
-	}
-}
-
-bool Client::isConnected() const
-{
-	return m_is_connected;
-}
-
-int	Client::getSocketFD() const
-{
-	return m_socket_fd;
-}
-
-void Client::receiveData(const char* data, size_t len)
-{
-	if (!m_is_connected)
-		return ;
-	m_buffer.append(data, len);
-	try {
-		m_request.parse(m_buffer);
-		m_request_complete = true;
-	}
-	catch (const HTTPException& e){
-		m_request_complete = false;
-	}
-}
-
-bool Client::hasCompleteRequest() const
-{
-	return m_request_complete;
-}
-
-const Request& Client::getRequest() const
-{
-	return m_request;
-}
-
-void Client::clearRequest()
-{
-	m_buffer.clear();
-	m_request = Request();
-	m_request_complete = false;
-}
-
-void Client::reset()
-{
-	clearRequest();
-	//! no socket fd or server reference clear
-	//! maybe better to use disconnect to reset connection state
-}
-
-//--------------//
+//TODO Figure out
 
 Server::Server(const Config& config)
 	: m_config(config)
@@ -86,10 +14,7 @@ Server::Server(const Config& config)
 	, m_clients()
 	, m_running(false)
 	, m_request_handler(m_config)
-{
-	initializeServerSockets();
-	setupServerSockets();
-}
+{}
 
 Server::~Server()
 {
@@ -101,44 +26,55 @@ void Server::run()
 	if (!m_running)
 		return;
 	
-	//* Uncomment when implementing epoll
-	// for (auto& socket: m_listening_sockets)
-	// {
-	//     setNonBlocking(socket.getFD());
-	//     m_epoll.addFD(socket.getFD(), EPOLLIN);
-	// }
-	// while (m_running)
-	// {
-	//     //epoll related
-	// }
-	// If we have any clients, handle their data
-	
-	//* testing: accept one connection
-	try {
-		handleNewConnection();
-
-		if (!m_clients.empty())
-		{
-			int client_fd = m_clients.begin()->first;
-			handleClientData(client_fd);
-			// Only remove the client, not the server socket
-			removeClient(client_fd);
-			// Stop the server after handling one request for testing
+	std::cout << "Server running with epoll event loop" << std::endl;
+	while (m_running)
+	{
+		try {
+			int num_events = m_epoll.wait();
+			//TODO timeout mechanism
+			for (int i = 0; i < num_events; ++i)
+			{
+				const epoll_event& event = m_epoll.getEvents()[i];
+				int fd = event.data.fd;
+				std::cout << "Processing event for fd: " << fd << std::endl; //! TEST 
+				
+				if (m_epoll.isTypeEvent(event, EPOLLERR) || m_epoll.isTypeEvent(event, EPOLLHUP))
+				{
+					std::cerr << "Error or hangup on fd: " << fd << std::endl; //! TEST 
+					removeClient(fd);
+					continue;
+				}
+				if (m_epoll.isServerSocket(fd, m_listening_sockets[0].getServerSockets()))
+				{
+					std::cout << "Server socket event detected" << std::endl; //! TEST 
+					handleNewConnection();
+					continue;
+				}
+				if (m_epoll.isTypeEvent(event, EPOLLIN))
+				{
+					std::cout << "EPOLLIN event detected for fd: " << fd << std::endl; //! TEST 
+					handleClientData(fd);
+				}
+			}
+		}
+		catch (const EpollException& e) {
+			std::cerr << "Epoll error: " << e.what() << std::endl;
 			stop();
 			return;
 		}
-	}
-	catch (const SocketException& e) {
-		std::cerr << "Socket error: " << e.what() << std::endl;
-		stop();
-		return;
+		catch (const SocketException& e) {
+			std::cerr << "Socket error: " << e.what() << std::endl;
+			return ;
+		}
 	}
 }
 
 void Server::start()
 {
 	m_running = true;
-	std::cout << "Server started" << std::endl;
+	addListeningSocket("1050"); //! testing port <- modify later
+	configureServerSockets();
+	std::cout << "Server started with epoll" << std::endl;
 }
 
 void Server::stop()
@@ -148,8 +84,7 @@ void Server::stop()
 		client.disconnect();
 	m_clients.clear();
 	m_listening_sockets.clear();
-	// TODO: uncomment when implementing epoll
-	// m_epoll.close();
+	m_epoll.close_epoll_instance();
 }
 
 bool Server::isRunning() const
@@ -171,11 +106,16 @@ bool Server::isRunning() const
 void Server::addClient(int fd)
 {
 	if (m_clients.find(fd) != m_clients.end())
-		return ;
-	m_clients.emplace(fd, Client(fd, *this));
-	//TODO add back later
-	// setNonBlocking(fd);
-	// m_epoll.addFd(fd, EPOLLIN);
+		return;
+	try {
+		setNonBlocking(fd); //* client socket
+		m_epoll.addFd(fd, EPOLLIN);
+		m_clients.emplace(fd, Client(fd, *this));
+	} catch (const SocketException& e) {
+		std::cerr << "Error setting up client socket: " << e.what() << std::endl;
+		close(fd);
+		throw;
+	}
 }
 
 void Server::removeClient(int fd)
@@ -185,7 +125,7 @@ void Server::removeClient(int fd)
 	{
 		it->second.disconnect();
 		m_clients.erase(it);
-		// m_epoll.removeFD(fd);
+		m_epoll.removeFD(fd);
 	}
 }
 
@@ -194,23 +134,21 @@ Client& Server::getClient(int fd)
 	return m_clients.at(fd);
 }
 
+/**
+ * @note emplace_back vector method that constructs element directly in vector
+ */
 void Server::addListeningSocket(const std::string& port)
 {
-	//* create socket and store it directly -> see what good option is
-	m_listening_sockets.emplace_back(10); //* create Socket with backlog of 10
-	Socket& socket = m_listening_sockets.back();
+	m_listening_sockets.emplace_back(10);  //* create socket directly in vector
+	if (!m_listening_sockets.back().initTestSocket(port))
+		throw SocketException("Failed to initialize socket on port " + port);
 	
-	if (!socket.initTestSocket(port))
-	{
-		m_listening_sockets.pop_back(); //* remove the socket if initialization failed
-		return;
-	}
 	std::cout << "Server is listening on port " << port << std::endl;
 }
 
 Socket& Server::getListeningSocket(size_t index)
 {
-	return m_listening_sockets.at(index);
+	return m_listening_sockets.at(index); //? check where to utilise
 }
 
 size_t Server::getListeningSocketCount() const
@@ -221,10 +159,14 @@ size_t Server::getListeningSocketCount() const
 void Server::processRequest(int client_fd, const Request& request)
 {
 	try {
-		Response response = m_request_handler.handle_get(request); //! change to handle request later
+		std::cout << "Handling request for URI: " << request.getURI() << std::endl; //! TEST
+		Response response = m_request_handler.handle_get(request);
+		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST 
+		std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST 
 		sendResponseToClient(client_fd, response);
 	}
 	catch (const HTTPException& e) {
+		std::cerr << "HTTP Error: " << e.what() << std::endl; //! TEST
 		sendErrorResponse(client_fd, e);
 	}
 }
@@ -232,8 +174,13 @@ void Server::processRequest(int client_fd, const Request& request)
 void Server::sendResponseToClient(int client_fd, const Response& response)
 {
 	std::string response_str = response.to_str();
-	if (send(client_fd, response_str.c_str(), response_str.length(), 0) == -1)
-		std::cerr << "Error sending response: " << strerror(errno) << std::endl;
+	std::cout << "Sending response of length: " << response_str.length() << std::endl; //! TEST 
+	std::cout << "Response content: " << response_str << std::endl; //! TEST 
+	ssize_t bytes_sent = send(client_fd, response_str.c_str(), response_str.length(), 0);
+	if (bytes_sent == -1)
+		std::cerr << "Error sending response: " << strerror(errno) << std::endl; //! TEST 
+	else
+		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST 
 }
 
 void Server::handleNewConnection()
@@ -245,12 +192,14 @@ void Server::handleNewConnection()
 			continue;
 			
 		try {
-			int client_fd = socket.acceptConnection(serverSockets[0]);  //! only accept one connection for testing
-			if (client_fd != -1)
-			{
-				std::cout << "New connection accepted on fd: " << client_fd << std::endl;
+			int client_fd = socket.acceptConnection(serverSockets[0]);
+			std::cout << "New connection accepted on fd: " << client_fd << std::endl; //! TEST 
+			try {
 				addClient(client_fd);
-				return;
+				std::cout << "Client added successfully" << std::endl; //! TEST 
+			} catch (const std::exception& e) {
+				std::cerr << "Failed to set up client: " << e.what() << std::endl; //! TEST 
+				close(client_fd);
 			}
 		} catch (const SocketException& e) {
 			std::cerr << "Warning: " << e.what() << std::endl;
@@ -267,43 +216,48 @@ void Server::handleClientData(int client_fd)
 	ssize_t bytes_read = recv(client_fd, buffer, sizeof(buffer), 0);
 	if (bytes_read == -1)
 	{
-		std::cerr << "Error reading from client: " << strerror(errno) << std::endl;
+		std::cerr << "Error reading from client: " << strerror(errno) << std::endl; //! TEST 
 		removeClient(client_fd);
 		return;
 	}
 	else if (bytes_read == 0)
 	{
-		std::cout << "Client closed connection on fd: " << client_fd << std::endl;
+		std::cout << "Client closed connection on fd: " << client_fd << std::endl; //! TEST 
 		removeClient(client_fd);
 		return;
 	}
+	std::cout << "Received " << bytes_read << " bytes from client" << std::endl; //! TEST 
+	std::cout << "Request data: " << std::string(buffer, bytes_read) << std::endl; //! TEST 
 	
 	client.receiveData(buffer, bytes_read);
 	if (client.hasCompleteRequest())
 	{
+		std::cout << "Processing complete request" << std::endl; //! TEST 
 		processRequest(client_fd, client.getRequest());
 		client.clearRequest();
+	}
+	else
+	{
+		std::cout << "Request not complete yet" << std::endl; //! TEST 
 	}
 }
 
 void Server::setNonBlocking(int fd)
 {
-	fcntl(fd, F_SETFL, O_NONBLOCK);
+	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1) {
+		throw SocketException("Error setting non-blocking mode: " + std::string(strerror(errno)));
+	}
 }
 
-void Server::initializeServerSockets()
-{
-	//* server sockets will be added by the caller for now
-}
-
-void Server::setupServerSockets()
+void Server::configureServerSockets()
 {
 	for (auto& socket : m_listening_sockets)
 	{
 		const std::vector<int>& serverSockets = socket.getServerSockets();
-		if (!serverSockets.empty())
+		for (int server_fd : serverSockets)
 		{
-			setNonBlocking(serverSockets[0]);
+			setNonBlocking(server_fd); //* listening socket
+			m_epoll.addFd(server_fd, EPOLLIN);
 		}
 	}
 }
