@@ -1,7 +1,7 @@
 CC := g++
 INC_DIRS := include
 INC := $(foreach dir, $(INC_DIRS), -I$(dir))
-CFLAGS := -Wall -Wextra -Werror -Wshadow $(INC) -g -std=c++17
+CFLAGS := -Wall -Wextra -Werror -Wshadow $(INC) -g -std=c++20
 LDFLAGS :=
 OBJDIR := build
 VPATH = $(shell find src/ -maxdepth 1 -mindepth 1)
