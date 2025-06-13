@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:13:45 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/13 13:07:18 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/13 14:31:36 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,8 @@
 # include "ServerContext.hpp"
 
 const std::string get_mime_type(const std::filesystem::path& extension);
+
+const std::string create_directory_listing(const std::filesystem::path& directory);
 
 class RequestHandler
 {
