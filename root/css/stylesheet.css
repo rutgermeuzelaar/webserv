@@ -15,3 +15,13 @@ table {
 th, td {
     text-align: center;
 }
+
+img {
+    width: 100%;
+    height: auto;
+}
+
+figure {
+    width: 100%;
+    height: auto;
+}

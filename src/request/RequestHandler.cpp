@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/15 17:19:08 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/15 17:36:11 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -105,11 +105,23 @@ const std::string create_directory_listing(const std::filesystem::path& director
     return directory_listing;
 }
 
+static bool is_jpeg(const std::filesystem::path& extension)
+{
+    if (extension == ".jpg") return true;    
+    if (extension == ".jpeg") return true;    
+    if (extension == ".jpe") return true;    
+    if (extension == ".jfif") return true;    
+    if (extension == ".jif") return true;
+    return (false);   
+}
+
 const std::string get_mime_type(const std::filesystem::path& extension)
 {
     if (extension == ".css") return "text/css";
     if (extension == ".html") return "text/html";
     if (extension == ".ico") return "image/x-icon";
+    if (is_jpeg(extension)) return "image/jpeg";
+    if (extension == ".png") return "image/png";
     return "text/plain";
 }
 
@@ -226,6 +238,7 @@ Response RequestHandler::handle_get(const Request& request)
 	Response response(HTTPStatusCode::OK);
 	response.setBodyFromFile(local_path);
     response.setContentType(get_mime_type(local_path.extension()));
+    response.setHeader("Content-Disposition", "inline");
 	return response;
 		// create 
 	// if file exists
