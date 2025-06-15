@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/13 17:14:21 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/15 17:19:08 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,15 +44,13 @@ static std::string create_table_rows(const std::filesystem::path& directory)
     {
         const std::string item_path = item.path();
         const auto file_time = std::filesystem::last_write_time(item.path());
-        const auto system_time = std::chrono::clock_cast<std::chrono::system_clock>(file_time);
-        const auto time_t_time = std::chrono::system_clock::to_time_t(system_time);
-        (void)time_t_time;
+
         std::string item_name;
         std::string file_size = "-";
 
         if (!item.is_directory())
         {
-            file_size = std::filesystem::file_size(item.path());
+            file_size = std::to_string(std::filesystem::file_size(item.path()));
         }
         if (item.path().has_filename())
         {
@@ -70,7 +68,7 @@ static std::string create_table_rows(const std::filesystem::path& directory)
             "</tr>"
             , item_path
             , item_name
-            , item_name
+            , std::format("{0:%d}-{0:%m}-{0:%Y} {0:%R}", file_time)
             , file_size
         );
     }
