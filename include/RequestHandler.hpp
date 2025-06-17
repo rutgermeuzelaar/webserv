@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:13:45 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 12:47:09 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 15:16:47 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ class RequestHandler
 		Response handle_post(const Request& request);
 		Response handle_delete(const Request& request);
         const LocationContext* find_location(const std::string& folder_path) const;
+        Response build_error_page(HTTPStatusCode status_code, const LocationContext* location);
 
 	public:
 		RequestHandler(const ServerContext&);

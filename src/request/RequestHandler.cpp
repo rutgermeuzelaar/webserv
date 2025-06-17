@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 13:36:54 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 15:25:08 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -218,6 +218,34 @@ static Response build_redirect(const Return& return_obj)
     return response;
 }
 
+Response RequestHandler::build_error_page(HTTPStatusCode status_code, const LocationContext* location)
+{
+    Response response(status_code);
+
+    response.setContentType("text/html");
+    if (location != nullptr)
+    {
+        for (auto& it: location->m_error_pages)
+        {
+            if (it.m_status_code == status_code)
+            {
+                response.setBodyFromFile(it.m_path);
+                return response;
+            }
+        }
+    }
+    for (auto& it: m_config.m_error_pages)
+    {
+        if (it.m_status_code == status_code)
+        {
+            response.setBodyFromFile(it.m_path);
+            return response;
+        }
+    }
+    // create a dynamic function
+    return build_404();
+}
+
 Response RequestHandler::handle_get(const Request& request)
 {
 	const std::string& uri = request.getURI();
@@ -244,12 +272,12 @@ Response RequestHandler::handle_get(const Request& request)
         }
         else
         {
-            return build_404();
+            return build_error_page(HTTPStatusCode::NotFound, location);
         }
     }
 	if (!std::filesystem::exists(local_path))
 	{
-        return build_404();
+        return build_error_page(HTTPStatusCode::NotFound, location);
 	}
     // directory request
 	Response response(HTTPStatusCode::OK);
