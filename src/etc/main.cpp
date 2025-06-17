@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 15:42:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 19:58:10 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/13 13:57:35 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,7 @@ static void exec_connection_process(Socket& server, const ServerContext& server_
     } 
     catch (std::exception& e)
     { 
-        std::cout << "Failed to parse request\n";
+        std::cout << "Failed to parse request: " << e.what() << '\n';
         std::string errorResponse = "HTTP/1.1 400 Bad Request\r\n"
                                     "Content-Type: text/plain\r\n"
                                     "Content-Length: 15\r\n"
