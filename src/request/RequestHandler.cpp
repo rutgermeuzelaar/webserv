@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/15 17:36:11 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 13:36:54 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -170,26 +170,35 @@ static bool has_index_html(std::filesystem::path uri)
     return (std::filesystem::exists(uri));
 }
 
-std::filesystem::path RequestHandler::map_uri(std::string uri)
+// should find the most specific location
+const LocationContext* RequestHandler::find_location(const std::string& folder_path) const
 {
-	std::string filename;
+    size_t uri_match_len;
+    const LocationContext* match = nullptr;
+
+    uri_match_len = 0;
+    for (auto& it :m_config.m_location_contexts)
+    {
+        if (folder_path.compare(0, it.m_uri.size(), it.m_uri) == 0)
+        {
+            if (it.m_uri.size() > uri_match_len)
+            {
+                match = &it;
+                uri_match_len = it.m_uri.size();
+            }
+        }
+    }
+    return match;
+}
+
+std::filesystem::path RequestHandler::map_uri(std::string uri, const LocationContext* location)
+{
 	std::filesystem::path uri_path(uri);
 	
-	const std::string folder_path = uri_path.parent_path();
-	// if received URI like this '/' '/dir/' we look for an index.html file
-	// if it doesn't exist check if autoindex is enabled, if it isn't error otherwise generate directory listing
-	// filename = uri.substr(last_slash_pos, uri.size() - last_slash_pos);
-	for (auto& it :m_config.m_location_contexts)
-	{
-		if (folder_path.compare(0, it.m_uri.size(), it.m_uri) == 0)
-		{
-			// check if it has root block
-			if (it.m_root.has_value())
-			{
-				return map_uri_helper(it.m_root.value().m_path, uri_path);
-			}
-		}
-	}
+    if (location != nullptr && location->m_root.has_value())
+    {
+        return map_uri_helper(location->m_root.value().m_path, uri_path);
+    }
 	return map_uri_helper(m_config.m_root.value().m_path, uri_path);
 }
 
@@ -202,15 +211,23 @@ static Response build_404(void)
 	return response;
 }
 
+static Response build_redirect(const Return& return_obj)
+{
+    Response response(return_obj.m_status_code);
+    response.setHeader("Location", return_obj.m_uri);
+    return response;
+}
+
 Response RequestHandler::handle_get(const Request& request)
 {
-	// Response response;
 	const std::string& uri = request.getURI();
+    const LocationContext* location = find_location(uri);
+	std::filesystem::path local_path = map_uri(uri, location);
 
-	// write to the specified connection
-	// m_config.m_http_context.m_servers.m_vector.at(0);
-	std::filesystem::path local_path = map_uri(uri);
-
+    if (location != nullptr && location->m_return.has_value())
+    {
+        return build_redirect(*location->m_return);
+    }
     if (std::filesystem::is_directory(local_path))
     {
         if (has_index_html(local_path))
@@ -270,7 +287,7 @@ Response RequestHandler::handle(const Request& request)
 		case HTTPMethod::POST:
 			return handle_post(request);
         default:
-            throw std::runtime_error("Unsupported HTTP method.");
+            break;
 	}
     throw std::runtime_error("Unsupported HTTP method.");
 }
