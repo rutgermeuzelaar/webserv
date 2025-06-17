@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/26 20:14:01 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/23 16:45:22 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 13:05:03 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,4 +83,5 @@ enum class HTTPStatusCode: int
 const char *get_http_status_text(HTTPStatusCode status);
 bool is_http_status_code(int);
 std::ostream& operator<<(std::ostream&, const HTTPStatusCode&);
+HTTPStatusCode from_string(const std::string& str);
 #endif

@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 21:52:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/23 16:55:16 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 13:07:27 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -156,4 +156,16 @@ bool is_http_status_code(int num)
         511
     };
     return (std::find(codes.begin(), codes.end(), num) != codes.end());
+}
+
+HTTPStatusCode from_string(const std::string& str)
+{
+    int int_rep;
+
+    int_rep = std::stoi(str);
+    if (!is_http_status_code(int_rep))
+    {
+        throw std::runtime_error("Not a HTTP status code.");
+    }
+    return static_cast<HTTPStatusCode>(int_rep);
 }
