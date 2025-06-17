@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 15:25:08 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 16:25:21 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <sstream>
+#include <format>
 #include "RequestHandler.hpp"
 #include "Response.hpp"
 
@@ -202,20 +203,34 @@ std::filesystem::path RequestHandler::map_uri(std::string uri, const LocationCon
 	return map_uri_helper(m_config.m_root.value().m_path, uri_path);
 }
 
-// should be expanded with error handling from the config file
-static Response build_404(void)
-{
-    Response response(HTTPStatusCode::NotFound);
-	response.setBodyFromFile("./root/pages/404.html");
-    response.setContentType("text/html");
-	return response;
-}
-
 static Response build_redirect(const Return& return_obj)
 {
     Response response(return_obj.m_status_code);
     response.setHeader("Location", return_obj.m_uri);
     return response;
+}
+
+static const std::string create_dynamic_error_page(HTTPStatusCode status_code)
+{
+    const std::string status_text = get_http_status_text(status_code);
+    const std::string error_page = std::format(
+    "<!DOCTYPE html>"
+    "<html lang=\"en-US\">"
+        "<head>"
+            "<meta charset=\"utf-8\"/>"
+            "<link rel=\"stylesheet\" href=\"../css/stylesheet.css\">"
+            "<title>{}</title>"
+        "</head>"
+        "<body>"
+            "<h1>{} - {}</h1>"
+            "<p><a href=\"/\">Home</a></p>"
+        "</body>"
+    "</html>"
+    , status_text
+    , static_cast<int>(status_code)
+    , status_text
+    );
+    return error_page;
 }
 
 Response RequestHandler::build_error_page(HTTPStatusCode status_code, const LocationContext* location)
@@ -242,8 +257,8 @@ Response RequestHandler::build_error_page(HTTPStatusCode status_code, const Loca
             return response;
         }
     }
-    // create a dynamic function
-    return build_404();
+    response.setBody(create_dynamic_error_page(status_code));
+    return response;
 }
 
 Response RequestHandler::handle_get(const Request& request)
