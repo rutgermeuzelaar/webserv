@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/11 14:15:37 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 16:21:55 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 13:14:26 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ class ServerContext: public ConfigDirective
         LocationContext& get_location(void);
         std::vector<LocationContext> m_location_contexts;
         std::vector<ErrorPage> m_error_pages;
-        std::vector<Return> m_returns;
+        std::optional<Return> m_return;
         std::optional<ServerName> m_server_name;
         std::optional<Listen> m_listen;
         std::optional<Root> m_root;

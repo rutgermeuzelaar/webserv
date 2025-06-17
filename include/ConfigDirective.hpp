@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/07 07:43:50 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 15:04:30 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 13:10:09 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,15 +99,11 @@ bool operator==(const ErrorPage&, const ErrorPage&);
 
 class Return: public ConfigDirective
 {
-    private:
-        std::vector<HTTPStatusCode> codes_from_string(const std::vector<std::string>&) const;
     public:
-        const std::vector<HTTPStatusCode> m_status_codes;
+        const HTTPStatusCode m_status_code;
         const std::string m_uri;
-        Return(const std::vector<std::string>&, const std::string);
+        Return(const std::string& status_code, const std::string uri);
 };
-
-bool operator==(const Return&, const Return&);
 
 class AutoIndex: public ConfigDirective
 {

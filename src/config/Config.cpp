@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/23 11:38:40 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 17:22:19 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 13:16:15 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,7 +69,7 @@ void merge_config(const ServerContext& merge_from, ServerContext& merge_into)
 {
     merge_directive<LocationContext>(merge_from.m_location_contexts, merge_into.m_location_contexts);
     merge_directive<ErrorPage>(merge_from.m_error_pages, merge_into.m_error_pages);
-    merge_directive<Return>(merge_from.m_returns, merge_into.m_returns);
+    merge_directive<Return>(merge_from.m_return, merge_into.m_return);
     merge_directive<ServerName>(merge_from.m_server_name, merge_into.m_server_name);
     merge_directive<Listen>(merge_from.m_listen, merge_into.m_listen);
     merge_directive<Root>(merge_from.m_root, merge_into.m_root);
