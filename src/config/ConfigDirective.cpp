@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/23 12:15:27 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 13:11:13 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 14:45:01 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,50 +101,28 @@ ClientMaxBodySize::ClientMaxBodySize(const std::string& size)
     
 }
 
-std::vector<HTTPStatusCode> ErrorPage::create_status_codes(const std::vector<std::string>& codes)
+HTTPStatusCode ErrorPage::enforce_error_code(HTTPStatusCode status_code)
 {
-    std::vector<HTTPStatusCode> converted;
-    int int_rep;
+    const int int_rep = static_cast<int>(status_code);
 
-    for (const std::string& it: codes)
+    if (int_rep < 400 || int_rep > 599)
     {
-        int_rep = std::stoi(it);
-        if (!is_http_status_code(int_rep))
-        {
-            throw std::runtime_error("Invalid HTTP code.");
-        }
-        if (int_rep < 400 || int_rep > 599)
-        {
-            throw std::runtime_error("Not a HTTP error code.");
-        }
-        converted.push_back(static_cast<HTTPStatusCode>(int_rep));
+        throw std::runtime_error("Not a HTTP error code.");
     }
-    return converted;
+    return status_code;
 }
 
-ErrorPage::ErrorPage(const std::vector<std::string>& codes, const std::filesystem::path& path)
+ErrorPage::ErrorPage(const std::string& status_code, const std::filesystem::path& path)
     : ConfigDirective(true)
-    , m_status_codes {create_status_codes(codes)}
+    , m_status_code {enforce_error_code(from_string(status_code))}
     , m_path {path}
 {
     
 }
 
-static bool status_codes_overlap(const std::vector<HTTPStatusCode>& a, const std::vector<HTTPStatusCode>& b)
-{
-     for (const auto& it: a)
-    {
-        if (std::find(b.begin(), b.end(), it) != b.end())
-        {
-            return (true);
-        }
-    }
-    return (false);
-}
-
 bool operator==(const ErrorPage& a, const ErrorPage& b)
 {
-    return (status_codes_overlap(a.m_status_codes, b.m_status_codes));
+    return (a.m_status_code == b.m_status_code);
 }
 
 Return::Return(const std::string& status_code, const std::string uri)

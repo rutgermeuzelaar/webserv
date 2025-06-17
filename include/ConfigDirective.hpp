@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/07 07:43:50 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 13:10:09 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 14:41:53 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,14 +88,14 @@ bool operator==(const Listen&, const Listen&);
 class ErrorPage: public ConfigDirective
 {
     private:
-        std::vector<HTTPStatusCode> create_status_codes(const std::vector<std::string>&);
+        HTTPStatusCode enforce_error_code(HTTPStatusCode);
     public:
-        ErrorPage(const std::vector<std::string>&, const std::filesystem::path&);
-        const std::vector<HTTPStatusCode> m_status_codes;
+        ErrorPage(const std::string& status_code, const std::filesystem::path& path);
+        const HTTPStatusCode m_status_code;
         const std::filesystem::path m_path;
 };
 
-bool operator==(const ErrorPage&, const ErrorPage&);
+bool operator==(const ErrorPage& a, const ErrorPage& b);
 
 class Return: public ConfigDirective
 {

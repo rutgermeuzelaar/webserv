@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 13:25:01 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 14:44:11 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,13 +120,7 @@ void Parser::parse_server_name()
 
 void Parser::parse_error_page()
 {
-    std::vector<std::string> codes;
-
-    codes.push_back(consume(TokenType::Number, "Expected status code.").m_str);
-    while (check(TokenType::Number))
-    {
-        codes.push_back(advance().m_str);
-    }
+    consume(TokenType::Number, "Expected status code.");
     consume(TokenType::Path, "Expected path after status code(s).");
     if (!is_valid_file_path(previous().m_str))
     {
@@ -134,7 +128,7 @@ void Parser::parse_error_page()
     }
     try
     {
-        set_error_page(ErrorPage(codes, std::filesystem::path(previous().m_str)));
+        set_error_page(ErrorPage(m_tokens[m_current - 2].m_str, std::filesystem::path(previous().m_str)));
     }
     catch (const std::exception& error)
     {
