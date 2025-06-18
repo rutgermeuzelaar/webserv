@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 21:56:08 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/05 18:01:47 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/12 15:48:45 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,8 +32,8 @@ HTTPStatusLine::HTTPStatusLine(const HTTPStatusLine& src)
 
 HTTPStatusLine& HTTPStatusLine::operator=(const HTTPStatusLine& other)
 {
-    const_cast<std::string&>(m_status_text) = other.m_status_text;
-    const_cast<HTTPStatusCode&>(m_status_code) = other.m_status_code;
+    m_status_text = other.m_status_text;
+    m_status_code = other.m_status_code;
     return *this;
 }
 

@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:13:45 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/05 18:02:21 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/12 12:45:17 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,19 +15,19 @@
 # include <optional>
 # include "Response.hpp"
 # include "Request.hpp"
-# include "Config.hpp"
+# include "ServerContext.hpp"
 
 class RequestHandler
 {
 	private:
-		const Config& m_config;
-	
-	public:
-		RequestHandler(const Config&);
+		const ServerContext& m_config;
 		Response handle_get(const Request& request);
-		void handle_post(const Request& request);
-		void handle_delete(const Request& request);
-		std::optional<std::string> map_uri(std::string uri);
-		void handle(const Request& request, int fd);
+		Response handle_post(const Request& request);
+		Response handle_delete(const Request& request);
+
+	public:
+		RequestHandler(const ServerContext&);
+		std::string map_uri(std::string uri);
+		Response handle(const Request& request);
 };
 #endif

@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/25 16:44:14 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/05/26 20:20:25 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 14:44:32 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,4 +26,5 @@ class Ipv4Address
 };
 
 std::vector<std::string> split(const std::string to_split, const char delimiter);
+bool operator==(const Ipv4Address&, const Ipv4Address&);
 #endif

@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/02 11:24:15 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/04 17:38:12 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/11 16:32:51 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,10 +16,11 @@
 # include <map>
 # include <vector>
 # include <optional>
+# include <filesystem>
 # include "Lexer.hpp"
 # include "ServerContext.hpp"
 # include "HttpContext.hpp"
-# include "ConfigStatement.hpp"
+# include "ConfigDirective.hpp"
 
 const std::map<std::string, TokenType> keywords {
     {"client_max_body_size", TokenType::ClientMaxBodySize},
@@ -40,9 +41,34 @@ class Config
 {
     public:
         HttpContext m_http_context;
+        std::vector<ServerContext> m_servers;
         Config();
         ServerContext& get_server(void);
+        void finalize(void);
 };
 
-void read_config_file(Config& config, const char *path);
+template <typename T> void merge_directive(const std::optional<T>& from, std::optional<T>& to)
+{
+    if (from.has_value() && !to.has_value())
+    {
+        to.emplace(from.value());
+    }
+}
+
+template <typename T> void merge_directive(const std::vector<T>& from, std::vector<T>& to)
+{
+    for (auto const& it: from)
+    {
+        if (std::find(to.begin(), to.end(), it) == to.end())
+		{
+            to.push_back(it);
+        }
+    }
+}
+
+void merge_config(const HttpContext& http, ServerContext& server);
+void merge_config(const ServerContext& merge_from, ServerContext& merge_into);
+void load_defaults(const std::filesystem::path& path, std::vector<ServerContext>& servers);
+void read_config_file(Config& config, const std::filesystem::path& path);
+std::vector<ServerContext> get_server_config(const std::filesystem::path& path);
 #endif
