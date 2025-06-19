@@ -142,6 +142,7 @@ bool Socket::initTestSocket(const std::string& port)
 
 int	Socket::acceptConnection(int serverSocket)
 {
+	_peerSize = sizeof(_peerAddr); //! test
 	int peerFD = accept(serverSocket, (struct sockaddr*)&_peerAddr, &_peerSize);
 	if (peerFD == -1) 
 		throw SocketException("Accept failed: " + std::string(strerror(errno)));
