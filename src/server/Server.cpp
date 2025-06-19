@@ -4,16 +4,15 @@
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
+#include <set>
 
-//TODO Figure out
-
-Server::Server(const Config& config)
-	: m_config(config)
+Server::Server(const std::vector<ServerContext>& config)
+	: m_configs(config)
 	, m_listening_sockets()
 	, m_epoll()
 	, m_clients()
+	, m_client_to_socket_index()
 	, m_running(false)
-	, m_request_handler(m_config)
 {}
 
 Server::~Server()
@@ -72,8 +71,7 @@ void Server::run()
 void Server::start()
 {
 	m_running = true;
-	addListeningSocket("1050"); //! testing port <- modify later
-	configureServerSockets();
+	setupListeningSockets();
 	std::cout << "Server started with epoll" << std::endl;
 }
 
@@ -115,7 +113,7 @@ void Server::addClient(int fd)
 		std::cerr << "Error setting up client socket: " << e.what() << std::endl;
 		close(fd);
 		throw;
-	}
+	} //TODO change later for good exception throwing
 }
 
 void Server::removeClient(int fd)
@@ -126,6 +124,7 @@ void Server::removeClient(int fd)
 		it->second.disconnect();
 		m_clients.erase(it);
 		m_epoll.removeFD(fd);
+		m_client_to_socket_index.erase(fd);
 	}
 }
 
@@ -134,16 +133,29 @@ Client& Server::getClient(int fd)
 	return m_clients.at(fd);
 }
 
-/**
- * @note emplace_back vector method that constructs element directly in vector
- */
-void Server::addListeningSocket(const std::string& port)
+void Server::setupListeningSockets()
 {
-	m_listening_sockets.emplace_back(10);  //* create socket directly in vector
-	if (!m_listening_sockets.back().initTestSocket(port))
-		throw SocketException("Failed to initialize socket on port " + port);
+	std::set<int> added_fds;  //* track which FDs we've already added to epoll
 	
-	std::cout << "Server is listening on port " << port << std::endl;
+	for (const ServerContext& config : m_configs)
+	{
+		m_listening_sockets.emplace_back(10); //! 10 backlog
+		if (!m_listening_sockets.back().initSocket(config))
+			throw SocketException("Failed to init socket");
+
+		//* straight config and add to epoll
+		const std::vector<int>& serverSockets = m_listening_sockets.back().getServerSockets();
+		for (int server_fd : serverSockets)
+		{
+			//* only add to epoll if new FD
+			if (added_fds.find(server_fd) == added_fds.end())
+			{
+				setNonBlocking(server_fd);
+				m_epoll.addFd(server_fd, EPOLLIN);
+				added_fds.insert(server_fd);
+			}
+		}
+	}
 }
 
 Socket& Server::getListeningSocket(size_t index)
@@ -153,14 +165,23 @@ Socket& Server::getListeningSocket(size_t index)
 
 size_t Server::getListeningSocketCount() const
 {
-	return m_listening_sockets.size();
+	return m_listening_sockets.size(); //? need still?
 }
 
 void Server::processRequest(int client_fd, const Request& request)
 {
+	//* check which socket to handle
+	size_t socket_index = 0;
+	auto it = m_client_to_socket_index.find(client_fd);
+	if (it != m_client_to_socket_index.end())
+		socket_index = it->second;
+	// else
+	// 	socket_index = 0; //! handle error, comment in if it works
+	const ServerContext& config = m_configs[socket_index];
+	RequestHandler handler(config);
 	try {
 		std::cout << "Handling request for URI: " << request.getURI() << std::endl; //! TEST
-		Response response = m_request_handler.handle_get(request);
+		Response response = handler.handle(request);
 		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST 
 		std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST 
 		sendResponseToClient(client_fd, response);
@@ -185,8 +206,9 @@ void Server::sendResponseToClient(int client_fd, const Response& response)
 
 void Server::handleNewConnection()
 {
-	for (auto& socket : m_listening_sockets)
+	for (size_t i = 0; i < m_listening_sockets.size(); ++i)
 	{
+		Socket& socket = m_listening_sockets[i];
 		const std::vector<int>& serverSockets = socket.getServerSockets();
 		if (serverSockets.empty())
 			continue;
@@ -196,6 +218,7 @@ void Server::handleNewConnection()
 			std::cout << "New connection accepted on fd: " << client_fd << std::endl; //! TEST 
 			try {
 				addClient(client_fd);
+				m_client_to_socket_index[client_fd] = i;
 				std::cout << "Client added successfully" << std::endl; //! TEST 
 			} catch (const std::exception& e) {
 				std::cerr << "Failed to set up client: " << e.what() << std::endl; //! TEST 
@@ -210,55 +233,52 @@ void Server::handleNewConnection()
 
 void Server::handleClientData(int client_fd)
 {
+	std::cout << "\n=== Handling Client Data for fd: " << client_fd << " ===" << std::endl;
+	
 	Client& client = getClient(client_fd);
 	char buffer[4096];
 
 	ssize_t bytes_read = recv(client_fd, buffer, sizeof(buffer), 0);
 	if (bytes_read == -1)
 	{
-		std::cerr << "Error reading from client: " << strerror(errno) << std::endl; //! TEST 
+		std::cerr << "Error reading from client: " << strerror(errno) << std::endl;
 		removeClient(client_fd);
 		return;
 	}
 	else if (bytes_read == 0)
 	{
-		std::cout << "Client closed connection on fd: " << client_fd << std::endl; //! TEST 
+		std::cout << "Client closed connection on fd: " << client_fd << std::endl;
 		removeClient(client_fd);
 		return;
 	}
-	std::cout << "Received " << bytes_read << " bytes from client" << std::endl; //! TEST 
-	std::cout << "Request data: " << std::string(buffer, bytes_read) << std::endl; //! TEST 
+
+	std::cout << "\n--- Raw Request Data ---" << std::endl;
+	std::cout << std::string(buffer, bytes_read) << std::endl;
+	std::cout << "------------------------\n" << std::endl;
 	
 	client.receiveData(buffer, bytes_read);
+	
+	std::cout << "Checking if request is complete..." << std::endl;
 	if (client.hasCompleteRequest())
 	{
-		std::cout << "Processing complete request" << std::endl; //! TEST 
-		processRequest(client_fd, client.getRequest());
+		std::cout << "Processing complete request" << std::endl;
+		const Request& req = client.getRequest();
+		std::cout << "Request method: " << req.getMethod() << std::endl;
+		std::cout << "Request URI: " << req.getURI() << std::endl;
+		processRequest(client_fd, req);
 		client.clearRequest();
 	}
 	else
 	{
-		std::cout << "Request not complete yet" << std::endl; //! TEST 
+		std::cout << "Request not complete yet" << std::endl;
 	}
+	std::cout << "=== End of Client Data Handling ===\n" << std::endl;
 }
 
 void Server::setNonBlocking(int fd)
 {
 	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1) {
 		throw SocketException("Error setting non-blocking mode: " + std::string(strerror(errno)));
-	}
-}
-
-void Server::configureServerSockets()
-{
-	for (auto& socket : m_listening_sockets)
-	{
-		const std::vector<int>& serverSockets = socket.getServerSockets();
-		for (int server_fd : serverSockets)
-		{
-			setNonBlocking(server_fd); //* listening socket
-			m_epoll.addFd(server_fd, EPOLLIN);
-		}
 	}
 }
 
@@ -269,4 +289,3 @@ void Server::sendErrorResponse(int client_fd, const HTTPException& e)
 	errorResponse.setBody(e.what());
 	sendResponseToClient(client_fd, errorResponse);
 }
-

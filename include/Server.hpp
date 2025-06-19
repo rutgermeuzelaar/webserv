@@ -15,15 +15,15 @@
 class Server
 {
 private:
-	Config m_config;
+	std::vector<ServerContext> m_configs;
 	std::vector<Socket> m_listening_sockets;
 	Epoll m_epoll;
 	std::map<int, Client> m_clients;
+	std::map<int, size_t> m_client_to_socket_index; //* <client_fd, listening_socket_i>
 	bool m_running;
-	RequestHandler m_request_handler;
 
 	//* server initialization
-	void configureServerSockets();
+	void setupListeningSockets();
 
 	//* connection handling
 	void handleNewConnection();
@@ -40,7 +40,7 @@ private:
 	void cleanup();
 
 public:
-	Server(const Config& config);
+	Server(const std::vector<ServerContext>& configs);
 	~Server();
 
 	//* server control
@@ -55,7 +55,6 @@ public:
 	Client& getClient(int fd);
 	
 	//* socket management
-	void addListeningSocket(const std::string& port);
 	Socket& getListeningSocket(size_t index);
 	size_t getListeningSocketCount() const;
 
