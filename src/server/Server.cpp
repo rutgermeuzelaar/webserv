@@ -29,32 +29,44 @@ void Server::run()
 	while (m_running)
 	{
 		try {
+			std::cout << "We running" << std::endl;
 			int num_events = m_epoll.wait();
-			//TODO timeout mechanism
+			std::cout << "epoll_wait returned " << num_events << " events" << std::endl;
 			for (int i = 0; i < num_events; ++i)
 			{
 				const epoll_event& event = m_epoll.getEvents()[i];
+				std::cout << "Event for fd: " << event.data.fd << ", events: " << event.events << std::endl;
+				if (event.events & EPOLLIN) std::cout << "  EPOLLIN" << std::endl;
+				if (event.events & EPOLLHUP) std::cout << "  EPOLLHUP" << std::endl;
+				if (event.events & EPOLLERR) std::cout << "  EPOLLERR" << std::endl;
 				int fd = event.data.fd;
-				std::cout << "Processing event for fd: " << fd << std::endl; //! TEST 
+				std::cout << "Processing event for fd: " << fd << std::endl;
 				
 				if (m_epoll.isTypeEvent(event, EPOLLERR) || m_epoll.isTypeEvent(event, EPOLLHUP))
 				{
-					std::cerr << "Error or hangup on fd: " << fd << std::endl; //! TEST 
+					std::cerr << "Error or hangup on fd: " << fd << std::endl;
 					removeClient(fd);
 					continue;
 				}
-				if (m_epoll.isServerSocket(fd, m_listening_sockets[0].getServerSockets()))
+				if (m_epoll.isServerSocket(fd, m_listening_sockets[0].getServerSockets())) 
 				{
-					std::cout << "Server socket event detected" << std::endl; //! TEST 
+					std::cout << "Server socket event detected (fd: " << fd << ")" << std::endl;
 					handleNewConnection();
 					continue;
 				}
-				if (m_epoll.isTypeEvent(event, EPOLLIN))
+				if (m_epoll.isTypeEvent(event, EPOLLIN)) 
 				{
-					std::cout << "EPOLLIN event detected for fd: " << fd << std::endl; //! TEST 
+					std::cout << "EPOLLIN event detected for fd: " << fd << std::endl;
 					handleClientData(fd);
+					continue ;
 				}
 			}
+            //* print all fds in m_clients after each loop to check
+            std::cout << "Current m_clients fds: ";
+            for (std::map<int, Client>::iterator it = m_clients.begin(); it != m_clients.end(); ++it) {
+                std::cout << it->first << " ";
+            }
+            std::cout << std::endl; //! delete afterwards this current_clients fd
 		}
 		catch (const EpollException& e) {
 			std::cerr << "Epoll error: " << e.what() << std::endl;
@@ -93,13 +105,15 @@ bool Server::isRunning() const
 /**
  * @brief Adds a new client connection to the server's client map
  * @details This function is called when a new connection is accepted:
- *          1. Creates a new Client object with the socket fd and server reference (*this)
- *          2. Adds the client to the m_clients map using emplace
+ *          1. Sets the client socket to non-blocking mode
+ *          2. Adds the client fd to the epoll instance with the following event types:
+ *             - EPOLLIN: Notifies when data is available to read from the client
+ *             - EPOLLHUP: Notifies when the client has closed the connection (hangup)
+ *             - EPOLLERR: Notifies if an error occurs on the client socket
+ *          3. Creates a new Client object with the socket fd and server reference (*this)
+ *          4. Adds the client to the m_clients map using emplace
  * @param fd The socket file descriptor for the new client connection
- * @note The Client object needs a reference to the Server (*this) to:
- *       - Send responses back to the client
- *       - Access server configuration
- *       - Handle request processing
+ * @note Adding the client fd to epoll with EPOLLIN, EPOLLHUP, and EPOLLERR ensures the server is notified for epoll types.
  */
 void Server::addClient(int fd)
 {
@@ -107,7 +121,8 @@ void Server::addClient(int fd)
 		return;
 	try {
 		setNonBlocking(fd); //* client socket
-		m_epoll.addFd(fd, EPOLLIN);
+		m_epoll.addFd(fd, EPOLLIN | EPOLLHUP | EPOLLERR);
+		std::cout << "Added client fd " << fd << " to epoll" << std::endl;
 		m_clients.emplace(fd, Client(fd, *this));
 	} catch (const SocketException& e) {
 		std::cerr << "Error setting up client socket: " << e.what() << std::endl;
@@ -134,26 +149,19 @@ Client& Server::getClient(int fd)
 }
 
 void Server::setupListeningSockets()
-{
-	std::set<int> added_fds;  //* track which FDs we've already added to epoll
-	
+{	
 	for (const ServerContext& config : m_configs)
 	{
 		m_listening_sockets.emplace_back(10); //! 10 backlog
 		if (!m_listening_sockets.back().initSocket(config))
 			throw SocketException("Failed to init socket");
-
+	
 		//* straight config and add to epoll
 		const std::vector<int>& serverSockets = m_listening_sockets.back().getServerSockets();
 		for (int server_fd : serverSockets)
 		{
-			//* only add to epoll if new FD
-			if (added_fds.find(server_fd) == added_fds.end())
-			{
 				setNonBlocking(server_fd);
 				m_epoll.addFd(server_fd, EPOLLIN);
-				added_fds.insert(server_fd);
-			}
 		}
 	}
 }
@@ -215,13 +223,13 @@ void Server::handleNewConnection()
 			
 		try {
 			int client_fd = socket.acceptConnection(serverSockets[0]);
-			std::cout << "New connection accepted on fd: " << client_fd << std::endl; //! TEST 
+			std::cout << "New connection accepted on fd: " << client_fd << std::endl;
 			try {
 				addClient(client_fd);
 				m_client_to_socket_index[client_fd] = i;
-				std::cout << "Client added successfully" << std::endl; //! TEST 
+				std::cout << "Client added successfully" << std::endl;
 			} catch (const std::exception& e) {
-				std::cerr << "Failed to set up client: " << e.what() << std::endl; //! TEST 
+				std::cerr << "Failed to set up client: " << e.what() << std::endl;
 				close(client_fd);
 			}
 		} catch (const SocketException& e) {
@@ -277,9 +285,11 @@ void Server::handleClientData(int client_fd)
 
 void Server::setNonBlocking(int fd)
 {
-	if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1) {
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1)
+		throw SocketException("Error getting flags: " + std::string(strerror(errno)));
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
 		throw SocketException("Error setting non-blocking mode: " + std::string(strerror(errno)));
-	}
 }
 
 void Server::sendErrorResponse(int client_fd, const HTTPException& e)
