@@ -99,6 +99,31 @@ void Socket::closeAllSockets()
 	_isRunning = false;
 }
 
+bool Socket::initSocket(const ServerContext& config)
+{
+	try {
+		std::string port = "1050"; //* default for now
+		std::string server_name = "default";
+
+		if (config.m_listen.has_value() && 
+            config.m_listen.value().m_port.has_value())
+            port = config.m_listen.value().m_port.value().to_string();
+		
+		int socketFD = createSocket(port);
+		_serverSockets.push_back(socketFD);
+		if (config.m_server_name.has_value())
+			server_name = config.m_server_name.value().m_name;
+		_socketToServer[socketFD] = server_name;
+		_isRunning = true;
+		return true;
+	}
+	catch (const SocketException& e)
+	{
+		std::cerr << e.what() << std::endl;
+		return false;
+	}
+}
+
 bool Socket::initTestSocket(const std::string& port)
 {
 	try {
