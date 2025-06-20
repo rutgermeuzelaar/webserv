@@ -6,33 +6,32 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 16:25:21 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/20 15:44:39 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <chrono>
 #include <cassert>
 #include <filesystem>
-#include <format>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <sstream>
-#include <format>
+#include <ctime>
 #include "RequestHandler.hpp"
 #include "Response.hpp"
 
 static std::string create_header(const std::filesystem::path& directory)
 {
-    std::string header = std::format(
+    std::string header = std::string(
         "<!DOCTYPE html>"
         "<html lang=\"en-US\">"
         "<head>"
 		    "<meta charset=\"utf-8\"/>"
             "<link rel=\"stylesheet\" href=\"/root/css/stylesheet.css\">"
-		    "<title>Index of {}</title>"
-        "</head>"
-        , directory.string()
-    );
+		    "<title>Index of ") + directory.string() + std::string("</title>"
+        "</head>");
     
     return header;
 }
@@ -61,42 +60,35 @@ static std::string create_table_rows(const std::filesystem::path& directory)
         {
             item_name = item.path().parent_path().string();
         }
-        table_rows += std::format(
+        table_rows += std::string(
             "<tr>"
-                "<td><a href=\"{}\">{}</a></td>"
-                "<td>{}</td>"
-                "<td>{}</td>"
-            "</tr>"
-            , item_path
-            , item_name
-            , std::format("{0:%d}-{0:%m}-{0:%Y} {0:%R}", file_time)
-            , file_size
-        );
+                "<td><a href=\"") + item_path + std::string("\">") + item_name + \
+				std::string("</a></td>"
+                "<td>") + time_stamp + std::string ("</td>"
+                "<td>") + file_size + std::string("</td>"
+            "</tr>");
     }
     return table_rows;
 }
 
 static std::string create_body(const std::filesystem::path& directory)
 {
-    std::string body = std::format(
+    std::string body = std::string(
         "<body>"
-            "<h1>index of {}</h1>"
+            "<h1>index of ") + directory.string() + std::string("</h1>"
             "<hr>"
             "<table>"
             "<tr>"
                 "<th>name</th>"
                 "<th>last modified</th>"
                 "<th>size</th>"
-            "</tr>"
-            "{}" // table rows go here
+            "</tr>") + create_table_rows(directory) + std::string(
             "</table>"
             "<hr>"
         "</body>"
-    "</html>"
-    , directory.string()
-    , create_table_rows(directory));
-
-    return body;
+    "</html>");
+    
+	return body;
 }
 
 const std::string create_directory_listing(const std::filesystem::path& directory)
@@ -213,24 +205,21 @@ static Response build_redirect(const Return& return_obj)
 static const std::string create_dynamic_error_page(HTTPStatusCode status_code)
 {
     const std::string status_text = get_http_status_text(status_code);
-    const std::string error_page = std::format(
+    const std::string error_page = std::string(
     "<!DOCTYPE html>"
     "<html lang=\"en-US\">"
         "<head>"
             "<meta charset=\"utf-8\"/>"
             "<link rel=\"stylesheet\" href=\"../css/stylesheet.css\">"
-            "<title>{}</title>"
+            "<title>") + status_text + std::string("</title>"
         "</head>"
         "<body>"
-            "<h1>{} - {}</h1>"
+            "<h1>") + std::to_string(static_cast<int>(status_code)) + std::string(" - ") + status_text + std::string("</h1>"
             "<p><a href=\"/\">Home</a></p>"
         "</body>"
-    "</html>"
-    , status_text
-    , static_cast<int>(status_code)
-    , status_text
-    );
-    return error_page;
+    "</html>");
+    
+	return error_page;
 }
 
 Response RequestHandler::build_error_page(HTTPStatusCode status_code, const LocationContext* location)
