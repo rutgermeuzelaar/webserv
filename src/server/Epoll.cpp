@@ -37,7 +37,7 @@ Epoll& Epoll::operator=(const Epoll& src)
 	return *this;
 }
 
-void Epoll::addFd(int fd, int events)
+void Epoll::addFd(int fd, uint32_t events)
 {
 	struct epoll_event event;
 	event.events = events;

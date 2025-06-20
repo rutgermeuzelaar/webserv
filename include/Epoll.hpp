@@ -31,7 +31,7 @@ public:
 	Epoll& operator=(const Epoll& src);
 
 	//* epoll operations
-	void addFd(int fd, int events);
+	void addFd(int fd, uint32_t events);
 	void modifyFD(int fd, int events);
 	void removeFD(int fd);
 	int wait();
