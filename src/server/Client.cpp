@@ -4,9 +4,8 @@
 #include <cstring>
 #include <unistd.h>
 
-Client::Client(int socket_fd, Server& server) 
-	: m_server(server)
-	, m_socket_fd(socket_fd)
+Client::Client(int socket_fd) 
+	: m_socket_fd(socket_fd)
 	, m_is_connected(true)
 	, m_request_complete(false)
 {
