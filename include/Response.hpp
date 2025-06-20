@@ -15,11 +15,10 @@
 class Response
 {
 private:
-    //* status line components
     HTTPStatusLine    _status_line;
     std::map<std::string, std::string> _headers; //* key-value headers
     std::string      _body;
-    std::string      _raw_response; //* cached response string
+    mutable std::string _raw_response; //* cached response string. mutable means const can be changed. as it's just a cache this is fine
 
 public:
     Response(HTTPStatusCode status_code = HTTPStatusCode::OK);
@@ -42,7 +41,7 @@ public:
     std::string getStatusText() const;
     std::string getHeader(const std::string& key) const;
     std::string getBody() const;
-    const std::string& to_str(); //* returns the complete response as a string
+    const std::string& to_str() const; //* returns the complete response as a string
 
     void printResponse() const; //* for debugging
 };
