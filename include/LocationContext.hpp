@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/22 16:36:22 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 14:33:00 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 13:14:40 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ class LocationContext: public ConfigDirective
         const std::string m_uri;
         std::optional<Root> m_root;
         std::vector<ErrorPage> m_error_pages;
-        std::vector<Return> m_returns;
+        std::optional<Return> m_return;
         std::optional<AutoIndex> m_auto_index;
         std::optional<ClientMaxBodySize> m_client_max_body_size;
 };

@@ -6,14 +6,126 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/12 12:46:04 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/20 15:44:39 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <chrono>
 #include <cassert>
 #include <filesystem>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <sstream>
+#include <ctime>
 #include "RequestHandler.hpp"
 #include "Response.hpp"
+
+static std::string create_header(const std::filesystem::path& directory)
+{
+    std::string header = std::string(
+        "<!DOCTYPE html>"
+        "<html lang=\"en-US\">"
+        "<head>"
+		    "<meta charset=\"utf-8\"/>"
+            "<link rel=\"stylesheet\" href=\"/root/css/stylesheet.css\">"
+		    "<title>Index of ") + directory.string() + std::string("</title>"
+        "</head>");
+    
+    return header;
+}
+
+static std::string create_table_rows(const std::filesystem::path& directory)
+{
+    std::string table_rows;
+
+    for (const auto& item: std::filesystem::directory_iterator(directory))
+    {
+        const std::string item_path = item.path();
+		// file_time is annoying to print if we can't use
+		// C++ 20
+		struct stat attributes;
+
+		std::string time_stamp;
+
+		if (stat(directory.string().c_str(), &attributes) == -1)
+		{
+			throw (std::runtime_error("stat"));
+		}
+		time_stamp = std::ctime(&attributes.st_mtime);
+        std::string item_name;
+        std::string file_size = "-";
+        
+		if (!item.is_directory())
+        {
+            file_size = std::to_string(std::filesystem::file_size(item.path()));
+        }
+        if (item.path().has_filename())
+        {
+            item_name = item.path().filename().string();
+        }
+        else
+        {
+            item_name = item.path().parent_path().string();
+        }
+        table_rows += std::string(
+            "<tr>"
+                "<td><a href=\"") + item_path + std::string("\">") + item_name + \
+				std::string("</a></td>"
+                "<td>") + time_stamp + std::string ("</td>"
+                "<td>") + file_size + std::string("</td>"
+            "</tr>");
+    }
+    return table_rows;
+}
+
+static std::string create_body(const std::filesystem::path& directory)
+{
+    std::string body = std::string(
+        "<body>"
+            "<h1>index of ") + directory.string() + std::string("</h1>"
+            "<hr>"
+            "<table>"
+            "<tr>"
+                "<th>name</th>"
+                "<th>last modified</th>"
+                "<th>size</th>"
+            "</tr>") + create_table_rows(directory) + std::string(
+            "</table>"
+            "<hr>"
+        "</body>"
+    "</html>");
+    
+	return body;
+}
+
+const std::string create_directory_listing(const std::filesystem::path& directory)
+{
+    std::string directory_listing = create_header(directory) + create_body(directory);
+
+    return directory_listing;
+}
+
+static bool is_jpeg(const std::filesystem::path& extension)
+{
+    if (extension == ".jpg") return true;    
+    if (extension == ".jpeg") return true;    
+    if (extension == ".jpe") return true;    
+    if (extension == ".jfif") return true;    
+    if (extension == ".jif") return true;
+    return (false);   
+}
+
+const std::string get_mime_type(const std::filesystem::path& extension)
+{
+    if (extension == ".css") return "text/css";
+    if (extension == ".html") return "text/html";
+    if (extension == ".ico") return "image/x-icon";
+    if (is_jpeg(extension)) return "image/jpeg";
+    if (extension == ".png") return "image/png";
+    return "text/plain";
+}
 
 RequestHandler::RequestHandler(const ServerContext& config)
 	: m_config {config}
@@ -44,7 +156,7 @@ static std::filesystem::path& resolve_overlap(std::filesystem::path& root, const
 	return root;
 }
 
-static std::string map_uri_helper(std::filesystem::path root_path, std::filesystem::path& uri_path)
+static std::filesystem::path map_uri_helper(std::filesystem::path root_path, std::filesystem::path& uri_path)
 {
 	if (uri_path.is_absolute())
 	{
@@ -54,52 +166,137 @@ static std::string map_uri_helper(std::filesystem::path root_path, std::filesyst
 	return root_path;
 }
 
-std::string RequestHandler::map_uri(std::string uri)
+static bool has_index_html(std::filesystem::path uri)
 {
-	std::string filename;
+    uri.append("index.html");
+    return (std::filesystem::exists(uri));
+}
+
+// should find the most specific location
+const LocationContext* RequestHandler::find_location(const std::string& folder_path) const
+{
+    size_t uri_match_len;
+    const LocationContext* match = nullptr;
+
+    uri_match_len = 0;
+    for (auto& it :m_config.m_location_contexts)
+    {
+        if (folder_path.compare(0, it.m_uri.size(), it.m_uri) == 0)
+        {
+            if (it.m_uri.size() > uri_match_len)
+            {
+                match = &it;
+                uri_match_len = it.m_uri.size();
+            }
+        }
+    }
+    return match;
+}
+
+std::filesystem::path RequestHandler::map_uri(std::string uri, const LocationContext* location)
+{
 	std::filesystem::path uri_path(uri);
 	
-	if (uri_path.string().back() == '/')
-	{
-		// hardcode index.html
-		uri_path.append("index.html");
-	}
-	const std::string folder_path = uri_path.parent_path();
-	// if received URI like this '/' '/dir/' we look for an index.html file
-	// if it doesn't exist check if autoindex is enabled, if it isn't error otherwise generate directory listing
-	// filename = uri.substr(last_slash_pos, uri.size() - last_slash_pos);
-	for (auto& it :m_config.m_location_contexts)
-	{
-		if (folder_path.compare(0, it.m_uri.size(), it.m_uri) == 0)
-		{
-			// check if it has root block
-			if (it.m_root.has_value())
-			{
-				return map_uri_helper(it.m_root.value().m_path, uri_path);
-			}
-		}
-	}
+    if (location != nullptr && location->m_root.has_value())
+    {
+        return map_uri_helper(location->m_root.value().m_path, uri_path);
+    }
 	return map_uri_helper(m_config.m_root.value().m_path, uri_path);
+}
+
+static Response build_redirect(const Return& return_obj)
+{
+    Response response(return_obj.m_status_code);
+    response.setHeader("Location", return_obj.m_uri);
+    return response;
+}
+
+static const std::string create_dynamic_error_page(HTTPStatusCode status_code)
+{
+    const std::string status_text = get_http_status_text(status_code);
+    const std::string error_page = std::string(
+    "<!DOCTYPE html>"
+    "<html lang=\"en-US\">"
+        "<head>"
+            "<meta charset=\"utf-8\"/>"
+            "<link rel=\"stylesheet\" href=\"../css/stylesheet.css\">"
+            "<title>") + status_text + std::string("</title>"
+        "</head>"
+        "<body>"
+            "<h1>") + std::to_string(static_cast<int>(status_code)) + std::string(" - ") + status_text + std::string("</h1>"
+            "<p><a href=\"/\">Home</a></p>"
+        "</body>"
+    "</html>");
+    
+	return error_page;
+}
+
+Response RequestHandler::build_error_page(HTTPStatusCode status_code, const LocationContext* location)
+{
+    Response response(status_code);
+
+    response.setContentType("text/html");
+    if (location != nullptr)
+    {
+        for (auto& it: location->m_error_pages)
+        {
+            if (it.m_status_code == status_code)
+            {
+                response.setBodyFromFile(it.m_path);
+                return response;
+            }
+        }
+    }
+    for (auto& it: m_config.m_error_pages)
+    {
+        if (it.m_status_code == status_code)
+        {
+            response.setBodyFromFile(it.m_path);
+            return response;
+        }
+    }
+    response.setBody(create_dynamic_error_page(status_code));
+    return response;
 }
 
 Response RequestHandler::handle_get(const Request& request)
 {
-	// Response response;
 	const std::string& uri = request.getURI();
+    const LocationContext* location = find_location(uri);
+	std::filesystem::path local_path = map_uri(uri, location);
 
-	// write to the specified connection
-	// m_config.m_http_context.m_servers.m_vector.at(0);
-	std::optional<std::string> local_path = map_uri(uri);
-	if (!local_path.has_value() || !std::filesystem::exists(local_path.value()))
+    if (location != nullptr && location->m_return.has_value())
+    {
+        return build_redirect(*location->m_return);
+    }
+    if (std::filesystem::is_directory(local_path))
+    {
+        if (has_index_html(local_path))
+        {
+            local_path.append("index.html");
+        }
+        else if (m_config.m_auto_index.value().m_on)
+        {
+            // create directory listing
+            Response response(HTTPStatusCode::OK);
+            response.setBody(create_directory_listing(local_path));
+            response.setContentType("text/html");
+            return response;
+        }
+        else
+        {
+            return build_error_page(HTTPStatusCode::NotFound, location);
+        }
+    }
+	if (!std::filesystem::exists(local_path))
 	{
-		std::cout << "Could not map URI.";
-		Response response(HTTPStatusCode::NotFound);
-		response.setBodyFromFile("./root/pages/404.html");
-		return response;
+        return build_error_page(HTTPStatusCode::NotFound, location);
 	}
+    // directory request
 	Response response(HTTPStatusCode::OK);
-	response.setBodyFromFile(local_path.value());
-	std::cout << map_uri(uri) << '\n';
+	response.setBodyFromFile(local_path);
+    response.setContentType(get_mime_type(local_path.extension()));
+    response.setHeader("Content-Disposition", "inline");
 	return response;
 		// create 
 	// if file exists
@@ -131,7 +328,7 @@ Response RequestHandler::handle(const Request& request)
 		case HTTPMethod::POST:
 			return handle_post(request);
         default:
-            throw std::runtime_error("Unsupported HTTP method.");
+            break;
 	}
     throw std::runtime_error("Unsupported HTTP method.");
 }

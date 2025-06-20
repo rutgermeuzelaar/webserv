@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/05/08 16:56:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 15:02:12 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/17 14:44:11 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,13 +120,7 @@ void Parser::parse_server_name()
 
 void Parser::parse_error_page()
 {
-    std::vector<std::string> codes;
-
-    codes.push_back(consume(TokenType::Number, "Expected status code.").m_str);
-    while (check(TokenType::Number))
-    {
-        codes.push_back(advance().m_str);
-    }
+    consume(TokenType::Number, "Expected status code.");
     consume(TokenType::Path, "Expected path after status code(s).");
     if (!is_valid_file_path(previous().m_str))
     {
@@ -134,7 +128,7 @@ void Parser::parse_error_page()
     }
     try
     {
-        set_error_page(ErrorPage(codes, std::filesystem::path(previous().m_str)));
+        set_error_page(ErrorPage(m_tokens[m_current - 2].m_str, std::filesystem::path(previous().m_str)));
     }
     catch (const std::exception& error)
     {
@@ -207,18 +201,11 @@ void Parser::parse_location()
 
 void Parser::parse_return()
 {
-    std::vector<std::string> tokens;
-
     consume(TokenType::Number, "Expected status code.");
-    tokens.push_back(previous().m_str);
-    while (check(TokenType::Number))
-    {
-        tokens.push_back(advance().m_str);
-    }
-    consume(TokenType::String, "Expected URL after status code(s).");
+    consume(TokenType::Uri, "Expected URL after status code(s).");
     try
     {
-        set_return(Return(tokens, previous().m_str));
+        set_return(Return(m_tokens[m_current - 2].m_str, previous().m_str));
     }
     catch (const std::exception& error)
     {
@@ -558,10 +545,10 @@ void Parser::set_return(Return return_obj)
     switch (context)
     {
         case ContextName::Server:
-            add_to_context<Return>(m_config.get_server().m_returns, return_obj);
+            add_to_context<Return>(m_config.get_server().m_return, return_obj);
             return;
         case ContextName::Location:
-            add_to_context<Return>(m_config.get_server().get_location().m_returns, return_obj);
+            add_to_context<Return>(m_config.get_server().get_location().m_return, return_obj);
             return;
         default:
             throw std::runtime_error(context_forbidden);

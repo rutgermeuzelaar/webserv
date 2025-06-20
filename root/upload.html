@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en-US">
+	<head>
+		<meta charset="utf-8"/>
+        <link rel="stylesheet" href="/root/css/stylesheet.css">
+		<title>Upload an image</title>
+	</head>
+	<body>
+		<h1>upload an image</h1>
+		<p>
+            You can upload a file here. View uploaded files <a href="/root/upload/">here</a>.
+		</p>
+        <form method="post" enctype="multipart/form-data">
+            <div>
+                <label for="image">Choose an image:</label>
+                <input type="file" id="image" name="image" accept="image/png, image/jpeg">
+            </div>
+            <div>
+                <button>Submit</button>
+            </div>
+    </form>
+	</body>
+</html>
