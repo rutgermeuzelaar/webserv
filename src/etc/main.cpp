@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 15:42:16 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 19:58:10 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/18 16:29:53 by robertrinh    ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,6 @@
 #include <unistd.h>
 #include <csignal>
 #include <vector>
-#include <iomanip>
 #include "Request.hpp"
 #include "Socket.hpp"
 #include "Scanner.hpp"

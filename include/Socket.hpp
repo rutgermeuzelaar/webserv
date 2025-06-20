@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <string>
 #include <cstring>
+#include "ServerContext.hpp"
 
 class SocketException : public std::runtime_error {
 public:
@@ -28,9 +29,6 @@ private:
 	struct sockaddr_storage _peerAddr; //* peer address info for accept();
 	socklen_t	_peerSize;
 
-
-	//? epoll related functions?
-
 	int createSocket(const std::string& port);
 	void closeAllSockets();
 
@@ -38,9 +36,9 @@ public:
 	Socket(int backlog);
 	~Socket();
 
-	//! bool initSocket(CONFIG) << init socket based on Config (wait for that to be done)
 	//! consider socket configuration - TCP_NODELAY, no timeout, keep alive, no socket buffer size
-	bool	initTestSocket(const std::string& port = "1050");
+	bool	initSocket(const ServerContext& config);
+	bool	initTestSocket(const std::string& port = "1050"); //! delete later
 	int		acceptConnection(int serverSocket);
 	void	closeSocket(int socketFD);
 
