@@ -110,8 +110,8 @@ bool Server::isRunning() const
  *             - EPOLLIN: Notifies when data is available to read from the client
  *             - EPOLLHUP: Notifies when the client has closed the connection (hangup)
  *             - EPOLLERR: Notifies if an error occurs on the client socket
- *          3. Creates a new Client object with the socket fd and server reference (*this)
- *          4. Adds the client to the m_clients map using emplace
+ *          3. Constructs a new Client object in-place within the m_clients map using try_emplace,
+ *             avoiding temp object destruction and ensuring the socket remains valid
  * @param fd The socket file descriptor for the new client connection
  * @note Adding the client fd to epoll with EPOLLIN, EPOLLHUP, and EPOLLERR ensures the server is notified for epoll types.
  */
@@ -123,7 +123,7 @@ void Server::addClient(int fd)
 		setNonBlocking(fd); //* client socket
 		m_epoll.addFd(fd, EPOLLIN | EPOLLHUP | EPOLLERR);
 		std::cout << "Added client fd " << fd << " to epoll" << std::endl;
-		m_clients.emplace(fd, Client(fd, *this));
+		m_clients.try_emplace(fd, fd);
 	} catch (const SocketException& e) {
 		std::cerr << "Error setting up client socket: " << e.what() << std::endl;
 		close(fd);
