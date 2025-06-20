@@ -43,12 +43,21 @@ static std::string create_table_rows(const std::filesystem::path& directory)
     for (const auto& item: std::filesystem::directory_iterator(directory))
     {
         const std::string item_path = item.path();
-        const auto file_time = std::filesystem::last_write_time(item.path());
+		// file_time is annoying to print if we can't use
+		// C++ 20
+		struct stat attributes;
 
+		std::string time_stamp;
+
+		if (stat(directory.string().c_str(), &attributes) == -1)
+		{
+			throw (std::runtime_error("stat"));
+		}
+		time_stamp = std::ctime(&attributes.st_mtime);
         std::string item_name;
         std::string file_size = "-";
-
-        if (!item.is_directory())
+        
+		if (!item.is_directory())
         {
             file_size = std::to_string(std::filesystem::file_size(item.path()));
         }
