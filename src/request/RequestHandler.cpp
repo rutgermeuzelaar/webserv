@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/20 15:44:39 by rmeuzela      ########   odam.nl         */
+/*   Updated: 2025/06/21 18:54:39 by rmeuzela      ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -208,6 +208,7 @@ static Response build_redirect(const Return& return_obj)
 {
     Response response(return_obj.m_status_code);
     response.setHeader("Location", return_obj.m_uri);
+    response.setHeader("Content-Length", "0");
     return response;
 }
 
