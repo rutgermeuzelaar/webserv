@@ -5,3 +5,4 @@ parser
 __pycache__
 cgi
 !cgi/
+random/
