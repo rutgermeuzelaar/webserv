@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   HTTPStatusLine.hpp                                 :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/04/28 21:27:25 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/12 15:47:38 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef HTTP_STATUS_LINE_HPP
 # define HTTP_STATUS_LINE_HPP
 # include <sstream>

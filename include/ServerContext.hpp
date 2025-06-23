@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   ServerContext.hpp                                  :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/05/11 14:15:37 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 13:14:26 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef SERVER_CONTEXT_HPP
 # define SERVER_CONTEXT_HPP
 # include <string>

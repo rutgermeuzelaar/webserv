@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   Utilities.hpp                                      :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/06/04 16:13:54 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 17:21:32 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef UTILITIES_HPP
 # define UTILITIES_HPP
 # include <vector>

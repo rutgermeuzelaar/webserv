@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   Utilities.cpp                                      :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/06/04 16:14:40 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/04 16:56:51 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "Utilities.hpp"
 
 std::vector<std::string> split(const std::string to_split, const char delimiter)

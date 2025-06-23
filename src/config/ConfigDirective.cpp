@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   ConfigDirective.cpp                                :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/05/23 12:15:27 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 14:45:01 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include <stdexcept>
 #include <string>
 #include <algorithm>

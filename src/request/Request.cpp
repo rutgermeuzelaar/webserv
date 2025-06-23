@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   Request.cpp                                        :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: robertrinh <robertrinh@student.codam.nl      +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/04/28 15:42:16 by robertrinh    #+#    #+#                 */
-/*   Updated: 2025/05/19 16:10:40 by robertrinh    ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "Request.hpp"
 
 Request::Request() : _HTTPVersion(), _method_type(HTTPMethod::UNSUPPORTED), _method(), _uri(), _path(), _query(), _fragment(), _headers(), _body()

@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   HTTPStatusCode.hpp                                 :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/04/26 20:14:01 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 13:05:03 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef HTTP_STATUS_CODE_HPP
 # define HTTP_STATUS_CODE_HPP
 # include <string>

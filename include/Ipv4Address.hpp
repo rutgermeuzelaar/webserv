@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   Ipv4Address.hpp                                    :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/05/25 16:44:14 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/11 14:44:32 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef IPV4_ADDRESS_HPP
 # define IPV4_ADDRESS_HPP
 # include <string>
