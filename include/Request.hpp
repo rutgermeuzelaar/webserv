@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <fstream>
 #include <stdexcept>
-#include "defines.h"
+#include "Defines.hpp"
 #include "HTTPStatusCode.hpp"
 #include "HTTPException.hpp"
 

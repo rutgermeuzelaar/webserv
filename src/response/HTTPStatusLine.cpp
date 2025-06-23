@@ -1,6 +1,6 @@
 #include <sstream>
 #include <string>
-#include "defines.h"
+#include "Defines.hpp"
 #include "HTTPStatusLine.hpp"
 #include "HTTPStatusCode.hpp"
 

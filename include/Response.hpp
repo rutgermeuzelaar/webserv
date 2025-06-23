@@ -10,7 +10,7 @@
 #include "HTTPStatusCode.hpp"
 #include "HTTPStatusLine.hpp"
 #include "HTTPException.hpp"
-#include "defines.h"
+#include "Defines.hpp"
 
 class Response
 {
