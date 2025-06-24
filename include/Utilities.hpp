@@ -20,4 +20,5 @@ template <typename T> bool is_unique(const std::vector<T>& vector)
 }
 
 std::optional<const std::string> get_envvar(char *const *envp, const std::string& var_name);
+const std::string create_file_name(const std::string extension);
 #endif
