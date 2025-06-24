@@ -1,7 +1,7 @@
 #ifndef REQUEST_HPP
 # define REQUEST_HPP
 
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -30,7 +30,7 @@ private:
 	std::string _path;
 	std::string _query;
 	std::string _fragment;
-	std::map<std::string, std::string>_headers; //* key-value headers
+	std::unordered_map<std::string, std::string>_headers; //* key-value headers
 	std::string _body;
 
 	HTTPMethod StringToMethod(const std::string& method);

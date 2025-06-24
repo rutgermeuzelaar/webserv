@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include "Utilities.hpp"
 
 Request::Request() : _HTTPVersion(), _method_type(HTTPMethod::UNSUPPORTED), _method(), _uri(), _path(), _query(), _fragment(), _headers(), _body()
 {}
@@ -96,44 +97,12 @@ void Request::parseRequestLine(const std::string& requestLineStr)
  * @brief parses HTTP headers from the request stream
  * @param requestStream string stream containing the HTTP request headers
  * @note headers are in format "Key: Value"
- * @note headers end with a newline
+ * @note headers end with CRLF (\r\\n)
  * @return true if headers were parsed successfully
  */
 void Request::parseHeaders(std::istream& stream)
 {
-	std::string line;
-	size_t totalHeaderSize = 0;
-	const size_t MAX_HEADER_SIZE = 8192; //* common header size limit
-	
-	while (std::getline(stream, line))
-	{
-		if (!line.empty() && line.back() == '\r') //* C11: back-> return reference to last element
-			line.pop_back(); //* removes last element (carriage return = /r)
-		if (line.empty())
-			break;
-		totalHeaderSize += line.length();
-		if (totalHeaderSize > MAX_HEADER_SIZE)
-			throw HTTPException(HTTPStatusCode::RequestHeaderFieldsTooLarge, "Request header fields too large");
-		size_t colonPos = line.find(':');
-		if (colonPos == std::string::npos)
-			throw HTTPException(HTTPStatusCode::BadRequest, "Malformed header line: " + line);
-
-		std::string key = line.substr(0, colonPos);
-		std::string value = line.substr(colonPos + 1);
-		
-		//* trim whitespace from key and value
-		key.erase(0, key.find_first_not_of(" \t\r\n")); //* searches str for first char that does not match the given chars
-		key.erase(key.find_last_not_of(" \t\r\n") + 1); //* same, but for last char
-		value.erase(0, value.find_first_not_of(" \t\r\n"));
-		value.erase(value.find_last_not_of(" \t\r\n") + 1);
-		
-		//* converting header keys to lowercase to combat case-insensivity
-		std::string lowerKey = key;
-		std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
-		if (lowerKey.empty())
-			throw HTTPException(HTTPStatusCode::BadRequest, "Empty header key");
-		_headers[lowerKey] = value;
-	}
+    _headers = parse_http_headers(stream);
 }
 
 /**
@@ -218,7 +187,7 @@ std::string Request::getHeader(const std::string& key) const
 	std::string lowerKey = key;
 	std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
 
-	std::map<std::string, std::string>::const_iterator headerIt = _headers.find(lowerKey);
+    auto headerIt = _headers.find(lowerKey);
 	if (headerIt != _headers.end())
 		return headerIt->second;
 	return "";
