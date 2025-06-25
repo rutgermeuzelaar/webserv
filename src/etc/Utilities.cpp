@@ -112,6 +112,25 @@ std::istream& getline_delim(std::istream& is, std::string& str, const std::strin
     return is;
 }
 
+std::string& ltrim(std::string& str, const char* to_trim)
+{
+	str.erase(0, str.find_first_not_of(to_trim));
+    return str;
+}
+
+std::string& rtrim(std::string& str, const char* to_trim)
+{
+    str.erase(str.find_last_not_of(to_trim) + 1);
+    return str;
+}
+
+std::string& trim(std::string& str, const char* to_trim)
+{
+    ltrim(str, to_trim);
+    rtrim(str, to_trim);
+    return str;
+}
+
 std::unordered_map<std::string, std::string> parse_http_headers(std::istream& stream)
 {
 	static const size_t MAX_HEADER_SIZE = 8192; //* common header size limit
@@ -143,10 +162,8 @@ std::unordered_map<std::string, std::string> parse_http_headers(std::istream& st
 		std::string value = line.substr(colonPos + 1);
 		
 		//* trim whitespace from key and value
-		key.erase(0, key.find_first_not_of(" \t\r\n")); //* searches str for first char that does not match the given chars
-		key.erase(key.find_last_not_of(" \t\r\n") + 1); //* same, but for last char
-		value.erase(0, value.find_first_not_of(" \t\r\n"));
-		value.erase(value.find_last_not_of(" \t\r\n") + 1);
+        trim(key, WHITE_SPACE);
+        trim(value, WHITE_SPACE);
 		
 		//* converting header keys to lowercase to combat case-insensivity
 		std::string lowerKey = key;
