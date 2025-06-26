@@ -6,7 +6,7 @@
 /*   By: robertrinh <robertrinh@student.codam.nl      +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/28 15:42:16 by robertrinh    #+#    #+#                 */
-/*   Updated: 2025/05/19 16:10:40 by robertrinh    ########   odam.nl         */
+/*   Updated: 2025/06/26 15:08:11 by qtrinh        ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,10 +157,89 @@ void Request::parseHeaders(std::istream& stream)
  */
 void Request::parseBody(std::istream& stream)
 {
+	if (!stream.good())
+		throw HTTPException(HTTPStatusCode::BadRequest, "Stream broken before chunk reads");
+	std::string ChunkedEncoding = getHeader("transfer-encoding");
+	if (!ChunkedEncoding.empty() && ChunkedEncoding.find("chunked") != std::string::npos)
+	{
+		parseChunkedBody(stream);
+		return;
+	}
+	if (!ChunkedEncoding.empty())
+		throw HTTPException(HTTPStatusCode::NotImplemented, "Unsupported Transfer-Encoding: " + ChunkedEncoding);
+
 	std::string contentLengthStr = getHeader("content-length");
 	if (contentLengthStr.empty())
 		throw HTTPException(HTTPStatusCode::LengthRequired, "Content-Length header required for POST request");
+	parseContentLength(stream, contentLengthStr);
+}
 
+void Request::parseChunkedBody(std::istream& stream)
+{
+	_body.clear();
+	std::string chunkLine;
+	bool lastChunk = false;
+	size_t chunkCount = 0;
+	size_t totalSize = 0;
+
+	if (!stream.good())
+        throw HTTPException(HTTPStatusCode::BadRequest, "Stream in bad state before chunked read");
+	while (!lastChunk && chunkCount < _MAX_CHUNKS)
+	{
+		if (!std::getline(stream, chunkLine))
+			throw HTTPException(HTTPStatusCode::BadRequest, "Invalid chunked encoding");
+		
+		//* remove trailing CRLF, if present
+		if (!chunkLine.empty() && chunkLine.back() == '\r')
+			chunkLine.pop_back();
+
+		//* parse chunksize (in hexadecimal)
+		//? handle chunk Extensions?
+		size_t chunkSize;
+		try {
+			chunkSize = std::stoul(chunkLine, nullptr, 16);
+		} catch (const std::exception& e) {
+			throw HTTPException(HTTPStatusCode::BadRequest, "Invalid chunk size");
+		}
+
+		//* check if last chunk is handled
+		if (chunkSize == 0)
+			lastChunk = true;
+		else
+		{
+			if (chunkSize > _MAX_CHUNK_SIZE) 
+			{
+    			throw HTTPException(HTTPStatusCode::BadRequest, 
+        			"Chunk size " + std::to_string(chunkSize) + 
+        			" exceeds maximum allowed " + std::to_string(_MAX_CHUNK_SIZE));
+			}
+			if (totalSize + chunkSize > _MAX_TOTAL_SIZE)
+				throw HTTPException(HTTPStatusCode::BadRequest, "Total body too large");
+			
+			std::string chunkData;
+			chunkData.resize(chunkSize);
+			stream.read(&chunkData[0], chunkSize);
+			if (stream.gcount() != static_cast<std::streamsize>(chunkSize))
+				throw HTTPException(HTTPStatusCode::BadRequest, "Incomplete chunk data");
+			
+			_body.append(chunkData);
+			totalSize += chunkSize;
+			if (!std::getline(stream, chunkLine))
+				throw HTTPException(HTTPStatusCode::BadRequest, "Missing CRLF after chunk");
+		}
+		chunkCount++;
+	}
+	if (!lastChunk)
+		throw HTTPException(HTTPStatusCode::BadRequest, "Chunked Transfer incomplete or too many chunks");
+	else
+		parseHeaders(stream); //* process trailing headers
+}
+
+void Request::parseContentLength(std::istream& stream, const std::string& contentLengthStr)
+{
+	if (!stream.good()) 
+        throw HTTPException(HTTPStatusCode::BadRequest, "Stream in bad state before content-length read");
+	
 	//* will check for how many bytes of data to expect in request, important for POST
 	unsigned long contentLength;
 	try {
@@ -179,9 +258,8 @@ void Request::parseBody(std::istream& stream)
 	char* buffer = &_body[0]; //* C11: pointer to first char in internal (resized) str buffer
 	stream.read(buffer, contentLength); //* reads directly into contentLength, pointed by buffer. efficient because avoids temp + copy
 
-	std::streamsize bytesRead = stream.gcount();
-	if (static_cast<unsigned long>(bytesRead) != contentLength)
-		throw HTTPException(HTTPStatusCode::BadRequest, "Incomplete request body");
+	if (!stream.good() && stream.gcount() != static_cast<std::streamsize>(contentLength))
+        throw HTTPException(HTTPStatusCode::BadRequest, "Stream error during content-length read");
 }
 
 std::string Request::getHTTPVersion() const
