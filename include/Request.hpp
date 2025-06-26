@@ -6,7 +6,7 @@
 /*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
 /*                                                   +#+                      */
 /*   Created: 2025/04/25 14:18:35 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/04 14:02:55 by robertrinh    ########   odam.nl         */
+/*   Updated: 2025/06/26 15:00:41 by qtrinh        ########   odam.nl         */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,12 @@ enum class HTTPMethod {
 class Request
 {
 private:
+	//* chunk limits
+	//? configurable or hard setting?
+	const size_t _MAX_CHUNKS = 1000;
+	const size_t _MAX_TOTAL_SIZE = 10 * 1024 * 1024; //* 10MB
+	const size_t _MAX_CHUNK_SIZE = 1024 * 1024; //* 1MB per chunk
+	
 	//* status line components
 	std::string _HTTPVersion;
 	HTTPMethod	_method_type;
@@ -50,6 +56,8 @@ private:
 	void parseHeaders(std::istream& requestStream);
 	void parseBody(std::istream& requestStream);
 	void parseURI(const std::string& uri); 
+	void parseChunkedBody(std::istream& stream);
+	void parseContentLength(std::istream& stream, const std::string& contentLengthStr);
 
 public:
 	Request();
