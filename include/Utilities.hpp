@@ -28,5 +28,6 @@ std::istream& getline_delim(std::istream& is, std::string& str, const std::strin
 std::string& ltrim(std::string& str, const char* to_trim);
 std::string& rtrim(std::string& str, const char* to_trim);
 std::string& trim(std::string& str, const char* to_trim);
+std::pair<std::string, std::string> parse_single_http_header(const std::string& header);
 std::unordered_map<std::string, std::string> parse_http_headers(std::istream& stream);
 #endif

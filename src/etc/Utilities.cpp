@@ -131,11 +131,31 @@ std::string& trim(std::string& str, const char* to_trim)
     return str;
 }
 
+std::pair<std::string, std::string> parse_single_http_header(const std::string& header)
+{
+    size_t colonPos = header.find(':');
+    if (colonPos == std::string::npos)
+        throw HTTPException(HTTPStatusCode::BadRequest, "Malformed header line: " + header);
+    if (!ends_with(header, LINE_BREAK))
+        throw HTTPException(HTTPStatusCode::BadRequest);
+    std::string key = header.substr(0, colonPos);
+    std::string value = header.substr(colonPos + 1);
+    
+    //* trim whitespace from key and value
+    trim(key, WHITE_SPACE);
+    trim(value, WHITE_SPACE);
+    
+    //* converting header keys to lowercase to combat case-insensivity
+    std::string lowerKey = key;
+    std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
+    if (lowerKey.empty())
+        throw HTTPException(HTTPStatusCode::BadRequest, "Empty header key");
+    return std::pair(lowerKey, value);
+}
+
 std::unordered_map<std::string, std::string> parse_http_headers(std::istream& stream)
 {
-	static const size_t MAX_HEADER_SIZE = 8192; //* common header size limit
 	std::string line;
-	size_t totalHeaderSize = 0;
 	std::unordered_map<std::string, std::string> http_headers;
 
 	while (getline_delim(stream, line, LINE_BREAK))
@@ -143,34 +163,10 @@ std::unordered_map<std::string, std::string> parse_http_headers(std::istream& st
         // header end is indicated by double CRLF
 		if (line == LINE_BREAK)
         {
-            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Host
-            if (http_headers.find("host") == http_headers.end())
-            {
-                throw HTTPException(HTTPStatusCode::BadRequest);
-            }
             return http_headers;
         }
-		totalHeaderSize += line.length();
-		if (totalHeaderSize > MAX_HEADER_SIZE)
-			throw HTTPException(HTTPStatusCode::RequestHeaderFieldsTooLarge, "Request header fields too large");
-		size_t colonPos = line.find(':');
-		if (colonPos == std::string::npos)
-			throw HTTPException(HTTPStatusCode::BadRequest, "Malformed header line: " + line);
-        if (!ends_with(line, LINE_BREAK))
-            throw HTTPException(HTTPStatusCode::BadRequest);
-        std::string key = line.substr(0, colonPos);
-		std::string value = line.substr(colonPos + 1);
-		
-		//* trim whitespace from key and value
-        trim(key, WHITE_SPACE);
-        trim(value, WHITE_SPACE);
-		
-		//* converting header keys to lowercase to combat case-insensivity
-		std::string lowerKey = key;
-		std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
-		if (lowerKey.empty())
-			throw HTTPException(HTTPStatusCode::BadRequest, "Empty header key");
-        http_headers[lowerKey] = value;
+        std::pair<std::string, std::string> pair = parse_single_http_header(line);
+        http_headers.insert(pair);
         line = "";
 	}
     throw HTTPException(HTTPStatusCode::BadRequest);
