@@ -250,7 +250,7 @@ Response RequestHandler::build_error_page(HTTPStatusCode status_code, const Loca
 
 Response RequestHandler::handle_get(const Request& request)
 {
-	const std::string& uri = request.getURI();
+	const std::string& uri = request.getStartLine().get_uri();
     const LocationContext* location = find_location(uri);
 	std::filesystem::path local_path = map_uri(uri, location);
 
@@ -308,7 +308,7 @@ Response RequestHandler::handle_post(const Request& request)
 // for now URI and method only
 Response RequestHandler::handle(const Request& request)
 {
-	switch (request.getMethodType())
+	switch (request.getStartLine().get_http_method())
 	{
 		case HTTPMethod::GET:
 			return handle_get(request);
