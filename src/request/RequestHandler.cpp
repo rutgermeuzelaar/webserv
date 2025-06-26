@@ -9,6 +9,8 @@
 #include <ctime>
 #include "RequestHandler.hpp"
 #include "Response.hpp"
+#include "Utilities.hpp"
+#include "MIMETypes.hpp"
 
 static std::string create_header(const std::filesystem::path& directory)
 {
@@ -299,10 +301,38 @@ Response RequestHandler::handle_delete(const Request& request)
     return Response();
 }
 
+static const std::string get_extension(const std::string& mime_type)
+{
+    auto pos = g_mime_types.find(mime_type);
+    if (pos == g_mime_types.end())
+    {
+        throw HTTPException(HTTPStatusCode::UnsupportedMediaType);   
+    }
+    if (pos->second.size() > 0)
+    {
+        return pos->second[0];
+    }
+    return "";
+}
+
 Response RequestHandler::handle_post(const Request& request)
 {
-    (void)request;
-    return Response();
+    const MultiPartChunk& chunk = request.getBody().get_multi_part_chunk();
+    const std::string file_name = create_file_name(get_extension(chunk.get_mime_type()));
+    std::string path = "./root/upload/";
+
+    path.append(file_name);
+    std::ofstream file(path);
+    if (file.fail())
+    {
+        throw HTTPException(HTTPStatusCode::InternalServerError);
+    }
+    file << chunk.m_data;
+    file.close();
+    Response response(HTTPStatusCode::SeeOther);
+    response.setHeader("Location", "/root/upload/");
+    response.setHeader("Content-Length", "0");
+    return response;
 }
 
 // for now URI and method only
