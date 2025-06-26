@@ -73,7 +73,7 @@ const std::string create_file_name(const std::string extension)
 
 bool ends_with(const std::string& str, const std::string& ending)
 {
-    if (ending > str)
+    if (ending.size() > str.size())
     {
         return (false);
     }
