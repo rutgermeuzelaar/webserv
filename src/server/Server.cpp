@@ -136,10 +136,9 @@ void Server::removeClient(int fd)
 	auto it = m_clients.find(fd);
 	if (it != m_clients.end())
 	{
-		it->second.disconnect();
-		m_clients.erase(it);
 		m_epoll.removeFD(fd);
 		m_client_to_socket_index.erase(fd);
+		m_clients.erase(it);
 	}
 }
 
