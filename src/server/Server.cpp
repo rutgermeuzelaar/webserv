@@ -203,7 +203,7 @@ void Server::sendResponseToClient(int client_fd, const Response& response)
 {
 	std::string response_str = response.to_str();
 	std::cout << "Sending response of length: " << response_str.length() << std::endl; //! TEST 
-	std::cout << "Response content: " << response_str << std::endl; //! TEST 
+	// std::cout << "Response content: " << response_str << std::endl; //! SLOWS DOWN THE SERVER <- because it prints out te binary data (which has to converted to ASCII)
 	ssize_t bytes_sent = send(client_fd, response_str.c_str(), response_str.length(), 0);
 	if (bytes_sent == -1)
 		std::cerr << "Error sending response: " << strerror(errno) << std::endl; //! TEST 
