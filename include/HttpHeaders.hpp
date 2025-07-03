@@ -12,6 +12,7 @@ class HttpHeaders
 
     public:
         HttpHeaders(void);
+        HttpHeaders(const HttpHeaders&);
         HttpHeaders& operator=(const HttpHeaders&);
         ~HttpHeaders(void);
 

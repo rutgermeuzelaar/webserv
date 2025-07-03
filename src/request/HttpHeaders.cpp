@@ -18,6 +18,13 @@ HttpHeaders& HttpHeaders::operator=(const HttpHeaders& http_headers)
     return *this;
 }
 
+HttpHeaders::HttpHeaders(const HttpHeaders& http_headers)
+    : m_line_break_count {http_headers.m_line_break_count}
+    , m_headers {http_headers.m_headers}
+{
+
+}
+
 HttpHeaders::~HttpHeaders()
 {
 
