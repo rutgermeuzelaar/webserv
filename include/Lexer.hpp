@@ -45,6 +45,7 @@ enum class TokenType: int
 	AutoIndex,
     Index,
     LimitExcept,
+    UploadStore,
 
     Eof,
 	TokenTypeCount

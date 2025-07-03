@@ -128,4 +128,11 @@ class LimitExcept: public ConfigDirective
         const std::vector<HTTPMethod> m_allowed_methods;
         LimitExcept(const std::vector<std::string>&);
 };
+
+class UploadStore: public ConfigDirective
+{
+    public:
+        const std::string m_path;
+        UploadStore(const std::string&);
+};
 #endif

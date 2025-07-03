@@ -315,6 +315,9 @@ void Parser::parse_statement()
         case TokenType::LimitExcept:
             parse_limit_except();
             break;
+        case TokenType::UploadStore:
+            parse_upload_store();
+            break;
         default:
             log_error("Unexpected token.");
             throw Error();
@@ -659,4 +662,40 @@ void Parser::parse_limit_except(void)
         log_error(error.what());
         throw Parser::Error();
     }
+}
+
+void Parser::parse_upload_store(void)
+{
+    consume(TokenType::Path, "Expected path");
+    if (!is_valid_file_path(previous().m_str))
+    {
+        throw Parser::Error();
+    }
+    try
+    {
+        set_upload_store(UploadStore(previous().m_str));
+    }
+    catch(const std::exception& error)
+    {
+        log_error(error.what());
+        throw Parser::Error();
+    }
+}
+
+void Parser::set_upload_store(UploadStore upload_store)
+{
+    const ContextName context = m_contexts.top();
+
+    switch (context)
+    {
+        case ContextName::Http:
+            add_to_context<UploadStore>(m_config.m_http_context.m_upload_store, upload_store);
+            return;
+        case ContextName::Server:
+            add_to_context<UploadStore>(m_config.get_server().m_upload_store, upload_store);
+            return;
+        case ContextName::Location:
+            add_to_context<UploadStore>(m_config.get_server().get_location().m_upload_store, upload_store);
+            return;
+    }  
 }

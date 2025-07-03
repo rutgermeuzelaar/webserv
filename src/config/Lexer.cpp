@@ -81,8 +81,10 @@ std::string stringify(TokenType type)
         case TokenType::Get: return "Get";
         case TokenType::Post: return "Post";
         case TokenType::Delete: return "Delete";
-		default: assert(false);
+        case TokenType::UploadStore: return "UploadStore";
+        case TokenType::TokenTypeCount: return "TokenTypeCount";
 	}
+    assert(false);
 }
 
 void Token::print() const

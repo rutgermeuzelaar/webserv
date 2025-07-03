@@ -169,3 +169,10 @@ LimitExcept::LimitExcept(const std::vector<std::string>& allowed_methods)
 {
 
 }
+
+UploadStore::UploadStore(const std::string& path)
+    : ConfigDirective(true)
+    , m_path {path}
+{
+
+}

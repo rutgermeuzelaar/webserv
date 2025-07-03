@@ -23,6 +23,7 @@ class HttpContext
     std::optional<ClientMaxBodySize> m_client_max_body_size;
     std::optional<AutoIndex> m_auto_index;
     std::optional<Index> m_index;
+    std::optional<UploadStore> m_upload_store;
     HttpContext();
 };
 #endif

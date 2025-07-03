@@ -39,7 +39,8 @@ const std::unordered_map<std::string, TokenType> keywords {
     {"GET", TokenType::Get},
     {"POST", TokenType::Post},
     {"DELETE", TokenType::Delete},
-    {"limit_except", TokenType::LimitExcept}
+    {"limit_except", TokenType::LimitExcept},
+    {"upload_store", TokenType::UploadStore}
 };
 
 class Config

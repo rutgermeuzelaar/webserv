@@ -63,6 +63,7 @@ class Parser
         void                        parse_autoindex(void);
         void                        parse_index(void);
         void                        parse_limit_except(void);
+        void                        parse_upload_store(void);
 
         void                        set_server_name(ServerName);
         void                        set_error_page(ErrorPage);
@@ -75,6 +76,7 @@ class Parser
         void                        set_auto_index(AutoIndex);
         void                        set_index(Index);
         void                        set_limit_except(LimitExcept);
+        void                        set_upload_store(UploadStore);
 };
 
 class Parser::Error: public std::runtime_error

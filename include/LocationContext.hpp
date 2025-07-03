@@ -28,6 +28,7 @@ class LocationContext: public ConfigDirective
         std::optional<ClientMaxBodySize> m_client_max_body_size;
         std::optional<Index> m_index;
         std::optional<LimitExcept> m_limit_except;
+        std::optional<UploadStore> m_upload_store;
 };
 
 bool operator==(const LocationContext&, const LocationContext&);
