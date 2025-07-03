@@ -77,6 +77,10 @@ std::string stringify(TokenType type)
 		case TokenType::On: return "On";
 		case TokenType::Off: return "Off";
         case TokenType::Index: return "Index";
+        case TokenType::LimitExcept: return "LimitExcept";
+        case TokenType::Get: return "Get";
+        case TokenType::Post: return "Post";
+        case TokenType::Delete: return "Delete";
 		default: assert(false);
 	}
 }

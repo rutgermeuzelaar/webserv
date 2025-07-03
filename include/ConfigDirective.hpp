@@ -20,6 +20,7 @@
 # include "Port.hpp"
 # include "ContextName.hpp"
 # include "HTTPStatusCode.hpp"
+# include "Request.hpp"
 
 class ConfigDirective
 {
@@ -117,5 +118,14 @@ class Index: public ConfigDirective
     public:
         const std::vector<std::string> m_files;
         Index(const std::vector<std::string>&);
+};
+
+class LimitExcept: public ConfigDirective
+{
+    private:
+        const std::vector<HTTPMethod> from_string(const std::vector<std::string>&) const;
+    public:
+        const std::vector<HTTPMethod> m_allowed_methods;
+        LimitExcept(const std::vector<std::string>&);
 };
 #endif

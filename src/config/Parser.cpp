@@ -312,6 +312,9 @@ void Parser::parse_statement()
         case TokenType::Index:
             parse_index();
             break;
+        case TokenType::LimitExcept:
+            parse_limit_except();
+            break;
         default:
             log_error("Unexpected token.");
             throw Error();
@@ -616,5 +619,44 @@ void Parser::set_index(Index index)
         case ContextName::Location:
             add_to_context<Index>(m_config.get_server().get_location().m_index, index);
             return;
+    }
+}
+
+void Parser::set_limit_except(LimitExcept limit_except)
+{
+    const ContextName context = m_contexts.top();
+
+    switch (context)
+    {
+        case ContextName::Location:
+            add_to_context<LimitExcept>(m_config.get_server().get_location().m_limit_except, limit_except);
+            return;
+        default:
+            throw std::runtime_error(context_forbidden);
+    }
+}
+
+void Parser::parse_limit_except(void)
+{
+    std::vector<std::string> methods;
+
+    while (match({TokenType::Get, TokenType::Post, TokenType::Delete}))
+    {
+        methods.push_back(peek().m_str);
+        advance();  
+    }
+    if (methods.size() < 1)
+    {
+        log_error("At least one argument required.");
+        throw Parser::Error();
+    }
+    try
+    {
+        set_limit_except(LimitExcept(methods));
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what());
+        throw Parser::Error();
     }
 }

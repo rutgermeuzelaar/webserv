@@ -97,6 +97,10 @@ std::vector<ServerContext> get_server_config(const std::filesystem::path& path)
 
     read_config_file(config, path);
     config.finalize();
-    load_defaults("./root/default.conf", config.m_servers);
-    return config.m_servers;
+    if (std::filesystem::exists(DEFAULT_CONF))
+    {
+        load_defaults(DEFAULT_CONF, config.m_servers);
+        return config.m_servers;
+    }
+    throw std::runtime_error("no such file or directory: " DEFAULT_CONF);
 }

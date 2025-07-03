@@ -35,7 +35,11 @@ const std::unordered_map<std::string, TokenType> keywords {
     {"autoindex", TokenType::AutoIndex},
     {"on", TokenType::On},
     {"off", TokenType::Off},
-    {"index", TokenType::Index}
+    {"index", TokenType::Index},
+    {"GET", TokenType::Get},
+    {"POST", TokenType::Post},
+    {"DELETE", TokenType::Delete},
+    {"limit_except", TokenType::LimitExcept}
 };
 
 class Config
