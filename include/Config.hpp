@@ -13,7 +13,7 @@
 #ifndef CONFIG_HPP
 # define CONFIG_HPP
 # include <string>
-# include <map>
+# include <unordered_map>
 # include <vector>
 # include <optional>
 # include <filesystem>
@@ -22,7 +22,7 @@
 # include "HttpContext.hpp"
 # include "ConfigDirective.hpp"
 
-const std::map<std::string, TokenType> keywords {
+const std::unordered_map<std::string, TokenType> keywords {
     {"client_max_body_size", TokenType::ClientMaxBodySize},
     {"error_page", TokenType::ErrorPage},
     {"http", TokenType::Http},
