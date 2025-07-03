@@ -111,4 +111,11 @@ class AutoIndex: public ConfigDirective
         const bool m_on;
         AutoIndex(const std::string&);
 };
+
+class Index: public ConfigDirective
+{
+    public:
+        const std::vector<std::string> m_files;
+        Index(const std::vector<std::string>&);
+};
 #endif

@@ -35,6 +35,7 @@ class ServerContext: public ConfigDirective
         std::optional<Root> m_root;
         std::optional<ClientMaxBodySize> m_client_max_body_size;
         std::optional<AutoIndex> m_auto_index;
+        std::optional<Index> m_index;
 };
 
 bool operator==(const ServerContext&, const ServerContext&);

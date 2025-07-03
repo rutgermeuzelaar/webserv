@@ -76,6 +76,7 @@ std::string stringify(TokenType type)
 		case TokenType::Return: return "Return";
 		case TokenType::On: return "On";
 		case TokenType::Off: return "Off";
+        case TokenType::Index: return "Index";
 		default: assert(false);
 	}
 }

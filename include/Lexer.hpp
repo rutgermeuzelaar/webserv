@@ -38,6 +38,7 @@ enum class TokenType: int
     Listen,
 	Return,
 	AutoIndex,
+    Index,
 	//
     Eof,
 	TokenTypeCount

@@ -309,6 +309,9 @@ void Parser::parse_statement()
         case TokenType::ClientMaxBodySize:
             parse_client_max_body_size();
             break;
+        case TokenType::Index:
+            parse_index();
+            break;
         default:
             log_error("Unexpected token.");
             throw Error();
@@ -569,6 +572,49 @@ void Parser::set_auto_index(AutoIndex auto_index)
             return;
         case ContextName::Location:
             add_to_context<AutoIndex>(m_config.get_server().get_location().m_auto_index, auto_index);
+            return;
+    }
+}
+
+void Parser::parse_index(void)
+{
+    std::vector<std::string> files;
+
+    while (match({TokenType::String}))
+    {
+        files.push_back(peek().m_str);
+        advance();
+    }
+    if (files.size() < 1)
+    {
+        log_error("At least one argument required.");
+        throw Parser::Error();
+    }
+    try
+    {
+        set_index(Index(files));
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what());
+        throw Parser::Error();
+    }
+}
+
+void Parser::set_index(Index index)
+{
+    const ContextName context = m_contexts.top();
+
+    switch (context)
+    {
+        case ContextName::Http:
+            add_to_context<Index>(m_config.m_http_context.m_index, index);
+            return;
+        case ContextName::Server:
+            add_to_context<Index>(m_config.get_server().m_index, index);
+            return;
+        case ContextName::Location:
+            add_to_context<Index>(m_config.get_server().get_location().m_index, index);
             return;
     }
 }

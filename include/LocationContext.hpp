@@ -26,6 +26,7 @@ class LocationContext: public ConfigDirective
         std::optional<Return> m_return;
         std::optional<AutoIndex> m_auto_index;
         std::optional<ClientMaxBodySize> m_client_max_body_size;
+        std::optional<Index> m_index;
 };
 
 bool operator==(const LocationContext&, const LocationContext&);

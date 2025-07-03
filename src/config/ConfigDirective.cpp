@@ -139,3 +139,10 @@ AutoIndex::AutoIndex(const std::string& status)
 {
    
 }
+
+Index::Index(const std::vector<std::string>& files)
+    : ConfigDirective(true)
+    , m_files {files}
+{
+
+}

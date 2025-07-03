@@ -34,7 +34,8 @@ const std::unordered_map<std::string, TokenType> keywords {
     {"return", TokenType::Return},
     {"autoindex", TokenType::AutoIndex},
     {"on", TokenType::On},
-    {"off", TokenType::Off}
+    {"off", TokenType::Off},
+    {"index", TokenType::Index}
 };
 
 class Config
