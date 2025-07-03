@@ -29,7 +29,8 @@ class Request
     public:
         Request();
         ~Request(); 
-        Request& operator=(const Request&);
+        friend void swap(Request&, Request&) noexcept;
+        Request& operator=(Request);
 
         void append(const char* buffer, size_t len);
         bool complete(void) const;

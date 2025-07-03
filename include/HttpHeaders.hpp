@@ -13,7 +13,8 @@ class HttpHeaders
     public:
         HttpHeaders(void);
         HttpHeaders(const HttpHeaders&);
-        HttpHeaders& operator=(const HttpHeaders&);
+        friend void swap(HttpHeaders&, HttpHeaders&) noexcept;
+        HttpHeaders& operator=(HttpHeaders);
         ~HttpHeaders(void);
 
         /**

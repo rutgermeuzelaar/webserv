@@ -100,14 +100,21 @@ void Request::printRequest() const
 	// std::cout << "---------------------\n" << std::endl;
 }
 
-Request& Request::operator=(const Request& request)
+void swap(Request& a, Request& b) noexcept
 {
-    _start_line = request._start_line;
-    _headers = request._headers;
-    _body = request._body;
-    _raw = request._raw;
-    _index = request._index;
-    _line_count = request._line_count;
+    using std::swap;
+
+    swap(a._start_line, b._start_line);
+    swap(a._headers, b._headers);
+    swap(a._body, b._body);
+    swap(a._raw, b._raw);
+    swap(a._index, b._index);
+    swap(a._line_count, b._line_count);
+}
+
+Request& Request::operator=(Request request)
+{
+    swap(*this, request);
     return *this;
 }
 

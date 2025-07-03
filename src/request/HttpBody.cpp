@@ -76,21 +76,40 @@ HttpBody::HttpBody(void)
 
 }
 
-HttpBody& HttpBody::operator=(const HttpBody& http_body)
+HttpBody::HttpBody(const HttpBody& http_body)
+    : m_raw {http_body.m_raw}
+    , m_index {http_body.m_index}
+    , m_data_start {http_body.m_data_start}
+    , m_boundary {http_body.m_boundary}
+    , m_content_length {http_body.m_content_length}
+    , m_client_max_body_size {http_body.m_client_max_body_size}
+    , m_initialized {http_body.m_initialized}
+    , m_complete {http_body.m_complete}
+    , m_chunk {http_body.m_chunk}
+    , m_headers {http_body.m_headers}
 {
-    m_raw = http_body.m_raw;
-    m_index = http_body.m_index;
-    m_data_start = http_body.m_data_start;
-    if (http_body.m_boundary.has_value())
-    {
-        m_boundary.emplace(http_body.m_boundary.value());
-    }
-    m_content_length = http_body.m_content_length;
-    m_client_max_body_size = http_body.m_client_max_body_size;
-    m_initialized = http_body.m_initialized;
-    m_complete = http_body.m_complete;
-    m_chunk = http_body.m_chunk;
-    m_headers = http_body.m_headers;
+
+}
+
+void swap(HttpBody& a, HttpBody& b) noexcept
+{
+    using std::swap;
+
+    swap(a.m_raw, b.m_raw);
+    swap(a.m_index, b.m_index);
+    swap(a.m_data_start, b.m_data_start);
+    swap(a.m_boundary, b.m_boundary);
+    swap(a.m_content_length, b.m_content_length);
+    swap(a.m_client_max_body_size, b.m_client_max_body_size);
+    swap(a.m_initialized, b.m_initialized);
+    swap(a.m_complete, b.m_complete);
+    swap(a.m_chunk, b.m_chunk);
+    swap(a.m_headers, b.m_headers);
+}
+
+HttpBody& HttpBody::operator=(HttpBody http_body)
+{
+    swap(*this, http_body);
     return *this;
 }
 

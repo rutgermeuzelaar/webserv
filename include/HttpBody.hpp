@@ -15,7 +15,7 @@ class HttpBody
         std::string m_raw;
         size_t      m_index;
         size_t      m_data_start;
-        std::optional<const std::string> m_boundary;
+        std::optional<std::string> m_boundary;
         ulong m_content_length;
         size_t m_client_max_body_size;
         bool m_initialized;
@@ -26,7 +26,9 @@ class HttpBody
     public:
         HttpBody(void);
         HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_max_body_size);
-        HttpBody& operator=(const HttpBody&);
+        HttpBody(const HttpBody&);
+        HttpBody& operator=(HttpBody);
+        friend void swap(HttpBody&, HttpBody&) noexcept;
         bool complete(void) const;
         bool initialized(void) const;
         void append(const std::string&);

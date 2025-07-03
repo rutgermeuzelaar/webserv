@@ -12,6 +12,16 @@ MultiPartChunk::~MultiPartChunk()
 
 }
 
+void swap(MultiPartChunk& a, MultiPartChunk& b) noexcept
+{
+    using std::swap;
+
+    swap(a.m_mime_type, b.m_mime_type);
+    swap(a.m_content_disposition, b.m_content_disposition);
+    swap(a.m_data, b.m_data);
+    swap(a.m_headers, b.m_headers);
+}
+
 MultiPartChunk::MultiPartChunk(const MultiPartChunk& multi_part_chunk)
     : m_mime_type {multi_part_chunk.m_mime_type}
     , m_content_disposition {multi_part_chunk.m_content_disposition}
@@ -21,10 +31,9 @@ MultiPartChunk::MultiPartChunk(const MultiPartChunk& multi_part_chunk)
 
 }
 
-MultiPartChunk& MultiPartChunk::operator=(const MultiPartChunk& multi_part_chunk)
+MultiPartChunk& MultiPartChunk::operator=(MultiPartChunk multi_part_chunk)
 {
-    m_data = multi_part_chunk.m_data;
-    m_headers = multi_part_chunk.m_headers;
+    swap(*this, multi_part_chunk);
     return *this;
 }
 

@@ -10,12 +10,19 @@ HttpRequestStartLine::HttpRequestStartLine()
 
 }
 
-HttpRequestStartLine& HttpRequestStartLine::operator=(const HttpRequestStartLine& http_request_start_line)
+void swap(HttpRequestStartLine& a, HttpRequestStartLine& b) noexcept
 {
-    m_http_method = http_request_start_line.m_http_method;
-    m_uri = http_request_start_line.m_uri;
-    m_version = http_request_start_line.m_version;
-    m_complete = http_request_start_line.m_complete;
+    using std::swap;
+
+    swap(a.m_http_method, b.m_http_method);
+    swap(a.m_uri, b.m_uri);
+    swap(a.m_version, b.m_version);
+    swap(a.m_complete, b.m_complete);
+}
+
+HttpRequestStartLine& HttpRequestStartLine::operator=(HttpRequestStartLine http_request_start_line)
+{
+    swap(*this, http_request_start_line);
     return *this;
 }
 

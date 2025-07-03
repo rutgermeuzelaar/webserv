@@ -13,7 +13,8 @@ class MultiPartChunk
     public:
         MultiPartChunk(void);
         MultiPartChunk(const MultiPartChunk&);
-        MultiPartChunk& operator=(const MultiPartChunk&);
+        friend void swap(MultiPartChunk&, MultiPartChunk&) noexcept;
+        MultiPartChunk& operator=(MultiPartChunk);
         ~MultiPartChunk(void);
         std::string m_data;
         HttpHeaders m_headers;
