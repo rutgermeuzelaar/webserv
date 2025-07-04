@@ -655,8 +655,9 @@ void Parser::parse_limit_except(void)
 void Parser::parse_upload_store(void)
 {
     consume(TokenType::Path, "Expected path");
-    if (!is_valid_file_path(previous().m_str))
+    if (!std::filesystem::exists(previous().m_str))
     {
+		log_error(previous().m_str);
         throw Parser::Error();
     }
     try
