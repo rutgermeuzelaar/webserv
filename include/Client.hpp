@@ -14,8 +14,6 @@ private:
 
 	//* request handling
 	Request m_request;
-	std::string m_buffer; //* raw data buffer
-	bool m_request_complete;
 public:
 	Client(int socket_fd);
 	~Client();
@@ -29,6 +27,7 @@ public:
 	void receiveData(const char* data, size_t len);
 	bool hasCompleteRequest() const;
 	const Request& getRequest() const;
+    Request& getRequest();
 	void clearRequest();
 	void reset();  //* for re-use
 };

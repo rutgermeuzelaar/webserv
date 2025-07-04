@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   LocationContext.hpp                                :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/05/22 16:36:22 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 13:14:40 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef LOCATION_CONTEXT_HPP
 # define LOCATION_CONTEXT_HPP
 # include <string>

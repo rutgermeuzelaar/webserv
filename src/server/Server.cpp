@@ -188,7 +188,7 @@ void Server::processRequest(int client_fd, const Request& request)
 	const ServerContext& config = m_configs[socket_index];
 	RequestHandler handler(config);
 	try {
-		std::cout << "Handling request for URI: " << request.getURI() << std::endl; //! TEST
+		std::cout << "Handling request for URI: " << request.getStartLine().get_uri() << std::endl; //! TEST
 		Response response = handler.handle(request);
 		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST 
 		std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST 
@@ -244,9 +244,9 @@ void Server::handleClientData(int client_fd)
 	std::cout << "\n=== Handling Client Data for fd: " << client_fd << " ===" << std::endl;
 	
 	Client& client = getClient(client_fd);
-	char buffer[4096];
+	char buffer[RECV_BUFFER_SIZE];
 
-	ssize_t bytes_read = recv(client_fd, buffer, sizeof(buffer), 0);
+	ssize_t bytes_read = recv(client_fd, buffer, RECV_BUFFER_SIZE, 0);
 	if (bytes_read == -1)
 	{
 		std::cerr << "Error reading from client: " << strerror(errno) << std::endl;
@@ -260,19 +260,19 @@ void Server::handleClientData(int client_fd)
 		return;
 	}
 
-	std::cout << "\n--- Raw Request Data ---" << std::endl;
-	std::cout << std::string(buffer, bytes_read) << std::endl;
-	std::cout << "------------------------\n" << std::endl;
-	
+	// std::cout << "\n--- Raw Request Data ---" << std::endl;
+	// std::cout << std::string(buffer, bytes_read) << std::endl;
+	// std::cout << "------------------------\n" << std::endl;
+    
 	client.receiveData(buffer, bytes_read);
 	
 	std::cout << "Checking if request is complete..." << std::endl;
 	if (client.hasCompleteRequest())
 	{
 		std::cout << "Processing complete request" << std::endl;
-		const Request& req = client.getRequest();
-		std::cout << "Request method: " << req.getMethod() << std::endl;
-		std::cout << "Request URI: " << req.getURI() << std::endl;
+		Request& req = client.getRequest();
+		std::cout << "Request method: " << req.getStartLine().get_http_method() << std::endl;
+		std::cout << "Request URI: " << req.getStartLine().get_uri() << std::endl;
 		processRequest(client_fd, req);
 		client.clearRequest();
 	}
