@@ -1,16 +1,11 @@
-#include <chrono>
+#include "Pch.hpp"
 #include <cassert>
-#include <filesystem>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <sstream>
-#include <ctime>
 #include "RequestHandler.hpp"
-#include "Response.hpp"
 #include "Utilities.hpp"
 #include "MIMETypes.hpp"
+#include "Response.hpp"
+#include "Request.hpp"
 
 static std::string create_header(const std::filesystem::path& directory)
 {

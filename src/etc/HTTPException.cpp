@@ -1,3 +1,4 @@
+#include "Pch.hpp"
 #include "HTTPException.hpp"
 
 HTTPException::HTTPException(HTTPStatusCode status_code, const std::string& message)

@@ -2,9 +2,10 @@
 # define REQUEST_HANDLER_HPP
 # include <optional>
 # include <filesystem>
-# include "Response.hpp"
-# include "Request.hpp"
 # include "ServerContext.hpp"
+
+class Response;
+class Request;
 
 const std::string get_mime_type(const std::filesystem::path& extension);
 
