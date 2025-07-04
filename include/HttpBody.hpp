@@ -27,8 +27,7 @@ class HttpBody
         HttpBody(void);
         HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_max_body_size);
         HttpBody(const HttpBody&);
-        HttpBody& operator=(HttpBody);
-        friend void swap(HttpBody&, HttpBody&) noexcept;
+        HttpBody& operator=(const HttpBody&) = default;
         bool complete(void) const;
         bool initialized(void) const;
         void append(const std::string&);

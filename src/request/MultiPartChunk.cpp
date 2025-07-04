@@ -31,12 +31,6 @@ MultiPartChunk::MultiPartChunk(const MultiPartChunk& multi_part_chunk)
 
 }
 
-MultiPartChunk& MultiPartChunk::operator=(MultiPartChunk multi_part_chunk)
-{
-    swap(*this, multi_part_chunk);
-    return *this;
-}
-
 void MultiPartChunk::parse_header_attributes(void)
 {
     if (m_headers.get_header("content-disposition") == "")

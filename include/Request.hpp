@@ -30,7 +30,7 @@ class Request
         Request();
         ~Request(); 
         friend void swap(Request&, Request&) noexcept;
-        Request& operator=(Request);
+        Request& operator=(const Request&) = default;
 
         void append(const char* buffer, size_t len);
         bool complete(void) const;

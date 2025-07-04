@@ -112,12 +112,6 @@ void swap(Request& a, Request& b) noexcept
     swap(a._line_count, b._line_count);
 }
 
-Request& Request::operator=(Request request)
-{
-    swap(*this, request);
-    return *this;
-}
-
 void Request::append(const char* buffer, size_t len)
 {
     size_t index_copy = _index;

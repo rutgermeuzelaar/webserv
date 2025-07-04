@@ -11,20 +11,6 @@ HttpHeaders::HttpHeaders()
 
 }
 
-void swap(HttpHeaders& a, HttpHeaders& b) noexcept
-{
-    using std::swap;
-
-    swap(a.m_line_break_count, b.m_line_break_count);
-    swap(a.m_headers, b.m_headers);
-}
-
-HttpHeaders& HttpHeaders::operator=(HttpHeaders http_headers)
-{
-    swap(*this, http_headers);
-    return *this;
-}
-
 HttpHeaders::HttpHeaders(const HttpHeaders& http_headers)
     : m_line_break_count {http_headers.m_line_break_count}
     , m_headers {http_headers.m_headers}
