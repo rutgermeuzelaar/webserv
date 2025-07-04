@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   HTTPStatusCode.cpp                                 :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/04/28 21:52:24 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 13:07:27 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include <vector>
 #include <algorithm>
 #include "HTTPStatusCode.hpp"

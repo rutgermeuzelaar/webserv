@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   ConfigDirective.hpp                                :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/06/07 07:43:50 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 14:41:53 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef CONFIG_DIRECTIVE_HPP
 # define CONFIG_DIRECTIVE_HPP
 # include <vector>

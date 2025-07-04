@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   RequestHandler.cpp                                 :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/06/05 14:17:11 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/20 15:44:39 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include <chrono>
 #include <cassert>
 #include <filesystem>
@@ -21,6 +9,8 @@
 #include <ctime>
 #include "RequestHandler.hpp"
 #include "Response.hpp"
+#include "Utilities.hpp"
+#include "MIMETypes.hpp"
 
 static std::string create_header(const std::filesystem::path& directory)
 {
@@ -208,6 +198,7 @@ static Response build_redirect(const Return& return_obj)
 {
     Response response(return_obj.m_status_code);
     response.setHeader("Location", return_obj.m_uri);
+    response.setHeader("Content-Length", "0");
     return response;
 }
 
@@ -261,7 +252,7 @@ Response RequestHandler::build_error_page(HTTPStatusCode status_code, const Loca
 
 Response RequestHandler::handle_get(const Request& request)
 {
-	const std::string& uri = request.getURI();
+	const std::string& uri = request.getStartLine().get_uri();
     const LocationContext* location = find_location(uri);
 	std::filesystem::path local_path = map_uri(uri, location);
 
@@ -310,16 +301,44 @@ Response RequestHandler::handle_delete(const Request& request)
     return Response();
 }
 
+static const std::string get_extension(const std::string& mime_type)
+{
+    auto pos = g_mime_types.find(mime_type);
+    if (pos == g_mime_types.end())
+    {
+        throw HTTPException(HTTPStatusCode::UnsupportedMediaType);   
+    }
+    if (pos->second.size() > 0)
+    {
+        return pos->second[0];
+    }
+    return "";
+}
+
 Response RequestHandler::handle_post(const Request& request)
 {
-    (void)request;
-    return Response();
+    const MultiPartChunk& chunk = request.getBody().get_multi_part_chunk();
+    const std::string file_name = create_file_name(get_extension(chunk.get_mime_type()));
+    std::string path = "./root/upload/";
+
+    path.append(file_name);
+    std::ofstream file(path);
+    if (file.fail())
+    {
+        throw HTTPException(HTTPStatusCode::InternalServerError);
+    }
+    file << chunk.m_data;
+    file.close();
+    Response response(HTTPStatusCode::SeeOther);
+    response.setHeader("Location", "/root/upload/");
+    response.setHeader("Content-Length", "0");
+    return response;
 }
 
 // for now URI and method only
 Response RequestHandler::handle(const Request& request)
 {
-	switch (request.getMethodType())
+	switch (request.getStartLine().get_http_method())
 	{
 		case HTTPMethod::GET:
 			return handle_get(request);

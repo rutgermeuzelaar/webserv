@@ -1,18 +1,6 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   HTTPStatusLine.cpp                                 :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/04/28 21:56:08 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/12 15:48:45 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include <sstream>
 #include <string>
-#include "defines.h"
+#include "Defines.hpp"
 #include "HTTPStatusLine.hpp"
 #include "HTTPStatusCode.hpp"
 
