@@ -48,12 +48,19 @@ void Server::run()
 					removeClient(fd);
 					continue;
 				}
-				if (m_epoll.isServerSocket(fd, m_listening_sockets[0].getServerSockets())) 
+				bool is_server_socket = false;
+				for (size_t socket_i = 0; socket_i < m_listening_sockets.size(); ++socket_i) 
 				{
-					std::cout << "Server socket event detected (fd: " << fd << ")" << std::endl;
-					handleNewConnection();
-					continue;
+					const std::vector<int>& serverSockets = m_listening_sockets[socket_i].getServerSockets();
+					if (m_epoll.isServerSocket(fd, serverSockets)) {
+						is_server_socket = true;
+						handleNewConnection(socket_i);
+						break;
+					}
 				}
+				if (is_server_socket)
+					continue;
+
 				if (m_epoll.isTypeEvent(event, EPOLLIN)) 
 				{
 					std::cout << "EPOLLIN event detected for fd: " << fd << std::endl;
@@ -149,6 +156,7 @@ Client& Server::getClient(int fd)
 
 void Server::setupListeningSockets()
 {	
+	m_listening_sockets.reserve(m_configs.size());
 	for (const ServerContext& config : m_configs)
 	{
 		m_listening_sockets.emplace_back(10); //! 10 backlog
@@ -210,21 +218,18 @@ void Server::sendResponseToClient(int client_fd, const Response& response)
 		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST 
 }
 
-void Server::handleNewConnection()
+void Server::handleNewConnection(size_t socket_index)
 {
-	for (size_t i = 0; i < m_listening_sockets.size(); ++i)
+	Socket& socket = m_listening_sockets[socket_index];
+	const std::vector<int>& serverSockets = socket.getServerSockets();
+	for (int server_fd : serverSockets)
 	{
-		Socket& socket = m_listening_sockets[i];
-		const std::vector<int>& serverSockets = socket.getServerSockets();
-		if (serverSockets.empty())
-			continue;
-			
 		try {
-			int client_fd = socket.acceptConnection(serverSockets[0]);
+			int client_fd = socket.acceptConnection(server_fd);
 			std::cout << "New connection accepted on fd: " << client_fd << std::endl;
 			try {
 				addClient(client_fd);
-				m_client_to_socket_index[client_fd] = i;
+				m_client_to_socket_index[client_fd] = socket_index;
 				std::cout << "Client added successfully" << std::endl;
 			} catch (const std::exception& e) {
 				std::cerr << "Failed to set up client: " << e.what() << std::endl;
