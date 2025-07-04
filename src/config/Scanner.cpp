@@ -59,7 +59,7 @@ void Scanner::scan_string()
     const size_t start = m_index;
     std::string substr;
     const std::string keyword;
-    std::map<std::string, TokenType>::const_iterator it;
+    std::unordered_map<std::string, TokenType>::const_iterator it;
 
     while (!at_end() && !std::isspace(m_in[m_index]) && \
     single_token.find(m_in[m_index]) == std::string::npos)

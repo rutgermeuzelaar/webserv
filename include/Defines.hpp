@@ -6,4 +6,5 @@
 #  define MAX_HEADER_SIZE 8192
 #  define RECV_BUFFER_SIZE 4096
 #  define MAX_URI_SIZE 2048
+#  define DEFAULT_CONF "./root/default.conf"
 #endif

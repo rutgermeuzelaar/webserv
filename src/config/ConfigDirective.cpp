@@ -2,6 +2,7 @@
 #include <string>
 #include <algorithm>
 #include <limits>
+#include <cassert>
 #include "ConfigDirective.hpp"
 #include "HTTPStatusCode.hpp"
 
@@ -126,4 +127,40 @@ AutoIndex::AutoIndex(const std::string& status)
     , m_on {status == "on"}
 {
    
+}
+
+Index::Index(const std::vector<std::string>& files)
+    : ConfigDirective(true)
+    , m_files {files}
+{
+
+}
+
+const std::vector<HTTPMethod> LimitExcept::from_string(const std::vector<std::string>& methods_str) const
+{
+    std::vector<HTTPMethod> methods;
+
+    for (auto str: methods_str)
+    {
+        // use new branch function later
+        if (str == "GET") methods.push_back(HTTPMethod::GET);
+        else if (str == "POST") methods.push_back(HTTPMethod::POST);
+        else if (str == "DELETE") methods.push_back(HTTPMethod::DELETE);
+        else assert("HTTP methods should be sanitized before this" && false); 
+    }
+    return methods;
+}
+
+LimitExcept::LimitExcept(const std::vector<std::string>& allowed_methods)
+    : ConfigDirective(true)
+    , m_allowed_methods {from_string(allowed_methods)}
+{
+
+}
+
+UploadStore::UploadStore(const std::string& path)
+    : ConfigDirective(true)
+    , m_path {path}
+{
+
 }

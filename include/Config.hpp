@@ -1,7 +1,7 @@
 #ifndef CONFIG_HPP
 # define CONFIG_HPP
 # include <string>
-# include <map>
+# include <unordered_map>
 # include <vector>
 # include <optional>
 # include <filesystem>
@@ -10,7 +10,7 @@
 # include "HttpContext.hpp"
 # include "ConfigDirective.hpp"
 
-const std::map<std::string, TokenType> keywords {
+const std::unordered_map<std::string, TokenType> keywords {
     {"client_max_body_size", TokenType::ClientMaxBodySize},
     {"error_page", TokenType::ErrorPage},
     {"http", TokenType::Http},
@@ -22,7 +22,13 @@ const std::map<std::string, TokenType> keywords {
     {"return", TokenType::Return},
     {"autoindex", TokenType::AutoIndex},
     {"on", TokenType::On},
-    {"off", TokenType::Off}
+    {"off", TokenType::Off},
+    {"index", TokenType::Index},
+    {"GET", TokenType::Get},
+    {"POST", TokenType::Post},
+    {"DELETE", TokenType::Delete},
+    {"limit_except", TokenType::LimitExcept},
+    {"upload_store", TokenType::UploadStore}
 };
 
 class Config
