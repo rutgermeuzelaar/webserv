@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   parseTests.cpp                                     :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: robertrinh <robertrinh@student.codam.nl      +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/05/19 16:49:58 by robertrinh    #+#    #+#                 */
-/*   Updated: 2025/05/21 14:49:07 by robertrinh    ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include <iostream>
 #include <string>
 #include "Request.hpp"

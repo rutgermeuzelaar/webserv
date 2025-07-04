@@ -7,9 +7,8 @@
 Client::Client(int socket_fd) 
 	: m_socket_fd(socket_fd)
 	, m_is_connected(true)
-	, m_request_complete(false)
 {
-	m_buffer.clear();
+
 }
 
 Client::~Client()
@@ -42,19 +41,12 @@ void Client::receiveData(const char* data, size_t len)
 {
 	if (!m_is_connected)
 		return ;
-	m_buffer.append(data, len);
-	try {
-		m_request.parse(m_buffer);
-		m_request_complete = true;
-	}
-	catch (const HTTPException& e){
-		m_request_complete = false;
-	}
+    m_request.append(data, len);
 }
 
 bool Client::hasCompleteRequest() const
 {
-	return m_request_complete;
+	return m_request.complete();
 }
 
 const Request& Client::getRequest() const
@@ -62,11 +54,14 @@ const Request& Client::getRequest() const
 	return m_request;
 }
 
+Request& Client::getRequest()
+{
+	return m_request;
+}
+
 void Client::clearRequest()
 {
-	m_buffer.clear();
 	m_request = Request();
-	m_request_complete = false;
 }
 
 void Client::reset()

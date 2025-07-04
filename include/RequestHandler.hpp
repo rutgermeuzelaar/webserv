@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        ::::::::            */
-/*   RequestHandler.hpp                                 :+:    :+:            */
-/*                                                     +:+                    */
-/*   By: rmeuzela <rmeuzela@student.codam.nl>         +#+                     */
-/*                                                   +#+                      */
-/*   Created: 2025/06/05 14:13:45 by rmeuzela      #+#    #+#                 */
-/*   Updated: 2025/06/17 15:16:47 by rmeuzela      ########   odam.nl         */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef REQUEST_HANDLER_HPP
 # define REQUEST_HANDLER_HPP
 # include <optional>
