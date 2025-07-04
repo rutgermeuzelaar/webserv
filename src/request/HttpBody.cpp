@@ -91,28 +91,6 @@ HttpBody::HttpBody(const HttpBody& http_body)
 
 }
 
-void swap(HttpBody& a, HttpBody& b) noexcept
-{
-    using std::swap;
-
-    swap(a.m_raw, b.m_raw);
-    swap(a.m_index, b.m_index);
-    swap(a.m_data_start, b.m_data_start);
-    swap(a.m_boundary, b.m_boundary);
-    swap(a.m_content_length, b.m_content_length);
-    swap(a.m_client_max_body_size, b.m_client_max_body_size);
-    swap(a.m_initialized, b.m_initialized);
-    swap(a.m_complete, b.m_complete);
-    swap(a.m_chunk, b.m_chunk);
-    swap(a.m_headers, b.m_headers);
-}
-
-HttpBody& HttpBody::operator=(HttpBody http_body)
-{
-    swap(*this, http_body);
-    return *this;
-}
-
 static std::string get_normal_boundary(const std::string& boundary)
 {
     std::string normal_boundary = "--";

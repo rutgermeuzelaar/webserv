@@ -15,8 +15,7 @@ class HttpRequestStartLine
     public:
         HttpRequestStartLine(void);
         ~HttpRequestStartLine(void);
-        friend void swap(HttpRequestStartLine&, HttpRequestStartLine&) noexcept;
-        HttpRequestStartLine& operator=(HttpRequestStartLine);
+        HttpRequestStartLine& operator=(const HttpRequestStartLine&) = default;
         HttpRequestStartLine(std::string);
 
         HTTPMethod get_http_method(void) const;

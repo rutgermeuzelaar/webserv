@@ -100,24 +100,6 @@ void Request::printRequest() const
 	// std::cout << "---------------------\n" << std::endl;
 }
 
-void swap(Request& a, Request& b) noexcept
-{
-    using std::swap;
-
-    swap(a._start_line, b._start_line);
-    swap(a._headers, b._headers);
-    swap(a._body, b._body);
-    swap(a._raw, b._raw);
-    swap(a._index, b._index);
-    swap(a._line_count, b._line_count);
-}
-
-Request& Request::operator=(Request request)
-{
-    swap(*this, request);
-    return *this;
-}
-
 void Request::append(const char* buffer, size_t len)
 {
     size_t index_copy = _index;
