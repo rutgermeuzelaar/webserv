@@ -6,4 +6,5 @@ __pycache__
 cgi
 !cgi/
 random/
-root/upload/*
+root/upload/
+*.gch

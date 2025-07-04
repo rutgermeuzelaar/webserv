@@ -1,3 +1,4 @@
+#include "Pch.hpp"
 #include "LocationContext.hpp"
 
 LocationContext::LocationContext(const std::string& uri)

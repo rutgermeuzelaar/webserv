@@ -1,7 +1,5 @@
+#include "Pch.hpp"
 #include <stdexcept>
-#include <cctype>
-#include <sstream>
-#include <utility>
 #include "Scanner.hpp"
 #include "Config.hpp"
 

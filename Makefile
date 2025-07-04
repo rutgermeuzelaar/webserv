@@ -14,16 +14,20 @@ NAME := webserv
 OBJECTS_STANDARD := $(SOURCES_STANDARD:%.cpp=$(OBJDIR)/%.o)
 OBJECTS_SHARED := $(SOURCES_SHARED:%.cpp=$(OBJDIR)/%.o)
 OBJECTS_BONUS := $(SOURCES_BONUS:%.cpp=$(OBJDIR)/%.o)
+PCH := include/Pch.hpp.gch
 
 .PHONY: all
 
 all: $(NAME)
 
+$(PCH): include/Pch.hpp
+	$(CC) $(CFLAGS) -c -o $(PCH) include/Pch.hpp
+
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-$(NAME): $(OBJECTS_STANDARD) $(OBJECTS_SHARED)
+$(NAME): $(PCH) $(OBJECTS_STANDARD) $(OBJECTS_SHARED)
 	$(CC) $(LDFLAGS) $(OBJECTS_STANDARD) $(OBJECTS_SHARED) -o $(NAME)
 
 $(OBJDIR):
