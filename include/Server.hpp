@@ -26,7 +26,7 @@ private:
 	void setupListeningSockets();
 
 	//* connection handling
-	void handleNewConnection();
+	void handleNewConnection(size_t socket_index);
 	void handleClientData(int client_fd);
 	void handleClientDisconnect(int client_fd);
 	
