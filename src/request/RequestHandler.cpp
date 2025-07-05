@@ -151,10 +151,17 @@ static std::filesystem::path map_uri_helper(std::filesystem::path root_path, std
 	return root_path;
 }
 
-static bool has_index_html(std::filesystem::path uri)
+static void find_page(const Index& index, std::string& buffer, std::filesystem::path uri)
 {
-    uri.append("index.html");
-    return (std::filesystem::exists(uri));
+    for (auto it: index.m_files)
+    {
+        std::filesystem::path uri_cp = uri;
+        if (std::filesystem::exists(uri_cp.append(it)))
+        {
+            buffer = it;
+            return;
+        }
+    }
 }
 
 // should find the most specific location
@@ -257,9 +264,19 @@ Response RequestHandler::handle_get(const Request& request)
     }
     if (std::filesystem::is_directory(local_path))
     {
-        if (has_index_html(local_path))
+        std::string page_name_buf;
+
+        if (location == nullptr || !location->m_index.has_value())
         {
-            local_path.append("index.html");
+            find_page(m_config.m_index.value(), page_name_buf, local_path);
+        }
+        else
+        {
+            find_page(location->m_index.value(), page_name_buf, local_path);
+        }
+        if (!page_name_buf.empty())
+        {
+            local_path.append(page_name_buf);
         }
         else if (m_config.m_auto_index.value().m_on)
         {
@@ -278,16 +295,11 @@ Response RequestHandler::handle_get(const Request& request)
 	{
         return build_error_page(HTTPStatusCode::NotFound, location);
 	}
-    // directory request
-	Response response(HTTPStatusCode::OK);
+	Response response(HTTPStatusCode::OK);  
 	response.setBodyFromFile(local_path);
     response.setContentType(get_mime_type(local_path.extension()));
     response.setHeader("Content-Disposition", "inline");
 	return response;
-		// create 
-	// if file exists
-	 // if file exists but you don't have permissions
-	// if file does not exist
 }
 
 Response RequestHandler::handle_delete(const Request& request)
