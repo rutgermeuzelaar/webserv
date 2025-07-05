@@ -353,29 +353,22 @@ Response RequestHandler::handle(const Request& request)
 {
 	const std::string& uri = request.getStartLine().get_uri();
     const LocationContext* location = find_location(uri, m_config);
-    try
+    switch (request.getStartLine().get_http_method())
     {
-        switch (request.getStartLine().get_http_method())
-        {
-            case HTTPMethod::GET:
-                return handle_get(uri, location);
-            case HTTPMethod::DELETE:
-                return handle_delete(request);
-            case HTTPMethod::POST:
-                if (location == nullptr || !location->m_upload_store.has_value())
-                {
-                    return handle_post(request, m_config.m_upload_store.value());
-                }
-                else
-                {
-                    return handle_post(request, location->m_upload_store.value());
-                }
-            default:
-                return build_error_page(HTTPStatusCode::BadRequest, location, m_config);
-        }
-    }
-    catch (const HTTPException& error)
-    {
-        return build_error_page(error.getStatusCode(), location, m_config);
+        case HTTPMethod::GET:
+            return handle_get(uri, location);
+        case HTTPMethod::DELETE:
+            return handle_delete(request);
+        case HTTPMethod::POST:
+            if (location == nullptr || !location->m_upload_store.has_value())
+            {
+                return handle_post(request, m_config.m_upload_store.value());
+            }
+            else
+            {
+                return handle_post(request, location->m_upload_store.value());
+            }
+        default:
+            return build_error_page(HTTPStatusCode::BadRequest, location, m_config);
     }
 }
