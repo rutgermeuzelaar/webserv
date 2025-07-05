@@ -252,10 +252,8 @@ Response build_error_page(HTTPStatusCode status_code, const LocationContext* loc
     return response;
 }
 
-Response RequestHandler::handle_get(const Request& request)
+Response RequestHandler::handle_get(const std::string& uri, const LocationContext* location)
 {
-	const std::string& uri = request.getStartLine().get_uri();
-    const LocationContext* location = find_location(uri);
 	std::filesystem::path local_path = map_uri(uri, location);
 
     if (location != nullptr && location->m_return.has_value())
@@ -322,13 +320,21 @@ static const std::string get_extension(const std::string& mime_type)
     return "";
 }
 
-Response RequestHandler::handle_post(const Request& request)
+Response RequestHandler::handle_post(const Request& request, const UploadStore& upload_store)
 {
     const MultiPartChunk& chunk = request.getBody().get_multi_part_chunk();
     const std::string file_name = create_file_name(get_extension(chunk.get_mime_type()));
-    std::string path = "./root/upload/";
+    std::string path = upload_store.m_path;
 
-    path.append(file_name);
+    if (ends_with(path, "/"))
+    {
+        path.append(file_name);
+    }
+    else
+    {
+        path.append("/");
+        path.append(file_name);
+    }
     std::ofstream file(path);
     if (file.fail())
     {
@@ -337,7 +343,7 @@ Response RequestHandler::handle_post(const Request& request)
     file << chunk.m_data;
     file.close();
     Response response(HTTPStatusCode::SeeOther);
-    response.setHeader("Location", "/root/upload/");
+    response.setHeader("Location", path);
     response.setHeader("Content-Length", "0");
     return response;
 }
@@ -345,16 +351,31 @@ Response RequestHandler::handle_post(const Request& request)
 // for now URI and method only
 Response RequestHandler::handle(const Request& request)
 {
-	switch (request.getStartLine().get_http_method())
-	{
-		case HTTPMethod::GET:
-			return handle_get(request);
-		case HTTPMethod::DELETE:
-			return handle_delete(request);
-		case HTTPMethod::POST:
-			return handle_post(request);
-        default:
-            break;
-	}
-    throw std::runtime_error("Unsupported HTTP method.");
+	const std::string& uri = request.getStartLine().get_uri();
+    const LocationContext* location = find_location(uri, m_config);
+    try
+    {
+        switch (request.getStartLine().get_http_method())
+        {
+            case HTTPMethod::GET:
+                return handle_get(uri, location);
+            case HTTPMethod::DELETE:
+                return handle_delete(request);
+            case HTTPMethod::POST:
+                if (location == nullptr || !location->m_upload_store.has_value())
+                {
+                    return handle_post(request, m_config.m_upload_store.value());
+                }
+                else
+                {
+                    return handle_post(request, location->m_upload_store.value());
+                }
+            default:
+                return build_error_page(HTTPStatusCode::BadRequest, location, m_config);
+        }
+    }
+    catch (const HTTPException& error)
+    {
+        return build_error_page(error.getStatusCode(), location, m_config);
+    }
 }
