@@ -54,6 +54,7 @@ void merge_config(const HttpContext& http, ServerContext& server)
     merge_directive<ClientMaxBodySize>(http.m_client_max_body_size, server.m_client_max_body_size);
     merge_directive<AutoIndex>(http.m_auto_index, server.m_auto_index);
     merge_directive<Index>(http.m_index, server.m_index);
+    merge_directive<UploadStore>(http.m_upload_store, server.m_upload_store);
 }
 
 void merge_config(const ServerContext& merge_from, ServerContext& merge_into)
@@ -67,6 +68,7 @@ void merge_config(const ServerContext& merge_from, ServerContext& merge_into)
     merge_directive<ClientMaxBodySize>(merge_from.m_client_max_body_size, merge_into.m_client_max_body_size);
     merge_directive<AutoIndex>(merge_from.m_auto_index, merge_into.m_auto_index);
     merge_directive<Index>(merge_from.m_index, merge_into.m_index);
+    merge_directive<UploadStore>(merge_from.m_upload_store, merge_into.m_upload_store);
 }
 
 void load_defaults(const std::filesystem::path& path, std::vector<ServerContext>& servers)
