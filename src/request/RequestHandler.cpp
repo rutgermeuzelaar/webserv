@@ -34,7 +34,7 @@ static std::string create_table_rows(const std::filesystem::path& directory)
 
 		std::string time_stamp;
 
-		if (stat(directory.string().c_str(), &attributes) == -1)
+		if (stat(item_path.c_str(), &attributes) == -1)
 		{
 			throw (std::runtime_error("stat"));
 		}
