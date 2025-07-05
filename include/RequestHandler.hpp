@@ -10,6 +10,8 @@ class Request;
 const std::string get_mime_type(const std::filesystem::path& extension);
 
 const std::string create_directory_listing(const std::filesystem::path& directory);
+const LocationContext* find_location(const std::string& folder_path, const ServerContext& config);
+Response build_error_page(HTTPStatusCode status_code, const LocationContext* location, const ServerContext& config);
 
 class RequestHandler
 {

@@ -165,13 +165,13 @@ static void find_page(const Index& index, std::string& buffer, std::filesystem::
 }
 
 // should find the most specific location
-const LocationContext* RequestHandler::find_location(const std::string& folder_path) const
+const LocationContext* find_location(const std::string& folder_path, const ServerContext& config)
 {
     size_t uri_match_len;
     const LocationContext* match = nullptr;
 
     uri_match_len = 0;
-    for (auto& it :m_config.m_location_contexts)
+    for (auto& it :config.m_location_contexts)
     {
         if (folder_path.compare(0, it.m_uri.size(), it.m_uri) == 0)
         {
@@ -224,7 +224,7 @@ static const std::string create_dynamic_error_page(HTTPStatusCode status_code)
 	return error_page;
 }
 
-Response RequestHandler::build_error_page(HTTPStatusCode status_code, const LocationContext* location)
+Response build_error_page(HTTPStatusCode status_code, const LocationContext* location, const ServerContext& config)
 {
     Response response(status_code);
 
@@ -240,7 +240,7 @@ Response RequestHandler::build_error_page(HTTPStatusCode status_code, const Loca
             }
         }
     }
-    for (auto& it: m_config.m_error_pages)
+    for (auto& it: config.m_error_pages)
     {
         if (it.m_status_code == status_code)
         {
@@ -288,12 +288,12 @@ Response RequestHandler::handle_get(const Request& request)
         }
         else
         {
-            return build_error_page(HTTPStatusCode::NotFound, location);
+            return build_error_page(HTTPStatusCode::NotFound, location, m_config);
         }
     }
 	if (!std::filesystem::exists(local_path))
 	{
-        return build_error_page(HTTPStatusCode::NotFound, location);
+        return build_error_page(HTTPStatusCode::NotFound, location, m_config);
 	}
 	Response response(HTTPStatusCode::OK);  
 	response.setBodyFromFile(local_path);
