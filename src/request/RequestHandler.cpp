@@ -56,7 +56,7 @@ static std::string create_table_rows(const std::filesystem::path& directory)
         }
         table_rows += std::string(
             "<tr>"
-                "<td><a href=\"") + item_path + std::string("\">") + item_name + \
+                "<td><a href=\"") + std::string(item_path).erase(0, 1) + std::string("\">") + item_name + \
 				std::string("</a></td>"
                 "<td>") + time_stamp + std::string ("</td>"
                 "<td>") + file_size + std::string("</td>"
