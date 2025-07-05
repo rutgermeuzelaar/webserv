@@ -353,7 +353,18 @@ Response RequestHandler::handle(const Request& request)
 {
 	const std::string& uri = request.getStartLine().get_uri();
     const LocationContext* location = find_location(uri, m_config);
-    switch (request.getStartLine().get_http_method())
+    const HTTPMethod method = request.getStartLine().get_http_method();
+
+    if (location != nullptr && location->m_limit_except.has_value())
+    {
+        const auto& allowed = location->m_limit_except.value().m_allowed_methods;
+
+        if (std::find(allowed.begin(), allowed.end(), method) == allowed.end())
+        {
+            return build_error_page(HTTPStatusCode::MethodNotAllowed, location, m_config);
+        }
+    }
+    switch (method)
     {
         case HTTPMethod::GET:
             return handle_get(uri, location);
