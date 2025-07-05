@@ -64,7 +64,19 @@ void Server::run()
 				if (m_epoll.isTypeEvent(event, EPOLLIN)) 
 				{
 					std::cout << "EPOLLIN event detected for fd: " << fd << std::endl;
-					handleClientData(fd);
+                    try
+                    {
+                        handleClientData(fd);
+                    }
+                    catch (const HTTPException& error)
+                    {
+                        const auto& conf = m_configs[m_client_to_socket_index[fd]];
+                        const std::string& uri = getClient(fd).getRequest().getStartLine().get_uri();
+                        const LocationContext* location = find_location(uri, conf);
+
+                        Response response = build_error_page(error.getStatusCode(), location, conf);
+                        sendResponseToClient(fd, response);
+                    }
 					continue ;
 				}
 			}
@@ -266,8 +278,9 @@ void Server::handleClientData(int client_fd)
 	// std::cout << "\n--- Raw Request Data ---" << std::endl;
 	// std::cout << std::string(buffer, bytes_read) << std::endl;
 	// std::cout << "------------------------\n" << std::endl;
-    
-	client.receiveData(buffer, bytes_read);
+
+    const auto& conf = m_configs[m_client_to_socket_index[client_fd]];
+	client.receiveData(buffer, bytes_read, conf.m_client_max_body_size.value().m_size);
 	
 	std::cout << "Checking if request is complete..." << std::endl;
 	if (client.hasCompleteRequest())

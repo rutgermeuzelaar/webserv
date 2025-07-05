@@ -15,6 +15,7 @@ class ServerContext: public ConfigDirective
     public:
         ServerContext();
         LocationContext& get_location(void);
+        bool is_valid(void) const;
         std::vector<LocationContext> m_location_contexts;
         std::vector<ErrorPage> m_error_pages;
         std::optional<Return> m_return;

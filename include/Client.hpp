@@ -24,7 +24,7 @@ public:
 	int getSocketFD() const;
 
 	//* data handling
-	void receiveData(const char* data, size_t len);
+	void receiveData(const char* data, size_t len, size_t client_max_body_size);
 	bool hasCompleteRequest() const;
 	const Request& getRequest() const;
     Request& getRequest();
