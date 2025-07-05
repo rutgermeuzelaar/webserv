@@ -12,6 +12,7 @@ Config::Config()
 {
     
 }
+
 void Config::finalize(void)
 {
     if (!is_unique<ServerContext>(m_servers))
@@ -89,6 +90,15 @@ std::vector<ServerContext> get_server_config(const std::filesystem::path& path)
     if (std::filesystem::exists(DEFAULT_CONF))
     {
         load_defaults(DEFAULT_CONF, config.m_servers);
+        for (size_t i = 0; i < config.m_servers.size(); ++i)
+        {
+            merge_config(config.m_http_context, config.m_servers[i]);
+            if (!config.m_servers[i].is_valid())
+            {
+                std::cerr << "Unvalid config for server config: " << i + 1 << '\n';
+                throw std::runtime_error("Invalid configuration file");
+            }
+        }
         return config.m_servers;
     }
     throw std::runtime_error("no such file or directory: " DEFAULT_CONF);
