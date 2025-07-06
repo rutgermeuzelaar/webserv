@@ -16,7 +16,7 @@ class RequestHandler
 {
 	private:
 		const ServerContext& m_config;
-		Response handle_get(const std::string& uri, const LocationContext* location);
+		Response handle_get(const LocationContext* location, std::filesystem::path& local_path);
 		Response handle_post(const Request& request, const UploadStore& upload_store);
 		Response handle_delete(const Request& request);
 

@@ -252,7 +252,7 @@ Response build_error_page(HTTPStatusCode status_code, const LocationContext* loc
     return response;
 }
 
-Response RequestHandler::handle_get(const std::string& uri, const LocationContext* location)
+Response RequestHandler::handle_get(const LocationContext* location, std::filesystem::path& local_path)
 {
 	std::filesystem::path local_path = map_uri(uri, location);
 
@@ -354,6 +354,7 @@ Response RequestHandler::handle(const Request& request)
 	const std::string& uri = request.getStartLine().get_uri();
     const LocationContext* location = find_location(uri, m_config);
     const HTTPMethod method = request.getStartLine().get_http_method();
+	std::filesystem::path local_path = map_uri(uri, location);
 
     if (location != nullptr && location->m_limit_except.has_value())
     {
@@ -367,7 +368,7 @@ Response RequestHandler::handle(const Request& request)
     switch (method)
     {
         case HTTPMethod::GET:
-            return handle_get(uri, location);
+            return handle_get(location, local_path);
         case HTTPMethod::DELETE:
             return handle_delete(request);
         case HTTPMethod::POST:
