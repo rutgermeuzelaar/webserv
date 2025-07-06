@@ -254,8 +254,6 @@ Response build_error_page(HTTPStatusCode status_code, const LocationContext* loc
 
 Response RequestHandler::handle_get(const LocationContext* location, std::filesystem::path& local_path)
 {
-	std::filesystem::path local_path = map_uri(uri, location);
-
     if (location != nullptr && location->m_return.has_value())
     {
         return build_redirect(*location->m_return);
@@ -300,10 +298,19 @@ Response RequestHandler::handle_get(const LocationContext* location, std::filesy
 	return response;
 }
 
-Response RequestHandler::handle_delete(const Request& request)
+Response RequestHandler::handle_delete(std::filesystem::path& local_path)
 {
-    (void)request;
-    return Response();
+    if (!std::filesystem::exists(local_path))
+    {
+        throw HTTPException(HTTPStatusCode::NotFound);
+    }
+    std::error_code ec;
+    if (!std::filesystem::remove(local_path, ec))
+    {
+        throw HTTPException(HTTPStatusCode::InternalServerError);
+    }
+    Response response(HTTPStatusCode::NoContent);
+    return response;
 }
 
 static const std::string get_extension(const std::string& mime_type)
@@ -370,7 +377,7 @@ Response RequestHandler::handle(const Request& request)
         case HTTPMethod::GET:
             return handle_get(location, local_path);
         case HTTPMethod::DELETE:
-            return handle_delete(request);
+            return handle_delete(local_path);
         case HTTPMethod::POST:
             if (location == nullptr || !location->m_upload_store.has_value())
             {
