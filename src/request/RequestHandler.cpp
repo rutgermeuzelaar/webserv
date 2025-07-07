@@ -355,22 +355,45 @@ Response RequestHandler::handle_post(const Request& request, const UploadStore& 
     return response;
 }
 
-// for now URI and method only
-Response RequestHandler::handle(const Request& request)
+bool is_cgi_request(const std::string& uri)
 {
-	const std::string& uri = request.getStartLine().get_uri();
-    const LocationContext* location = find_location(uri, m_config);
-    const HTTPMethod method = request.getStartLine().get_http_method();
-	std::filesystem::path local_path = map_uri(uri, location);
+    const std::string cgi_str = "/" CGI_DIR "/";
 
+    size_t str_pos = uri.find("/" CGI_DIR "/", 0);
+
+    if (str_pos == std::string::npos)
+    {
+        return (false);
+    }
+    if (str_pos + cgi_str.size() == uri.size())
+    {
+        return (false);
+    }
+    return (true);
+}
+
+bool request_method_allowed(const LocationContext* location, HTTPMethod method)
+{   
     if (location != nullptr && location->m_limit_except.has_value())
     {
         const auto& allowed = location->m_limit_except.value().m_allowed_methods;
 
         if (std::find(allowed.begin(), allowed.end(), method) == allowed.end())
         {
-            return build_error_page(HTTPStatusCode::MethodNotAllowed, location, m_config);
+            return (false);
         }
+    }
+    return (true);
+}
+
+Response RequestHandler::handle(const Request& request, const std::string& uri, const LocationContext* location)
+{
+    const HTTPMethod method = request.getStartLine().get_http_method();
+	std::filesystem::path local_path = map_uri(uri, location);
+
+    if (!request_method_allowed(location, method))
+    {
+        return build_error_page(HTTPStatusCode::MethodNotAllowed, location, m_config);
     }
     switch (method)
     {

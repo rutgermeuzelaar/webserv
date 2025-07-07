@@ -7,6 +7,7 @@
 #include "Response.hpp"
 #include "RequestHandler.hpp"
 #include "Client.hpp"
+#include "Cgi.hpp"
 #include <map>
 #include <string>
 #include <memory>
@@ -14,54 +15,55 @@
 
 class Server
 {
-private:
-	std::vector<ServerContext> m_configs;
-	std::vector<Socket> m_listening_sockets;
-	Epoll m_epoll;
-	std::map<int, Client> m_clients;
-	std::map<int, size_t> m_client_to_socket_index; //* <client_fd, listening_socket_i>
-	bool m_running;
+    private:
+        std::vector<ServerContext> m_configs;
+        std::vector<Socket> m_listening_sockets;
+        Epoll m_epoll;
+        std::map<int, Client> m_clients;
+        std::map<int, size_t> m_client_to_socket_index; //* <client_fd, listening_socket_i>
+        bool m_running;
+        Cgi m_cgi;
 
-	//* server initialization
-	void setupListeningSockets();
+        //* server initialization
+        void setupListeningSockets();
 
-	//* connection handling
-	void handleNewConnection(size_t socket_index);
-	void handleClientData(int client_fd);
-	void handleClientDisconnect(int client_fd);
-	
-	//* request processing
-	void handleRequest(const Request& request, int client_fd);
-	void sendResponse(int client_fd, const Response& response);
-	void sendErrorResponse(int client_fd, const HTTPException& e);
+        //* connection handling
+        void handleNewConnection(size_t socket_index);
+        void handleClientData(int client_fd);
+        void handleClientDisconnect(int client_fd);
+        
+        //* request processing
+        void handleRequest(const Request& request, int client_fd);
+        void sendResponse(int client_fd, const Response& response);
+        void sendErrorResponse(int client_fd, const HTTPException& e);
 
-	//* utils
-	void setNonBlocking(int fd);
-	void cleanup();
+        //* utils
+        void setNonBlocking(int fd);
+        void cleanup();
 
-public:
-	Server(const std::vector<ServerContext>& configs);
-	~Server();
+    public:
+        Server(const std::vector<ServerContext>& configs, char **envp);
+        ~Server();
 
-	//* server control
-	void start();
-	void run();
-	void stop();
-	bool isRunning() const;
+        //* server control
+        void start();
+        void run();
+        void stop();
+        bool isRunning() const;
 
-	//* client management
-	void addClient(int fd);
-	void removeClient(int fd);
-	Client& getClient(int fd);
-	
-	//* socket management
-	Socket& getListeningSocket(size_t index);
-	size_t getListeningSocketCount() const;
+        //* client management
+        void addClient(int fd);
+        void removeClient(int fd);
+        Client& getClient(int fd);
+        
+        //* socket management
+        Socket& getListeningSocket(size_t index);
+        size_t getListeningSocketCount() const;
 
-	//* request handling
-	void processRequest(int client_fd, const Request& request);
-	void sendResponseToClient(int client_fd, const Response& response);
-	const Config& getConfig() const;
-	RequestHandler& getRequestHandler();
+        //* request handling
+        void processRequest(int client_fd, const Request& request);
+        void sendResponseToClient(int client_fd, const Response& response);
+        const Config& getConfig() const;
+        RequestHandler& getRequestHandler();
 };
 

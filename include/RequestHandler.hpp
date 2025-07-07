@@ -11,6 +11,8 @@ const std::string get_mime_type(const std::filesystem::path& extension);
 const std::string create_directory_listing(const std::filesystem::path& directory);
 const LocationContext* find_location(const std::string& folder_path, const ServerContext& config);
 Response build_error_page(HTTPStatusCode status_code, const LocationContext* location, const ServerContext& config);
+bool is_cgi_request(const std::string& uri);
+bool request_method_allowed(const LocationContext* location, HTTPMethod method);
 
 class RequestHandler
 {
@@ -23,6 +25,6 @@ class RequestHandler
 	public:
 		RequestHandler(const ServerContext&);
 		std::filesystem::path map_uri(std::string uri, const LocationContext* location);
-		Response handle(const Request& request);
+		Response handle(const Request& request, const std::string& uri, const LocationContext* location);
 };
 #endif

@@ -6,14 +6,17 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-Server::Server(const std::vector<ServerContext>& config)
+Server::Server(const std::vector<ServerContext>& config, char** envp)
 	: m_configs(config)
 	, m_listening_sockets()
 	, m_epoll()
 	, m_clients()
 	, m_client_to_socket_index()
 	, m_running(false)
-{}
+    , m_cgi {envp, CGI_TIMEOUT_MS}
+{
+
+}
 
 Server::~Server()
 {
@@ -32,6 +35,7 @@ void Server::run()
 			std::cout << "We running" << std::endl;
 			int num_events = m_epoll.wait();
 			std::cout << "epoll_wait returned " << num_events << " events" << std::endl;
+            m_cgi.timeout();
 			for (int i = 0; i < num_events; ++i)
 			{
 				const epoll_event& event = m_epoll.getEvents()[i];
@@ -41,7 +45,18 @@ void Server::run()
 				if (event.events & EPOLLERR) std::cout << "  EPOLLERR" << std::endl;
 				int fd = event.data.fd;
 				std::cout << "Processing event for fd: " << fd << std::endl;
-				
+	            
+                if (m_cgi.is_cgi_fd(fd))
+                {
+                    std::cout << "Is CGI fd\n";
+                    m_cgi.read_pipes();
+                    auto cgi_response = m_cgi.reap();
+                    if (cgi_response.has_value())
+                    {
+                        sendResponseToClient(cgi_response.value().first, cgi_response.value().second);
+                    }
+                    continue;
+                }
 				if (m_epoll.isTypeEvent(event, EPOLLERR) || m_epoll.isTypeEvent(event, EPOLLHUP))
 				{
 					std::cerr << "Error or hangup on fd: " << fd << std::endl;
@@ -208,10 +223,21 @@ void Server::processRequest(int client_fd, const Request& request)
 	RequestHandler handler(config);
 	try {
 		std::cout << "Handling request for URI: " << request.getStartLine().get_uri() << std::endl; //! TEST
-		Response response = handler.handle(request);
-		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST 
-		std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST 
-		sendResponseToClient(client_fd, response);
+        const std::string& uri = request.getStartLine().get_uri();
+        const LocationContext* location = find_location(uri, config);
+
+        if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(uri))
+        {
+            std::cout << "CGI request\n";
+            m_cgi.add_process(request, m_epoll, client_fd, location, config);
+        }
+        else
+        {
+            Response response = handler.handle(request, uri, location);
+            std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST
+            std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST
+            sendResponseToClient(client_fd, response);
+        }
 	}
 	catch (const HTTPException& e) {
 		std::cerr << "HTTP Error: " << e.what() << std::endl; //! TEST
@@ -227,7 +253,11 @@ void Server::sendResponseToClient(int client_fd, const Response& response)
 	if (bytes_sent == -1)
 		std::cerr << "Error sending response: " << strerror(errno) << std::endl; //! TEST 
 	else
-		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST 
+		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST
+    if (response.getStatusCode() == HTTPStatusCode::RequestTimeout && close(client_fd) == -1)
+    {
+        std::cout << "wtasfs\n";
+    }
 }
 
 void Server::handleNewConnection(size_t socket_index)
