@@ -72,6 +72,7 @@ std::string stringify(TokenType type)
         case TokenType::Delete: return "Delete";
         case TokenType::UploadStore: return "UploadStore";
         case TokenType::TokenTypeCount: return "TokenTypeCount";
+        default: return "";
 	}
     assert(false);
 }
