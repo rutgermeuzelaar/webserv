@@ -12,4 +12,5 @@ enum class HTTPMethod {
 
 HTTPMethod StringToMethod(const std::string& method);
 std::ostream& operator<<(std::ostream& os, HTTPMethod http_method);
+std::string stringify(HTTPMethod);
 #endif
