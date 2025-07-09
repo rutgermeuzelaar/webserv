@@ -92,23 +92,15 @@ const std::string create_directory_listing(const std::filesystem::path& director
     return directory_listing;
 }
 
-static bool is_jpeg(const std::filesystem::path& extension)
+const std::string get_mime_type(const std::string& extension)
 {
-    if (extension == ".jpg") return true;    
-    if (extension == ".jpeg") return true;    
-    if (extension == ".jpe") return true;    
-    if (extension == ".jfif") return true;    
-    if (extension == ".jif") return true;
-    return (false);   
-}
-
-const std::string get_mime_type(const std::filesystem::path& extension)
-{
-    if (extension == ".css") return "text/css";
-    if (extension == ".html") return "text/html";
-    if (extension == ".ico") return "image/x-icon";
-    if (is_jpeg(extension)) return "image/jpeg";
-    if (extension == ".png") return "image/png";
+    for (auto it: g_mime_types)
+    {
+        if (std::find(it.second.begin(), it.second.end(), extension) != it.second.end())
+        {
+            return it.first;
+        }
+    }
     return "text/plain";
 }
 
@@ -298,7 +290,7 @@ Response RequestHandler::handle_get(const LocationContext* location, std::filesy
 	}
 	Response response(HTTPStatusCode::OK);  
 	response.setBodyFromFile(local_path);
-    response.setContentType(get_mime_type(local_path.extension()));
+    response.setContentType(get_mime_type(local_path.extension().string()));
     response.setHeader("Content-Disposition", "inline");
 	return response;
 }
