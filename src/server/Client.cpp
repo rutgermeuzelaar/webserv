@@ -8,9 +8,8 @@
 Client::Client(int socket_fd) 
 	: m_socket_fd(socket_fd)
 	, m_is_connected(true)
-{
-
-}
+	, m_last_activity(std::chrono::steady_clock::now())
+{}
 
 Client::~Client()
 {
@@ -38,10 +37,21 @@ int	Client::getSocketFD() const
 	return m_socket_fd;
 }
 
+std::chrono::steady_clock::time_point Client::getLastActivity() const
+{
+	return m_last_activity;
+}
+
+void Client::updateActivity()
+{
+	m_last_activity = std::chrono::steady_clock::now();
+}
+
 void Client::receiveData(const char* data, size_t len)
 {
 	if (!m_is_connected)
 		return ;
+	updateActivity();
     m_request.append(data, len);
 }
 

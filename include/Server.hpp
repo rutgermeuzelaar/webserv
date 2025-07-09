@@ -21,6 +21,7 @@ private:
 	std::map<int, Client> m_clients;
 	std::map<int, size_t> m_client_to_socket_index; //* <client_fd, listening_socket_i>
 	bool m_running;
+	static constexpr std::chrono::seconds TIMEOUT{15}; //! change to appriorate timeout
 
 	//* server initialization
 	void setupListeningSockets();
