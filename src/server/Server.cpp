@@ -79,19 +79,7 @@ void Server::run()
 				if (m_epoll.isTypeEvent(event, EPOLLIN)) 
 				{
 					std::cout << "EPOLLIN event detected for fd: " << fd << std::endl;
-                    try
-                    {
-                        handleClientData(fd);
-                    }
-                    catch (const HTTPException& error)
-                    {
-                        const auto& conf = m_configs[m_client_to_socket_index[fd]];
-                        const std::string& uri = getClient(fd).getRequest().getStartLine().get_uri();
-                        const LocationContext* location = find_location(uri, conf);
-
-                        Response response = build_error_page(error.getStatusCode(), location, conf);
-                        sendResponseToClient(fd, response);
-                    }
+                    handleClientData(fd);
 					continue ;
 				}
 			}
@@ -240,8 +228,12 @@ void Server::processRequest(int client_fd, const Request& request)
         }
 	}
 	catch (const HTTPException& e) {
-		std::cerr << "HTTP Error: " << e.what() << std::endl; //! TEST
-		sendErrorResponse(client_fd, e);
+        const auto& conf = m_configs[m_client_to_socket_index[client_fd]];
+        const std::string& uri = getClient(client_fd).getRequest().getStartLine().get_uri();
+        const LocationContext* location = find_location(uri, conf);
+
+        Response response = build_error_page(e.getStatusCode(), location, conf);
+        sendResponseToClient(client_fd, response);
 	}
 }
 
