@@ -24,10 +24,8 @@ std::string stringify(HTTPMethod http_method)
             return "POST";
         case HTTPMethod::DELETE:
             return "DELETE";
-        case HTTPMethod::UNSUPPORTED:
-            return "UNSUPPORTED";
         default:
-            return "";
+            return "UNSUPPORTED";
     }
 }
 
@@ -44,7 +42,7 @@ std::ostream& operator<<(std::ostream& os, HTTPMethod http_method)
         case HTTPMethod::DELETE:
             os << "DELETE";
             break;
-        case HTTPMethod::UNSUPPORTED:
+        default:
             os << "UNSUPPORTED";
             break;
     }
