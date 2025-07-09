@@ -3,7 +3,7 @@
 // cat src/*/*.cpp | grep "include <" | sort | uniq -c | sort -nr
 // cat include/*.hpp | grep "include <" | sort | uniq -c | sort -nr
 // std
-# ifndef NDEBUG
+# ifdef NDEBUG
 #  include <iostream>
 #  include <stdexcept>
 #  include <string>
