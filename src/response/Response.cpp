@@ -41,14 +41,23 @@ void Response::setBody(const std::string& content)
 void Response::setBodyFromFile(const std::string& file_path)
 {
     std::ifstream file(file_path);
-    if (!file.is_open())
-        throw HTTPException(HTTPStatusCode::NotFound, "File not found: " + file_path);
 
+    if (!file.is_open())
+    {
+        if (errno == EACCES)
+        {
+            throw HTTPException(HTTPStatusCode::Forbidden);
+        }
+        else if (errno == ENOENT)
+        {
+            throw HTTPException(HTTPStatusCode::NotFound, "File not found: " + file_path);
+        }
+        throw HTTPException(HTTPStatusCode::InternalServerError);
+    }
     std::stringstream buffer;
     buffer << file.rdbuf();
     if (buffer.fail())
         throw HTTPException(HTTPStatusCode::InternalServerError, "Failed to read file: " + file_path);
-
     setBody(buffer.str());
 }
 

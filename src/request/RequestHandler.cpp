@@ -156,10 +156,15 @@ static void find_page(const Index& index, std::string& buffer, std::filesystem::
     for (auto it: index.m_files)
     {
         std::filesystem::path uri_cp = uri;
-        if (std::filesystem::exists(uri_cp.append(it)))
+        std::error_code ec;
+        if (std::filesystem::exists(uri_cp.append(it), ec))
         {
             buffer = it;
             return;
+        }
+        else if (ec.value() == EACCES)
+        {
+            throw HTTPException(HTTPStatusCode::Forbidden);
         }
     }
 }
@@ -300,13 +305,25 @@ Response RequestHandler::handle_get(const LocationContext* location, std::filesy
 
 Response RequestHandler::handle_delete(std::filesystem::path& local_path)
 {
-    if (!std::filesystem::exists(local_path))
-    {
-        throw HTTPException(HTTPStatusCode::NotFound);
-    }
     std::error_code ec;
+    if (!std::filesystem::exists(local_path, ec))
+    {
+        if (!ec)
+        {
+            throw HTTPException(HTTPStatusCode::NotFound);
+        }
+        if (ec.value() == EACCES)
+        {
+            throw HTTPException(HTTPStatusCode::Forbidden);
+        }
+        throw HTTPException(HTTPStatusCode::InternalServerError);
+    }
     if (!std::filesystem::remove(local_path, ec))
     {
+        if (ec.value() == EACCES)
+        {
+            throw HTTPException(HTTPStatusCode::Forbidden);
+        }
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
     Response response(HTTPStatusCode::NoContent);
@@ -345,6 +362,10 @@ Response RequestHandler::handle_post(const Request& request, const UploadStore& 
     std::ofstream file(path);
     if (file.fail())
     {
+        if (errno == EACCES)
+        {
+            throw HTTPException(HTTPStatusCode::Forbidden);
+        }
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
     file << chunk.m_data;
