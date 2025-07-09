@@ -217,7 +217,7 @@ static const std::string create_dynamic_error_page(HTTPStatusCode status_code)
     "<html lang=\"en-US\">"
         "<head>"
             "<meta charset=\"utf-8\"/>"
-            "<link rel=\"stylesheet\" href=\"../css/stylesheet.css\">"
+            "<link rel=\"stylesheet\" href=\"" STYLESHEET "\">"
             "<title>") + status_text + std::string("</title>"
         "</head>"
         "<body>"
