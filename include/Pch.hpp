@@ -3,13 +3,15 @@
 // cat src/*/*.cpp | grep "include <" | sort | uniq -c | sort -nr
 // cat include/*.hpp | grep "include <" | sort | uniq -c | sort -nr
 // std
-#include <iostream>
-#include <stdexcept>
-#include <string>
-#include <algorithm>
-#include <vector>
-#include <cassert>
+# ifdef NDEBUG
+#  include <iostream>
+#  include <stdexcept>
+#  include <string>
+#  include <algorithm>
+#  include <vector>
+#  include <cassert>
 
 // maybe
-#include <filesystem>
+#  include <filesystem>
+# endif
 #endif

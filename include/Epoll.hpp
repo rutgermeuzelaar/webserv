@@ -23,7 +23,7 @@ private:
 	int m_epoll_fd;
 	std::vector<struct epoll_event> m_events;
 	static const int m_max_events = 1024;
-	static const int m_epoll_timeout = -1;
+	static const int m_epoll_timeout = 5;
 public:
 	Epoll();
 	~Epoll();

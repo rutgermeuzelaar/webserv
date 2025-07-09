@@ -100,7 +100,7 @@ void Request::printRequest() const
 	// std::cout << "---------------------\n" << std::endl;
 }
 
-void Request::append(const char* buffer, size_t len)
+void Request::append(const char* buffer, size_t len, size_t client_max_body_size)
 {
     size_t index_copy = _index;
 
@@ -113,7 +113,7 @@ void Request::append(const char* buffer, size_t len)
     {
         if (!_body.initialized())
         {
-            _body = HttpBody(&_headers, _start_line.get_http_method(), 1000000);
+            _body = HttpBody(&_headers, _start_line.get_http_method(), client_max_body_size);
         }
     }
     if (complete())
