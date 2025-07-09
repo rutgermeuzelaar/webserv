@@ -190,7 +190,7 @@ const LocationContext* find_location(const std::string& folder_path, const Serve
     return match;
 }
 
-std::filesystem::path RequestHandler::map_uri(std::string uri, const LocationContext* location)
+std::filesystem::path map_uri(std::string uri, const LocationContext* location, const Root& root)
 {
 	std::filesystem::path uri_path(uri);
 	
@@ -198,7 +198,7 @@ std::filesystem::path RequestHandler::map_uri(std::string uri, const LocationCon
     {
         return map_uri_helper(location->m_root.value().m_path, uri_path);
     }
-	return map_uri_helper(m_config.m_root.value().m_path, uri_path);
+	return map_uri_helper(root.m_path, uri_path);
 }
 
 static Response build_redirect(const Return& return_obj)
@@ -410,7 +410,7 @@ bool request_method_allowed(const LocationContext* location, HTTPMethod method)
 Response RequestHandler::handle(const Request& request, const std::string& uri, const LocationContext* location)
 {
     const HTTPMethod method = request.getStartLine().get_http_method();
-	std::filesystem::path local_path = map_uri(uri, location);
+	std::filesystem::path local_path = map_uri(uri, location, m_config.m_root.value());
 
     if (!request_method_allowed(location, method))
     {
