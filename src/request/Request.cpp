@@ -116,7 +116,7 @@ void Request::append(const char* buffer, size_t len, size_t client_max_body_size
             _body = HttpBody(&_headers, _start_line.get_http_method(), client_max_body_size);
         }
     }
-    if (complete())
+    if (complete() || _start_line.get_http_method() != HTTPMethod::POST)
     {
         return;
     }
