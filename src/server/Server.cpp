@@ -263,10 +263,11 @@ void Server::sendResponseToClient(int client_fd, const Response& response)
 		std::cerr << "Error sending response: " << strerror(errno) << std::endl; //! TEST 
 	else
 		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST
-    if (response.getStatusCode() == HTTPStatusCode::RequestTimeout && close(client_fd) == -1)
-    {
-        std::cout << "wtasfs\n";
-    }
+const std::string &connection_header = getClient(client_fd).getRequest().getHeaders().get_header("connection");
+	if (connection_header == "close")
+		removeClient(client_fd);
+	else
+		getClient(client_fd).clearRequest();
 }
 
 void Server::handleNewConnection(size_t socket_index)
@@ -329,7 +330,6 @@ void Server::handleClientData(int client_fd)
 		std::cout << "Request method: " << req.getStartLine().get_http_method() << std::endl;
 		std::cout << "Request URI: " << req.getStartLine().get_uri() << std::endl;
 		processRequest(client_fd, req);
-		client.clearRequest();
 	}
 	else
 	{
