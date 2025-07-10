@@ -13,7 +13,7 @@ void signal_handler(int signal)
     gLive = false;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char **argv, char **envp)
 {
     if (argc != 2)
     {
@@ -29,7 +29,7 @@ int main(int argc, char **argv)
         std::vector<ServerContext> config = get_server_config(argv[1]);
 
         //* create + start server
-        Server server(config);
+        Server server(config, envp);
         std::cout << "Starting server..." << std::endl;
         server.start();
 		server.run();

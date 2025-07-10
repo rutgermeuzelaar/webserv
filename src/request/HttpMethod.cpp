@@ -14,6 +14,21 @@ HTTPMethod StringToMethod(const std::string& method)
 		throw HTTPException(HTTPStatusCode::MethodNotAllowed, "Unsupported HTTP method: " + method);
 }
 
+std::string stringify(HTTPMethod http_method)
+{
+    switch (http_method)
+    {
+        case HTTPMethod::GET:
+            return "GET";
+        case HTTPMethod::POST:
+            return "POST";
+        case HTTPMethod::DELETE:
+            return "DELETE";
+        default:
+            return "UNSUPPORTED";
+    }
+}
+
 std::ostream& operator<<(std::ostream& os, HTTPMethod http_method)
 {
     switch (http_method)
@@ -27,7 +42,7 @@ std::ostream& operator<<(std::ostream& os, HTTPMethod http_method)
         case HTTPMethod::DELETE:
             os << "DELETE";
             break;
-        case HTTPMethod::UNSUPPORTED:
+        default:
             os << "UNSUPPORTED";
             break;
     }

@@ -47,12 +47,12 @@ void Client::updateActivity()
 	m_last_activity = std::chrono::steady_clock::now();
 }
 
-void Client::receiveData(const char* data, size_t len)
+void Client::receiveData(const char* data, size_t len, size_t client_max_body_size)
 {
 	if (!m_is_connected)
 		return ;
 	updateActivity();
-    m_request.append(data, len);
+    m_request.append(data, len, client_max_body_size);
 }
 
 bool Client::hasCompleteRequest() const
