@@ -93,6 +93,29 @@ void Server::run()
 					continue ;
 				}
 			}
+
+			//* timeout
+			auto now = std::chrono::steady_clock::now();
+			for (auto it = m_clients.begin(); it != m_clients.end();)
+			{
+				int fd = it->first;
+				Client& client = it->second;
+				if (now - client.getLastActivity() > TIMEOUT)
+				{
+					std::cout << "Client " << it->first << " timed out" << std::endl;
+					//* partial request
+					if (!client.hasCompleteRequest() && !client.getRequest().is_empty())
+					{
+						std::cout << "going in this block" << std::endl;
+						HTTPException timeout(HTTPStatusCode::RequestTimeout, "Request timed out\n");
+						sendErrorResponse(fd, timeout);
+					}
+					++it;
+					removeClient(fd);
+				}
+				else
+					++it;
+			}
 		}
 		catch (const EpollException& e) {
 			std::cerr << "Epoll error: " << e.what() << std::endl;

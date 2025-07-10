@@ -120,7 +120,11 @@ void Request::append(const char* buffer, size_t len, size_t client_max_body_size
     {
         return;
     }
-    assert(_start_line.get_http_method() == HTTPMethod::POST);
+    // assert(_start_line.get_http_method() == HTTPMethod::POST); //! finish @rutger
+	if (_start_line.get_http_method() == HTTPMethod::POST)
+	{
+		std::cout << "";	
+	}
     std::cout << "index: " << _index << "index_copy: " << index_copy << '\n';
     if (_start_line.complete() && _headers.complete())
     {
@@ -143,4 +147,9 @@ void Request::append(const char* buffer, size_t len, size_t client_max_body_size
 bool Request::complete(void) const
 {
     return (_start_line.complete() && _headers.complete() && _body.complete());
+}
+
+bool Request::is_empty() const
+{
+	return _raw.empty();
 }
