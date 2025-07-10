@@ -33,6 +33,7 @@ class Request
 
         void append(const char* buffer, size_t len, size_t client_max_body_size);
         bool complete(void) const;
+		bool is_empty() const;
 
         //* getters
         HttpRequestStartLine& getStartLine();

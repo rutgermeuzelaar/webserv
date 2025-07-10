@@ -316,6 +316,10 @@ Response RequestHandler::handle_delete(std::filesystem::path& local_path)
         {
             throw HTTPException(HTTPStatusCode::Forbidden);
         }
+		if (ec.value() == ENOTEMPTY)
+		{
+			throw HTTPException(HTTPStatusCode::Conflict);
+		}
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
     Response response(HTTPStatusCode::NoContent);
