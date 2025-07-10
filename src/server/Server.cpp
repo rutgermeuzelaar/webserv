@@ -6,6 +6,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+extern bool gLive;
+
 Server::Server(const std::vector<ServerContext>& config, char** envp)
 	: m_configs(config)
 	, m_listening_sockets()
@@ -28,7 +30,7 @@ void Server::run()
 	if (!m_running)
 		return;
 
-	while (m_running)
+	while (m_running && gLive)
 	{
 		try {
 			int num_events = m_epoll.wait();

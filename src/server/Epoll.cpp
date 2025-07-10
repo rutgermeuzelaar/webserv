@@ -76,7 +76,13 @@ int Epoll::wait()
 {
 	int num_events = epoll_wait(m_epoll_fd, m_events.data(), m_max_events, m_epoll_timeout);
 	if (num_events == -1)
-		throw EpollException("epoll_wait failed: " + std::string(strerror(errno)));
+    {
+        if (errno == EINTR)
+        {
+            return 0;
+        }
+        throw EpollException("epoll_wait failed: " + std::string(strerror(errno)));
+    }
 	return num_events;
 }
 

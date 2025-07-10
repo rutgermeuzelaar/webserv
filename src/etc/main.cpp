@@ -20,9 +20,6 @@ int main(int argc, char **argv, char **envp)
         std::cout << "Wrong arguments. Usage: ./webserv [config_file]" << std::endl;
         return (EXIT_FAILURE);
     }
-    std::signal(SIGINT, signal_handler);
-    std::signal(SIGTERM, signal_handler);
-
     try
     {
         //* server init
@@ -32,10 +29,11 @@ int main(int argc, char **argv, char **envp)
         Server server(config, envp);
         std::cout << "Starting server..." << std::endl;
         server.start();
+        std::signal(SIGINT, signal_handler);
 		server.run();
 
         //* cleanup
-        std::cout << "Shutting down server..." << std::endl;
+        std::cout << "\nShutting down server..." << std::endl;
         server.stop();
         return (EXIT_SUCCESS);
     }
