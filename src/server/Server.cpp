@@ -263,10 +263,6 @@ void Server::sendResponseToClient(int client_fd, const Response& response)
 		std::cerr << "Error sending response: " << strerror(errno) << std::endl; //! TEST 
 	else
 		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST
-    if (response.getStatusCode() == HTTPStatusCode::RequestTimeout && close(client_fd) == -1)
-    {
-        std::cout << "wtasfs\n";
-    }
 }
 
 void Server::handleNewConnection(size_t socket_index)
