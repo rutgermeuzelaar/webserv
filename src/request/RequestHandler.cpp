@@ -92,23 +92,15 @@ const std::string create_directory_listing(const std::filesystem::path& director
     return directory_listing;
 }
 
-static bool is_jpeg(const std::filesystem::path& extension)
+const std::string get_mime_type(const std::string& extension)
 {
-    if (extension == ".jpg") return true;    
-    if (extension == ".jpeg") return true;    
-    if (extension == ".jpe") return true;    
-    if (extension == ".jfif") return true;    
-    if (extension == ".jif") return true;
-    return (false);   
-}
-
-const std::string get_mime_type(const std::filesystem::path& extension)
-{
-    if (extension == ".css") return "text/css";
-    if (extension == ".html") return "text/html";
-    if (extension == ".ico") return "image/x-icon";
-    if (is_jpeg(extension)) return "image/jpeg";
-    if (extension == ".png") return "image/png";
+    for (auto it: g_mime_types)
+    {
+        if (std::find(it.second.begin(), it.second.end(), extension) != it.second.end())
+        {
+            return it.first;
+        }
+    }
     return "text/plain";
 }
 
@@ -190,7 +182,7 @@ const LocationContext* find_location(const std::string& folder_path, const Serve
     return match;
 }
 
-std::filesystem::path RequestHandler::map_uri(std::string uri, const LocationContext* location)
+std::filesystem::path map_uri(std::string uri, const LocationContext* location, const Root& root)
 {
 	std::filesystem::path uri_path(uri);
 	
@@ -198,7 +190,7 @@ std::filesystem::path RequestHandler::map_uri(std::string uri, const LocationCon
     {
         return map_uri_helper(location->m_root.value().m_path, uri_path);
     }
-	return map_uri_helper(m_config.m_root.value().m_path, uri_path);
+	return map_uri_helper(root.m_path, uri_path);
 }
 
 static Response build_redirect(const Return& return_obj)
@@ -217,7 +209,7 @@ static const std::string create_dynamic_error_page(HTTPStatusCode status_code)
     "<html lang=\"en-US\">"
         "<head>"
             "<meta charset=\"utf-8\"/>"
-            "<link rel=\"stylesheet\" href=\"../css/stylesheet.css\">"
+            "<link rel=\"stylesheet\" href=\"" STYLESHEET "\">"
             "<title>") + status_text + std::string("</title>"
         "</head>"
         "<body>"
@@ -298,7 +290,7 @@ Response RequestHandler::handle_get(const LocationContext* location, std::filesy
 	}
 	Response response(HTTPStatusCode::OK);  
 	response.setBodyFromFile(local_path);
-    response.setContentType(get_mime_type(local_path.extension()));
+    response.setContentType(get_mime_type(local_path.extension().string()));
     response.setHeader("Content-Disposition", "inline");
 	return response;
 }
@@ -414,7 +406,7 @@ bool request_method_allowed(const LocationContext* location, HTTPMethod method)
 Response RequestHandler::handle(const Request& request, const std::string& uri, const LocationContext* location)
 {
     const HTTPMethod method = request.getStartLine().get_http_method();
-	std::filesystem::path local_path = map_uri(uri, location);
+	std::filesystem::path local_path = map_uri(uri, location, m_config.m_root.value());
 
     if (!request_method_allowed(location, method))
     {

@@ -163,16 +163,17 @@ static std::string extract_path_info_envvar(const std::string& uri)
     {
         return "";
     }
-    return cgi_uri.substr(next_fslash + 1, cgi_uri.size());
+    return uri.substr(next_fslash + 1, uri.size() - next_fslash - 1);
 }
 
-std::vector<std::string> get_cgi_envvar(const Request& request)
+std::vector<std::string> get_cgi_envvar(const Request& request, const LocationContext* location, const Root& root)
 {
     std::vector<std::string> envvar;
     const std::string request_method = stringify(request.getStartLine().get_http_method());
     const std::string content_length = request.getHeaders().get_header("content-length");
     const std::string content_type = request.getHeaders().get_header("content-type");
     const std::string path_info = extract_path_info_envvar(request.getStartLine().get_uri());
+    const std::string path_translated = map_uri(path_info, location, root);
 
     assert(request_method.size() > 0);
     if (content_length.size() > 0)
@@ -183,7 +184,14 @@ std::vector<std::string> get_cgi_envvar(const Request& request)
     {
         envvar.push_back("CONTENT_TYPE=" + content_type);
     }
-    envvar.push_back("PATH_INFO=" + path_info);
+    if (path_info.size() > 0)
+    {
+        envvar.push_back("PATH_INFO=" + path_info);
+    }
+    if (path_translated.size() > 0)
+    {
+        envvar.push_back("PATH_TRANSLATED=" + path_translated);
+    }
     envvar.push_back("REQUEST_METHOD=" + request_method);
     return envvar;
 }
@@ -238,12 +246,12 @@ const std::string Cgi::get_script_name(const std::string& uri) const
     {
         return uri.substr(dir_pos + dir_str.size(), uri.size());
     }
-    return uri.substr(dir_pos + dir_str.size(), fslash_pos - dir_pos + dir_str.size());
+    return uri.substr(dir_pos + dir_str.size(), fslash_pos - dir_pos - dir_str.size());
 }
 
 void Cgi::add_process(const Request& request, Epoll& epoll, int client_fd, const LocationContext* location, const ServerContext& config)
 {
-    const std::vector envvar = get_cgi_envvar(request);
+    const std::vector envvar = get_cgi_envvar(request, location, config.m_root.value());
     const std::string script_name = get_script_name(request.getStartLine().get_uri());
     auto binary = find_binary(m_envp, get_interpreter(script_name));
     std::filesystem::path cgi_file_path = std::filesystem::current_path();

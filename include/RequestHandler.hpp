@@ -13,6 +13,7 @@ const LocationContext* find_location(const std::string& folder_path, const Serve
 Response build_error_page(HTTPStatusCode status_code, const LocationContext* location, const ServerContext& config);
 bool is_cgi_request(const std::string& uri);
 bool request_method_allowed(const LocationContext* location, HTTPMethod method);
+std::filesystem::path map_uri(std::string uri, const LocationContext* location, const Root& root);
 
 class RequestHandler
 {
@@ -24,7 +25,6 @@ class RequestHandler
 
 	public:
 		RequestHandler(const ServerContext&);
-		std::filesystem::path map_uri(std::string uri, const LocationContext* location);
 		Response handle(const Request& request, const std::string& uri, const LocationContext* location);
 };
 #endif
