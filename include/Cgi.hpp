@@ -34,6 +34,7 @@ class Cgi
         std::vector<CgiProcess> m_children;
         const std::chrono::milliseconds m_timeout_ms;
         const std::string get_script_name(const std::string& uri) const;
+        void reap_dtor(void);
     public:
         Cgi(char **envp, size_t timeout_ms);
         ~Cgi(); // should reap child processes
