@@ -12,6 +12,9 @@ if PATH_TRANSLATED == None:
     print("Please supply a PATH_INFO environment variable")
     exit(1)
 
+if PATH_TRANSLATED == './root':
+    exit(1)
+
 cwd = pathlib.Path.cwd()
 dir = cwd.joinpath(PATH_TRANSLATED)
 
@@ -26,7 +29,7 @@ print(
 
 print("<script src=\"/root/scripts/delete-request.js\"></script>")
 print("</head>")
-print(f"<h1>{os.environ.get("PATH_INFO")}</h1>")
+print(f"<h1>{ os.environ.get('PATH_INFO')}</h1>")
 print("<hr>")
 print(
     "<table>" \
@@ -44,5 +47,6 @@ for path in dir.iterdir():
     print("</td></tr>")
 print("</table>")
 print("<hr>")
+print("<a href=\"/\">Home</a>")
 print("</html>")
 exit(0)
