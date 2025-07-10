@@ -3,6 +3,7 @@
 #include <string>
 #include "Request.hpp"
 #include "HTTPException.hpp"
+#include <chrono>
 
 class Server;
 
@@ -11,6 +12,7 @@ private:
 	//* network connection
 	int m_socket_fd;
 	bool m_is_connected;
+	std::chrono::steady_clock::time_point m_last_activity;
 
 	//* request handling
 	Request m_request;
@@ -22,6 +24,8 @@ public:
 	void disconnect();
 	bool isConnected() const;
 	int getSocketFD() const;
+	std::chrono::steady_clock::time_point getLastActivity() const;
+	void updateActivity();
 
 	//* data handling
 	void receiveData(const char* data, size_t len, size_t client_max_body_size);

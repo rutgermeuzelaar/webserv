@@ -74,7 +74,6 @@ void Epoll::removeFD(int fd)
 
 int Epoll::wait()
 {
-	std::cout << "[epoll_wait] m_epoll_fd: " << m_epoll_fd << std::endl; //! DEBUG
 	int num_events = epoll_wait(m_epoll_fd, m_events.data(), m_max_events, m_epoll_timeout);
 	if (num_events == -1)
 		throw EpollException("epoll_wait failed: " + std::string(strerror(errno)));

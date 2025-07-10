@@ -27,14 +27,11 @@ void Server::run()
 {
 	if (!m_running)
 		return;
-	
-	std::cout << "Server running with epoll event loop" << std::endl;
+
 	while (m_running)
 	{
 		try {
-			std::cout << "We running" << std::endl;
 			int num_events = m_epoll.wait();
-			std::cout << "epoll_wait returned " << num_events << " events" << std::endl;
             m_cgi.timeout();
 			for (int i = 0; i < num_events; ++i)
 			{
@@ -78,17 +75,47 @@ void Server::run()
 
 				if (m_epoll.isTypeEvent(event, EPOLLIN)) 
 				{
-					std::cout << "EPOLLIN event detected for fd: " << fd << std::endl;
-                    handleClientData(fd);
+					try
+					{
+						std::cout << "EPOLLIN event detected for fd: " << fd << std::endl;
+						handleClientData(fd);
+					}
+					catch(const HTTPException& e)
+					{
+						const auto& conf = m_configs[m_client_to_socket_index[fd]];
+						const std::string& uri = getClient(fd).getRequest().getStartLine().get_uri();
+						const LocationContext* location = find_location(uri, conf);
+				
+						Response response = build_error_page(e.getStatusCode(), location, conf);
+						sendResponseToClient(fd, response);
+						std::cerr << e.what() << '\n';
+					}
 					continue ;
 				}
 			}
-            //* print all fds in m_clients after each loop to check
-            std::cout << "Current m_clients fds: ";
-            for (std::map<int, Client>::iterator it = m_clients.begin(); it != m_clients.end(); ++it) {
-                std::cout << it->first << " ";
-            }
-            std::cout << std::endl; //! delete afterwards this current_clients fd
+
+			//* timeout
+			auto now = std::chrono::steady_clock::now();
+			for (auto it = m_clients.begin(); it != m_clients.end();)
+			{
+				int fd = it->first;
+				Client& client = it->second;
+				if (now - client.getLastActivity() > TIMEOUT)
+				{
+					std::cout << "Client " << it->first << " timed out" << std::endl;
+					//* partial request
+					if (!client.hasCompleteRequest() && !client.getRequest().is_empty())
+					{
+						std::cout << "going in this block" << std::endl;
+						HTTPException timeout(HTTPStatusCode::RequestTimeout, "Request timed out\n");
+						sendErrorResponse(fd, timeout);
+					}
+					++it;
+					removeClient(fd);
+				}
+				else
+					++it;
+			}
 		}
 		catch (const EpollException& e) {
 			std::cerr << "Epoll error: " << e.what() << std::endl;
@@ -209,31 +236,21 @@ void Server::processRequest(int client_fd, const Request& request)
 	// 	socket_index = 0; //! handle error, comment in if it works
 	const ServerContext& config = m_configs[socket_index];
 	RequestHandler handler(config);
-	try {
-		std::cout << "Handling request for URI: " << request.getStartLine().get_uri() << std::endl; //! TEST
-        const std::string& uri = request.getStartLine().get_uri();
-        const LocationContext* location = find_location(uri, config);
+	std::cout << "Handling request for URI: " << request.getStartLine().get_uri() << std::endl; //! TEST
+	const std::string& uri = request.getStartLine().get_uri();
+	const LocationContext* location = find_location(uri, config);
 
-        if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(uri))
-        {
-            std::cout << "CGI request\n";
-            m_cgi.add_process(request, m_epoll, client_fd, location, config);
-        }
-        else
-        {
-            Response response = handler.handle(request, uri, location);
-            std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST
-            std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST
-            sendResponseToClient(client_fd, response);
-        }
+	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(uri))
+	{
+		std::cout << "CGI request\n";
+		m_cgi.add_process(request, m_epoll, client_fd, location, config);
 	}
-	catch (const HTTPException& e) {
-        const auto& conf = m_configs[m_client_to_socket_index[client_fd]];
-        const std::string& uri = getClient(client_fd).getRequest().getStartLine().get_uri();
-        const LocationContext* location = find_location(uri, conf);
-
-        Response response = build_error_page(e.getStatusCode(), location, conf);
-        sendResponseToClient(client_fd, response);
+	else
+	{
+		Response response = handler.handle(request, uri, location);
+		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST
+		std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST
+		sendResponseToClient(client_fd, response);
 	}
 }
 
