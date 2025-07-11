@@ -41,9 +41,21 @@ Cgi::Cgi(char **envp, size_t timeout_ms)
 
 }
 
+void Cgi::reap_dtor(void)
+{
+    int exit_status;
+
+    for (const auto& it = m_children.begin(); it != m_children.end();)
+    {
+        (void)kill(it->m_pid, SIGINT);
+        (void)waitpid(it->m_pid, &exit_status, 0);
+        m_children.erase(it);
+    }
+}
+
 Cgi::~Cgi()
 {
-    reap(); // should be something that kills all child processes and wait for them
+    reap_dtor();
 }
 
 void Cgi::timeout(void)
