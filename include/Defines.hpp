@@ -6,4 +6,8 @@
 #  define MAX_HEADER_SIZE 8192
 #  define RECV_BUFFER_SIZE 4096
 #  define MAX_URI_SIZE 2048
+#  define DEFAULT_CONF "./root/default.conf"
+#  define CGI_DIR "cgi-bin"
+#  define CGI_TIMEOUT_MS 500
+#  define STYLESHEET "/root/css/stylesheet.css"
 #endif

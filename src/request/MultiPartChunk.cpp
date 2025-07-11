@@ -1,3 +1,4 @@
+#include "Pch.hpp"
 #include "MultiPartChunk.hpp"
 #include "Utilities.hpp"
 #include "HTTPException.hpp"
@@ -12,11 +13,13 @@ MultiPartChunk::~MultiPartChunk()
 
 }
 
-MultiPartChunk& MultiPartChunk::operator=(const MultiPartChunk& multi_part_chunk)
+MultiPartChunk::MultiPartChunk(const MultiPartChunk& multi_part_chunk)
+    : m_mime_type {multi_part_chunk.m_mime_type}
+    , m_content_disposition {multi_part_chunk.m_content_disposition}
+    , m_data {multi_part_chunk.m_data}
+    , m_headers {multi_part_chunk.m_headers}
 {
-    m_data = multi_part_chunk.m_data;
-    m_headers = multi_part_chunk.m_headers;
-    return *this;
+
 }
 
 void MultiPartChunk::parse_header_attributes(void)

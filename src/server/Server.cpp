@@ -1,19 +1,24 @@
+#include "Pch.hpp"
 #include "Server.hpp"
 #include "Client.hpp"
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
-#include <set>
 
-Server::Server(const std::vector<ServerContext>& config)
+extern bool gLive;
+
+Server::Server(const std::vector<ServerContext>& config, char** envp)
 	: m_configs(config)
 	, m_listening_sockets()
 	, m_epoll()
 	, m_clients()
 	, m_client_to_socket_index()
 	, m_running(false)
-{}
+    , m_cgi {envp, CGI_TIMEOUT_MS}
+{
+
+}
 
 Server::~Server()
 {
@@ -24,14 +29,12 @@ void Server::run()
 {
 	if (!m_running)
 		return;
-	
-	std::cout << "Server running with epoll event loop" << std::endl;
-	while (m_running)
+
+	while (m_running && gLive)
 	{
 		try {
-			std::cout << "We running" << std::endl;
 			int num_events = m_epoll.wait();
-			std::cout << "epoll_wait returned " << num_events << " events" << std::endl;
+            m_cgi.timeout();
 			for (int i = 0; i < num_events; ++i)
 			{
 				const epoll_event& event = m_epoll.getEvents()[i];
@@ -41,32 +44,80 @@ void Server::run()
 				if (event.events & EPOLLERR) std::cout << "  EPOLLERR" << std::endl;
 				int fd = event.data.fd;
 				std::cout << "Processing event for fd: " << fd << std::endl;
-				
+	            
+                if (m_cgi.is_cgi_fd(fd))
+                {
+                    std::cout << "Is CGI fd\n";
+                    m_cgi.read_pipes();
+                    auto cgi_response = m_cgi.reap();
+                    if (cgi_response.has_value())
+                    {
+                        sendResponseToClient(cgi_response.value().first, cgi_response.value().second);
+                    }
+                    continue;
+                }
 				if (m_epoll.isTypeEvent(event, EPOLLERR) || m_epoll.isTypeEvent(event, EPOLLHUP))
 				{
 					std::cerr << "Error or hangup on fd: " << fd << std::endl;
 					removeClient(fd);
 					continue;
 				}
-				if (m_epoll.isServerSocket(fd, m_listening_sockets[0].getServerSockets())) 
+				bool is_server_socket = false;
+				for (size_t socket_i = 0; socket_i < m_listening_sockets.size(); ++socket_i) 
 				{
-					std::cout << "Server socket event detected (fd: " << fd << ")" << std::endl;
-					handleNewConnection();
-					continue;
+					const std::vector<int>& serverSockets = m_listening_sockets[socket_i].getServerSockets();
+					if (m_epoll.isServerSocket(fd, serverSockets)) {
+						is_server_socket = true;
+						handleNewConnection(socket_i);
+						break;
+					}
 				}
+				if (is_server_socket)
+					continue;
+
 				if (m_epoll.isTypeEvent(event, EPOLLIN)) 
 				{
-					std::cout << "EPOLLIN event detected for fd: " << fd << std::endl;
-					handleClientData(fd);
+					try
+					{
+						std::cout << "EPOLLIN event detected for fd: " << fd << std::endl;
+						handleClientData(fd);
+					}
+					catch(const HTTPException& e)
+					{
+						const auto& conf = m_configs[m_client_to_socket_index[fd]];
+						const std::string& uri = getClient(fd).getRequest().getStartLine().get_uri();
+						const LocationContext* location = find_location(uri, conf);
+				
+						Response response = build_error_page(e.getStatusCode(), location, conf);
+						sendResponseToClient(fd, response);
+						std::cerr << e.what() << '\n';
+					}
 					continue ;
 				}
 			}
-            //* print all fds in m_clients after each loop to check
-            std::cout << "Current m_clients fds: ";
-            for (std::map<int, Client>::iterator it = m_clients.begin(); it != m_clients.end(); ++it) {
-                std::cout << it->first << " ";
-            }
-            std::cout << std::endl; //! delete afterwards this current_clients fd
+
+			//* timeout
+			auto now = std::chrono::steady_clock::now();
+			for (auto it = m_clients.begin(); it != m_clients.end();)
+			{
+				int fd = it->first;
+				Client& client = it->second;
+				if (now - client.getLastActivity() > TIMEOUT)
+				{
+					std::cout << "Client " << it->first << " timed out" << std::endl;
+					//* partial request
+					if (!client.hasCompleteRequest() && !client.getRequest().is_empty())
+					{
+						std::cout << "going in this block" << std::endl;
+						HTTPException timeout(HTTPStatusCode::RequestTimeout, "Request timed out\n");
+						sendErrorResponse(fd, timeout);
+					}
+					++it;
+					removeClient(fd);
+				}
+				else
+					++it;
+			}
 		}
 		catch (const EpollException& e) {
 			std::cerr << "Epoll error: " << e.what() << std::endl;
@@ -136,10 +187,9 @@ void Server::removeClient(int fd)
 	auto it = m_clients.find(fd);
 	if (it != m_clients.end())
 	{
-		it->second.disconnect();
-		m_clients.erase(it);
 		m_epoll.removeFD(fd);
 		m_client_to_socket_index.erase(fd);
+		m_clients.erase(it);
 	}
 }
 
@@ -150,6 +200,7 @@ Client& Server::getClient(int fd)
 
 void Server::setupListeningSockets()
 {	
+	m_listening_sockets.reserve(m_configs.size());
 	for (const ServerContext& config : m_configs)
 	{
 		m_listening_sockets.emplace_back(10); //! 10 backlog
@@ -187,46 +238,52 @@ void Server::processRequest(int client_fd, const Request& request)
 	// 	socket_index = 0; //! handle error, comment in if it works
 	const ServerContext& config = m_configs[socket_index];
 	RequestHandler handler(config);
-	try {
-		std::cout << "Handling request for URI: " << request.getStartLine().get_uri() << std::endl; //! TEST
-		Response response = handler.handle(request);
-		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST 
-		std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST 
-		sendResponseToClient(client_fd, response);
+	std::cout << "Handling request for URI: " << request.getStartLine().get_uri() << std::endl; //! TEST
+	const std::string& uri = request.getStartLine().get_uri();
+	const LocationContext* location = find_location(uri, config);
+
+	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(uri))
+	{
+		std::cout << "CGI request\n";
+		m_cgi.add_process(request, m_epoll, client_fd, location, config);
 	}
-	catch (const HTTPException& e) {
-		std::cerr << "HTTP Error: " << e.what() << std::endl; //! TEST
-		sendErrorResponse(client_fd, e);
+	else
+	{
+		Response response = handler.handle(request, uri, location);
+		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST
+		std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST
+		sendResponseToClient(client_fd, response);
 	}
 }
 
 void Server::sendResponseToClient(int client_fd, const Response& response)
 {
 	std::string response_str = response.to_str();
-	std::cout << "Sending response of length: " << response_str.length() << std::endl; //! TEST 
-	std::cout << "Response content: " << response_str << std::endl; //! TEST 
+	std::cout << "Sending response of length: " << response_str.length() << std::endl; //! TEST
 	ssize_t bytes_sent = send(client_fd, response_str.c_str(), response_str.length(), 0);
 	if (bytes_sent == -1)
 		std::cerr << "Error sending response: " << strerror(errno) << std::endl; //! TEST 
 	else
-		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST 
+		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST
+const std::string &connection_header = getClient(client_fd).getRequest().getHeaders().get_header("connection");
+	if (connection_header == "close")
+		removeClient(client_fd);
+	else
+		getClient(client_fd).clearRequest();
 }
 
-void Server::handleNewConnection()
+void Server::handleNewConnection(size_t socket_index)
 {
-	for (size_t i = 0; i < m_listening_sockets.size(); ++i)
+	Socket& socket = m_listening_sockets[socket_index];
+	const std::vector<int>& serverSockets = socket.getServerSockets();
+	for (int server_fd : serverSockets)
 	{
-		Socket& socket = m_listening_sockets[i];
-		const std::vector<int>& serverSockets = socket.getServerSockets();
-		if (serverSockets.empty())
-			continue;
-			
 		try {
-			int client_fd = socket.acceptConnection(serverSockets[0]);
+			int client_fd = socket.acceptConnection(server_fd);
 			std::cout << "New connection accepted on fd: " << client_fd << std::endl;
 			try {
 				addClient(client_fd);
-				m_client_to_socket_index[client_fd] = i;
+				m_client_to_socket_index[client_fd] = socket_index;
 				std::cout << "Client added successfully" << std::endl;
 			} catch (const std::exception& e) {
 				std::cerr << "Failed to set up client: " << e.what() << std::endl;
@@ -263,8 +320,9 @@ void Server::handleClientData(int client_fd)
 	// std::cout << "\n--- Raw Request Data ---" << std::endl;
 	// std::cout << std::string(buffer, bytes_read) << std::endl;
 	// std::cout << "------------------------\n" << std::endl;
-    
-	client.receiveData(buffer, bytes_read);
+
+    const auto& conf = m_configs[m_client_to_socket_index[client_fd]];
+	client.receiveData(buffer, bytes_read, conf.m_client_max_body_size.value().m_size);
 	
 	std::cout << "Checking if request is complete..." << std::endl;
 	if (client.hasCompleteRequest())
@@ -274,7 +332,6 @@ void Server::handleClientData(int client_fd)
 		std::cout << "Request method: " << req.getStartLine().get_http_method() << std::endl;
 		std::cout << "Request URI: " << req.getStartLine().get_uri() << std::endl;
 		processRequest(client_fd, req);
-		client.clearRequest();
 	}
 	else
 	{

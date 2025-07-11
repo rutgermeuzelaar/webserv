@@ -1,3 +1,4 @@
+#include "Pch.hpp"
 #include <vector>
 #include <iostream>
 #include <string>
@@ -64,8 +65,16 @@ std::string stringify(TokenType type)
 		case TokenType::Return: return "Return";
 		case TokenType::On: return "On";
 		case TokenType::Off: return "Off";
-		default: assert(false);
+        case TokenType::Index: return "Index";
+        case TokenType::LimitExcept: return "LimitExcept";
+        case TokenType::Get: return "Get";
+        case TokenType::Post: return "Post";
+        case TokenType::Delete: return "Delete";
+        case TokenType::UploadStore: return "UploadStore";
+        case TokenType::TokenTypeCount: return "TokenTypeCount";
+        default: return "";
 	}
+    assert(false);
 }
 
 void Token::print() const

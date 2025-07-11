@@ -1,16 +1,11 @@
-#include <chrono>
+#include "Pch.hpp"
 #include <cassert>
-#include <filesystem>
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <sstream>
-#include <ctime>
 #include "RequestHandler.hpp"
-#include "Response.hpp"
 #include "Utilities.hpp"
 #include "MIMETypes.hpp"
+#include "Response.hpp"
+#include "Request.hpp"
 
 static std::string create_header(const std::filesystem::path& directory)
 {
@@ -39,7 +34,7 @@ static std::string create_table_rows(const std::filesystem::path& directory)
 
 		std::string time_stamp;
 
-		if (stat(directory.string().c_str(), &attributes) == -1)
+		if (stat(item_path.c_str(), &attributes) == -1)
 		{
 			throw (std::runtime_error("stat"));
 		}
@@ -61,7 +56,7 @@ static std::string create_table_rows(const std::filesystem::path& directory)
         }
         table_rows += std::string(
             "<tr>"
-                "<td><a href=\"") + item_path + std::string("\">") + item_name + \
+                "<td><a href=\"") + std::string(item_path).erase(0, 1) + std::string("\">") + item_name + \
 				std::string("</a></td>"
                 "<td>") + time_stamp + std::string ("</td>"
                 "<td>") + file_size + std::string("</td>"
@@ -97,23 +92,15 @@ const std::string create_directory_listing(const std::filesystem::path& director
     return directory_listing;
 }
 
-static bool is_jpeg(const std::filesystem::path& extension)
+const std::string get_mime_type(const std::string& extension)
 {
-    if (extension == ".jpg") return true;    
-    if (extension == ".jpeg") return true;    
-    if (extension == ".jpe") return true;    
-    if (extension == ".jfif") return true;    
-    if (extension == ".jif") return true;
-    return (false);   
-}
-
-const std::string get_mime_type(const std::filesystem::path& extension)
-{
-    if (extension == ".css") return "text/css";
-    if (extension == ".html") return "text/html";
-    if (extension == ".ico") return "image/x-icon";
-    if (is_jpeg(extension)) return "image/jpeg";
-    if (extension == ".png") return "image/png";
+    for (auto it: g_mime_types)
+    {
+        if (std::find(it.second.begin(), it.second.end(), extension) != it.second.end())
+        {
+            return it.first;
+        }
+    }
     return "text/plain";
 }
 
@@ -156,20 +143,32 @@ static std::filesystem::path map_uri_helper(std::filesystem::path root_path, std
 	return root_path;
 }
 
-static bool has_index_html(std::filesystem::path uri)
+static void find_page(const Index& index, std::string& buffer, std::filesystem::path uri)
 {
-    uri.append("index.html");
-    return (std::filesystem::exists(uri));
+    for (auto it: index.m_files)
+    {
+        std::filesystem::path uri_cp = uri;
+        std::error_code ec;
+        if (std::filesystem::exists(uri_cp.append(it), ec))
+        {
+            buffer = it;
+            return;
+        }
+        else if (ec.value() == EACCES)
+        {
+            throw HTTPException(HTTPStatusCode::Forbidden);
+        }
+    }
 }
 
 // should find the most specific location
-const LocationContext* RequestHandler::find_location(const std::string& folder_path) const
+const LocationContext* find_location(const std::string& folder_path, const ServerContext& config)
 {
     size_t uri_match_len;
     const LocationContext* match = nullptr;
 
     uri_match_len = 0;
-    for (auto& it :m_config.m_location_contexts)
+    for (auto& it :config.m_location_contexts)
     {
         if (folder_path.compare(0, it.m_uri.size(), it.m_uri) == 0)
         {
@@ -183,7 +182,7 @@ const LocationContext* RequestHandler::find_location(const std::string& folder_p
     return match;
 }
 
-std::filesystem::path RequestHandler::map_uri(std::string uri, const LocationContext* location)
+std::filesystem::path map_uri(std::string uri, const LocationContext* location, const Root& root)
 {
 	std::filesystem::path uri_path(uri);
 	
@@ -191,7 +190,7 @@ std::filesystem::path RequestHandler::map_uri(std::string uri, const LocationCon
     {
         return map_uri_helper(location->m_root.value().m_path, uri_path);
     }
-	return map_uri_helper(m_config.m_root.value().m_path, uri_path);
+	return map_uri_helper(root.m_path, uri_path);
 }
 
 static Response build_redirect(const Return& return_obj)
@@ -210,7 +209,7 @@ static const std::string create_dynamic_error_page(HTTPStatusCode status_code)
     "<html lang=\"en-US\">"
         "<head>"
             "<meta charset=\"utf-8\"/>"
-            "<link rel=\"stylesheet\" href=\"../css/stylesheet.css\">"
+            "<link rel=\"stylesheet\" href=\"" STYLESHEET "\">"
             "<title>") + status_text + std::string("</title>"
         "</head>"
         "<body>"
@@ -222,7 +221,7 @@ static const std::string create_dynamic_error_page(HTTPStatusCode status_code)
 	return error_page;
 }
 
-Response RequestHandler::build_error_page(HTTPStatusCode status_code, const LocationContext* location)
+Response build_error_page(HTTPStatusCode status_code, const LocationContext* location, const ServerContext& config)
 {
     Response response(status_code);
 
@@ -238,7 +237,7 @@ Response RequestHandler::build_error_page(HTTPStatusCode status_code, const Loca
             }
         }
     }
-    for (auto& it: m_config.m_error_pages)
+    for (auto& it: config.m_error_pages)
     {
         if (it.m_status_code == status_code)
         {
@@ -250,21 +249,27 @@ Response RequestHandler::build_error_page(HTTPStatusCode status_code, const Loca
     return response;
 }
 
-Response RequestHandler::handle_get(const Request& request)
+Response RequestHandler::handle_get(const LocationContext* location, std::filesystem::path& local_path)
 {
-	const std::string& uri = request.getStartLine().get_uri();
-    const LocationContext* location = find_location(uri);
-	std::filesystem::path local_path = map_uri(uri, location);
-
     if (location != nullptr && location->m_return.has_value())
     {
         return build_redirect(*location->m_return);
     }
     if (std::filesystem::is_directory(local_path))
     {
-        if (has_index_html(local_path))
+        std::string page_name_buf;
+
+        if (location == nullptr || !location->m_index.has_value())
         {
-            local_path.append("index.html");
+            find_page(m_config.m_index.value(), page_name_buf, local_path);
+        }
+        else
+        {
+            find_page(location->m_index.value(), page_name_buf, local_path);
+        }
+        if (!page_name_buf.empty())
+        {
+            local_path.append(page_name_buf);
         }
         else if (m_config.m_auto_index.value().m_on)
         {
@@ -276,29 +281,49 @@ Response RequestHandler::handle_get(const Request& request)
         }
         else
         {
-            return build_error_page(HTTPStatusCode::NotFound, location);
+            return build_error_page(HTTPStatusCode::NotFound, location, m_config);
         }
     }
 	if (!std::filesystem::exists(local_path))
 	{
-        return build_error_page(HTTPStatusCode::NotFound, location);
+        return build_error_page(HTTPStatusCode::NotFound, location, m_config);
 	}
-    // directory request
-	Response response(HTTPStatusCode::OK);
+	Response response(HTTPStatusCode::OK);  
 	response.setBodyFromFile(local_path);
-    response.setContentType(get_mime_type(local_path.extension()));
+    response.setContentType(get_mime_type(local_path.extension().string()));
     response.setHeader("Content-Disposition", "inline");
 	return response;
-		// create 
-	// if file exists
-	 // if file exists but you don't have permissions
-	// if file does not exist
 }
 
-Response RequestHandler::handle_delete(const Request& request)
+Response RequestHandler::handle_delete(std::filesystem::path& local_path)
 {
-    (void)request;
-    return Response();
+    std::error_code ec;
+    if (!std::filesystem::exists(local_path, ec))
+    {
+        if (!ec)
+        {
+            throw HTTPException(HTTPStatusCode::NotFound);
+        }
+        if (ec.value() == EACCES)
+        {
+            throw HTTPException(HTTPStatusCode::Forbidden);
+        }
+        throw HTTPException(HTTPStatusCode::InternalServerError);
+    }
+    if (!std::filesystem::remove(local_path, ec))
+    {
+        if (ec.value() == EACCES)
+        {
+            throw HTTPException(HTTPStatusCode::Forbidden);
+        }
+		if (ec.value() == ENOTEMPTY)
+		{
+			throw HTTPException(HTTPStatusCode::Conflict);
+		}
+        throw HTTPException(HTTPStatusCode::InternalServerError);
+    }
+    Response response(HTTPStatusCode::NoContent);
+    return response;
 }
 
 static const std::string get_extension(const std::string& mime_type)
@@ -315,39 +340,94 @@ static const std::string get_extension(const std::string& mime_type)
     return "";
 }
 
-Response RequestHandler::handle_post(const Request& request)
+Response RequestHandler::handle_post(const Request& request, const UploadStore& upload_store)
 {
     const MultiPartChunk& chunk = request.getBody().get_multi_part_chunk();
     const std::string file_name = create_file_name(get_extension(chunk.get_mime_type()));
-    std::string path = "./root/upload/";
+    std::string path = upload_store.m_path;
 
-    path.append(file_name);
+    if (ends_with(path, "/"))
+    {
+        path.append(file_name);
+    }
+    else
+    {
+        path.append("/");
+        path.append(file_name);
+    }
     std::ofstream file(path);
     if (file.fail())
     {
+        if (errno == EACCES)
+        {
+            throw HTTPException(HTTPStatusCode::Forbidden);
+        }
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
     file << chunk.m_data;
     file.close();
     Response response(HTTPStatusCode::SeeOther);
-    response.setHeader("Location", "/root/upload/");
+    response.setHeader("Location", path);
     response.setHeader("Content-Length", "0");
     return response;
 }
 
-// for now URI and method only
-Response RequestHandler::handle(const Request& request)
+bool is_cgi_request(const std::string& uri)
 {
-	switch (request.getStartLine().get_http_method())
-	{
-		case HTTPMethod::GET:
-			return handle_get(request);
-		case HTTPMethod::DELETE:
-			return handle_delete(request);
-		case HTTPMethod::POST:
-			return handle_post(request);
+    const std::string cgi_str = "/" CGI_DIR "/";
+
+    size_t str_pos = uri.find("/" CGI_DIR "/", 0);
+
+    if (str_pos == std::string::npos)
+    {
+        return (false);
+    }
+    if (str_pos + cgi_str.size() == uri.size())
+    {
+        return (false);
+    }
+    return (true);
+}
+
+bool request_method_allowed(const LocationContext* location, HTTPMethod method)
+{   
+    if (location != nullptr && location->m_limit_except.has_value())
+    {
+        const auto& allowed = location->m_limit_except.value().m_allowed_methods;
+
+        if (std::find(allowed.begin(), allowed.end(), method) == allowed.end())
+        {
+            return (false);
+        }
+    }
+    return (true);
+}
+
+Response RequestHandler::handle(const Request& request, const std::string& uri, const LocationContext* location)
+{
+    const HTTPMethod method = request.getStartLine().get_http_method();
+	std::filesystem::path local_path = map_uri(uri, location, m_config.m_root.value());
+
+    if (!request_method_allowed(location, method))
+    {
+        return build_error_page(HTTPStatusCode::MethodNotAllowed, location, m_config);
+    }
+    switch (method)
+    {
+        case HTTPMethod::GET:
+            return handle_get(location, local_path);
+        case HTTPMethod::DELETE:
+            return handle_delete(local_path);
+        case HTTPMethod::POST:
+            if (location == nullptr || !location->m_upload_store.has_value())
+            {
+                return handle_post(request, m_config.m_upload_store.value());
+            }
+            else
+            {
+                return handle_post(request, location->m_upload_store.value());
+            }
         default:
-            break;
-	}
-    throw std::runtime_error("Unsupported HTTP method.");
+            return build_error_page(HTTPStatusCode::BadRequest, location, m_config);
+    }
 }

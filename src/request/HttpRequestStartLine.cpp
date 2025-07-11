@@ -1,3 +1,4 @@
+#include "Pch.hpp"
 #include <vector>
 #include "HttpRequestStartLine.hpp"
 #include "Utilities.hpp"
@@ -8,15 +9,6 @@ HttpRequestStartLine::HttpRequestStartLine()
     : m_complete {false}
 {
 
-}
-
-HttpRequestStartLine& HttpRequestStartLine::operator=(const HttpRequestStartLine& http_request_start_line)
-{
-    m_http_method = http_request_start_line.m_http_method;
-    m_uri = http_request_start_line.m_uri;
-    m_version = http_request_start_line.m_version;
-    m_complete = http_request_start_line.m_complete;
-    return *this;
 }
 
 HttpRequestStartLine::~HttpRequestStartLine()

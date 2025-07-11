@@ -1,5 +1,5 @@
+#include "Pch.hpp"
 #include <cassert>
-#include <sstream>
 #include <iostream>
 #include "Request.hpp"
 #include "Utilities.hpp"
@@ -100,18 +100,7 @@ void Request::printRequest() const
 	// std::cout << "---------------------\n" << std::endl;
 }
 
-Request& Request::operator=(const Request& request)
-{
-    _start_line = request._start_line;
-    _headers = request._headers;
-    _body = request._body;
-    _raw = request._raw;
-    _index = request._index;
-    _line_count = request._line_count;
-    return *this;
-}
-
-void Request::append(const char* buffer, size_t len)
+void Request::append(const char* buffer, size_t len, size_t client_max_body_size)
 {
     size_t index_copy = _index;
 
@@ -124,14 +113,18 @@ void Request::append(const char* buffer, size_t len)
     {
         if (!_body.initialized())
         {
-            _body = HttpBody(&_headers, _start_line.get_http_method(), 1000000);
+            _body = HttpBody(&_headers, _start_line.get_http_method(), client_max_body_size);
         }
     }
-    if (complete())
+    if (complete() || _start_line.get_http_method() != HTTPMethod::POST)
     {
         return;
     }
-    assert(_start_line.get_http_method() == HTTPMethod::POST);
+    // assert(_start_line.get_http_method() == HTTPMethod::POST); //! finish @rutger
+	if (_start_line.get_http_method() == HTTPMethod::POST)
+	{
+		std::cout << "";	
+	}
     std::cout << "index: " << _index << "index_copy: " << index_copy << '\n';
     if (_start_line.complete() && _headers.complete())
     {
@@ -154,4 +147,9 @@ void Request::append(const char* buffer, size_t len)
 bool Request::complete(void) const
 {
     return (_start_line.complete() && _headers.complete() && _body.complete());
+}
+
+bool Request::is_empty() const
+{
+	return _raw.empty();
 }

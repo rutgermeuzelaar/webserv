@@ -1,12 +1,11 @@
+#include "Pch.hpp"
 #include <fstream>
-#include <sstream>
 #include <cassert>
 #include "HttpBody.hpp"
 #include "HTTPException.hpp"
 #include "Utilities.hpp"
 #include "HttpHeaders.hpp"
 #include "Defines.hpp"
-#include <stdio.h>
 
 /**
  * @brief parses the request body based on Content-Length header
@@ -38,6 +37,8 @@ HttpBody::HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_
 	std::string transfer_encoding = headers->get_header("transfer-encoding");
 	if (transfer_encoding == "chunked")
 	{
+		if (!headers->get_header("content-length").empty())
+			throw HTTPException(HTTPStatusCode::BadRequest, "Chunked Encoding cannot have Content length");
 		m_is_chunked = true;
 		m_chunked_decoder = ChunkedDecoder();
 		m_initialized = true;
@@ -83,27 +84,23 @@ HttpBody::HttpBody(void)
 	, m_initialized {false}
 	, m_complete {false}
 	, m_headers {nullptr}
-{
+	, m_is_chunked{false}
+{}
 
-}
-
-HttpBody& HttpBody::operator=(const HttpBody& http_body)
-{
-	m_raw = http_body.m_raw;
-	m_index = http_body.m_index;
-	m_data_start = http_body.m_data_start;
-	if (http_body.m_boundary.has_value())
-	{
-		m_boundary.emplace(http_body.m_boundary.value());
-	}
-	m_content_length = http_body.m_content_length;
-	m_client_max_body_size = http_body.m_client_max_body_size;
-	m_initialized = http_body.m_initialized;
-	m_complete = http_body.m_complete;
-	m_chunk = http_body.m_chunk;
-	m_headers = http_body.m_headers;
-	return *this;
-}
+HttpBody::HttpBody(const HttpBody& http_body)
+    : m_raw {http_body.m_raw}
+    , m_index {http_body.m_index}
+    , m_data_start {http_body.m_data_start}
+    , m_boundary {http_body.m_boundary}
+    , m_content_length {http_body.m_content_length}
+    , m_client_max_body_size {http_body.m_client_max_body_size}
+    , m_initialized {http_body.m_initialized}
+    , m_complete {http_body.m_complete}
+    , m_chunk {http_body.m_chunk}
+    , m_headers {http_body.m_headers}
+	, m_is_chunked {http_body.m_is_chunked}
+	, m_chunked_decoder {http_body.m_chunked_decoder}
+{}
 
 static std::string get_normal_boundary(const std::string& boundary)
 {
@@ -132,24 +129,30 @@ bool HttpBody::complete(void) const
 
 void HttpBody::append(const std::string& chunk)
 {
-	if ((m_raw.size() + chunk.size()) > m_client_max_body_size)
-	{
-		throw HTTPException(HTTPStatusCode::ContentTooLarge);
-	}
 	if (m_is_chunked)
 	{
 		m_chunked_decoder.append(chunk);
+		
+		const std::string& current_decoded = m_chunked_decoder.get_decoded();
+		if (current_decoded.size() > m_client_max_body_size)
+			throw HTTPException(HTTPStatusCode::ContentTooLarge);
 		if (m_chunked_decoder.complete())
 		{
-			m_raw = m_chunked_decoder.get_decoded();
+			m_raw = current_decoded;
 			m_complete = true;
 			parse();
 		}
 	}
 	else
 	{
+		if ((m_raw.size() + chunk.size()) > m_client_max_body_size)
+			throw HTTPException(HTTPStatusCode::ContentTooLarge);
 		m_raw.append(chunk);
-		parse();
+		if (m_raw.size() >= m_content_length)
+		{
+			m_complete = true;
+			parse();
+		}
 	}
 }
 
@@ -331,22 +334,34 @@ bool ChunkedDecoder::parse_chunk_data(size_t& pos)
 	size_t bytes_needed = m_expected_chunk_size - m_current_chunk_read;
 	size_t available_data = m_buffer.size() - pos;
 
+	//* all chunks read, only CRLF validation
+	if (bytes_needed == 0)
+	{
+		//* at least 2 bytes available for /r/n
+		if (available_data < 2)
+			return false;
+		if (m_buffer.substr(pos,2) != LINE_BREAK)
+			throw HTTPException(HTTPStatusCode::BadRequest, "Missing CRLF after chunk data");
+		pos += 2;
+		return true;
+	}
+
 	//* not enough data for complete chunk + CRLF
 	if (available_data < bytes_needed + 2)
 	{
 		size_t to_read = std::min(bytes_needed, available_data);
-		m_decoded.append(m_buffer.substr(pos, to_read));
-		m_current_chunk_read += to_read;
-		pos += to_read;
+		if (to_read > 0)
+		{
+			m_decoded.append(m_buffer.substr(pos, to_read));
+			m_current_chunk_read += to_read;
+			pos += to_read;
+		}
 		return false;
 	}
 
-	//* read remainder data
-	if (bytes_needed > 0)
-	{
-		m_decoded.append(m_buffer.substr(pos, bytes_needed));
-		pos += bytes_needed;
-	}
+	//* enough data, read remainder data
+	m_decoded.append(m_buffer.substr(pos, bytes_needed));
+	pos += bytes_needed;
 
 	//* CRLF check after chunk data
 	if (m_buffer.substr(pos, 2) != LINE_BREAK)
@@ -366,19 +381,21 @@ bool ChunkedDecoder::parse_chunk_data(size_t& pos)
  */
 bool ChunkedDecoder::parse_trailer(size_t& pos)
 {
-	size_t crlf_pos = m_buffer.find(LINE_BREAK, pos);
-	if (crlf_pos == std::string::npos)
-		return false;
-
-	std::string trailer_line = m_buffer.substr(pos, crlf_pos - pos);
-	if (trailer_line.empty())
+	while (pos < m_buffer.size())
 	{
-		pos += 2;
-		return true;
+		size_t crlf_pos = m_buffer.find(LINE_BREAK, pos);
+		if (crlf_pos == std::string::npos)
+			return false;
+	
+		std::string trailer_line = m_buffer.substr(pos, crlf_pos - pos);
+		if (trailer_line.empty())
+		{
+			pos += 2;
+			return true;
+		}
+		//? implement process trailer headers?
+		pos = crlf_pos + 2;
 	}
-
-	//? implement process trailer headers?
-	pos += 2;
 	return false;
 }
 

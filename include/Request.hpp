@@ -29,10 +29,11 @@ class Request
     public:
         Request();
         ~Request(); 
-        Request& operator=(const Request&);
+        Request& operator=(const Request&) = default;
 
-        void append(const char* buffer, size_t len);
+        void append(const char* buffer, size_t len, size_t client_max_body_size);
         bool complete(void) const;
+		bool is_empty() const;
 
         //* getters
         HttpRequestStartLine& getStartLine();

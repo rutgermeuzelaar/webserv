@@ -15,6 +15,7 @@ class ServerContext: public ConfigDirective
     public:
         ServerContext();
         LocationContext& get_location(void);
+        bool is_valid(void) const;
         std::vector<LocationContext> m_location_contexts;
         std::vector<ErrorPage> m_error_pages;
         std::optional<Return> m_return;
@@ -23,6 +24,8 @@ class ServerContext: public ConfigDirective
         std::optional<Root> m_root;
         std::optional<ClientMaxBodySize> m_client_max_body_size;
         std::optional<AutoIndex> m_auto_index;
+        std::optional<Index> m_index;
+        std::optional<UploadStore> m_upload_store;
 };
 
 bool operator==(const ServerContext&, const ServerContext&);

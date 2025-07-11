@@ -15,6 +15,11 @@ enum class TokenType: int
 	On,
 	Off,
 
+    // HTTP methods
+    Get,
+    Post,
+    Delete,
+
     // NGINX keywords
     ClientMaxBodySize,
     ErrorPage,
@@ -26,7 +31,10 @@ enum class TokenType: int
     Listen,
 	Return,
 	AutoIndex,
-	//
+    Index,
+    LimitExcept,
+    UploadStore,
+
     Eof,
 	TokenTypeCount
 };

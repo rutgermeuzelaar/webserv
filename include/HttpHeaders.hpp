@@ -12,7 +12,8 @@ class HttpHeaders
 
     public:
         HttpHeaders(void);
-        HttpHeaders& operator=(const HttpHeaders&);
+        HttpHeaders(const HttpHeaders&);
+        HttpHeaders& operator=(const HttpHeaders&) = default;
         ~HttpHeaders(void);
 
         /**

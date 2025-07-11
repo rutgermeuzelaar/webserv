@@ -12,7 +12,8 @@ class MultiPartChunk
         std::tuple<std::string, std::unordered_map<std::string, std::string>> m_content_disposition;
     public:
         MultiPartChunk(void);
-        MultiPartChunk& operator=(const MultiPartChunk&);
+        MultiPartChunk(const MultiPartChunk&);
+        MultiPartChunk& operator=(const MultiPartChunk&) = default;
         ~MultiPartChunk(void);
         std::string m_data;
         HttpHeaders m_headers;

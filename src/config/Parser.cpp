@@ -1,4 +1,4 @@
-#include <sstream>
+#include "Pch.hpp"
 #include <stdexcept>
 #include <iostream>
 #include <filesystem>
@@ -297,6 +297,15 @@ void Parser::parse_statement()
         case TokenType::ClientMaxBodySize:
             parse_client_max_body_size();
             break;
+        case TokenType::Index:
+            parse_index();
+            break;
+        case TokenType::LimitExcept:
+            parse_limit_except();
+            break;
+        case TokenType::UploadStore:
+            parse_upload_store();
+            break;
         default:
             log_error("Unexpected token.");
             throw Error();
@@ -559,4 +568,123 @@ void Parser::set_auto_index(AutoIndex auto_index)
             add_to_context<AutoIndex>(m_config.get_server().get_location().m_auto_index, auto_index);
             return;
     }
+}
+
+void Parser::parse_index(void)
+{
+    std::vector<std::string> files;
+
+    while (match({TokenType::String}))
+    {
+        files.push_back(peek().m_str);
+        advance();
+    }
+    if (files.size() < 1)
+    {
+        log_error("At least one argument required.");
+        throw Parser::Error();
+    }
+    try
+    {
+        set_index(Index(files));
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what());
+        throw Parser::Error();
+    }
+}
+
+void Parser::set_index(Index index)
+{
+    const ContextName context = m_contexts.top();
+
+    switch (context)
+    {
+        case ContextName::Http:
+            add_to_context<Index>(m_config.m_http_context.m_index, index);
+            return;
+        case ContextName::Server:
+            add_to_context<Index>(m_config.get_server().m_index, index);
+            return;
+        case ContextName::Location:
+            add_to_context<Index>(m_config.get_server().get_location().m_index, index);
+            return;
+    }
+}
+
+void Parser::set_limit_except(LimitExcept limit_except)
+{
+    const ContextName context = m_contexts.top();
+
+    switch (context)
+    {
+        case ContextName::Location:
+            add_to_context<LimitExcept>(m_config.get_server().get_location().m_limit_except, limit_except);
+            return;
+        default:
+            throw std::runtime_error(context_forbidden);
+    }
+}
+
+void Parser::parse_limit_except(void)
+{
+    std::vector<std::string> methods;
+
+    while (match({TokenType::Get, TokenType::Post, TokenType::Delete}))
+    {
+        methods.push_back(peek().m_str);
+        advance();  
+    }
+    if (methods.size() < 1)
+    {
+        log_error("At least one argument required.");
+        throw Parser::Error();
+    }
+    try
+    {
+        set_limit_except(LimitExcept(methods));
+    }
+    catch (const std::exception& error)
+    {
+        log_error(error.what());
+        throw Parser::Error();
+    }
+}
+
+void Parser::parse_upload_store(void)
+{
+    consume(TokenType::Path, "Expected path");
+    if (!std::filesystem::exists(previous().m_str))
+    {
+		log_error(previous().m_str);
+        throw Parser::Error();
+    }
+    try
+    {
+        set_upload_store(UploadStore(previous().m_str));
+    }
+    catch(const std::exception& error)
+    {
+        log_error(error.what());
+        throw Parser::Error();
+    }
+}
+
+void Parser::set_upload_store(UploadStore upload_store)
+{
+    const ContextName context = m_contexts.top();
+
+    switch (context)
+    {
+        case ContextName::Http:
+            add_to_context<UploadStore>(m_config.m_http_context.m_upload_store, upload_store);
+            return;
+        case ContextName::Server:
+            add_to_context<UploadStore>(m_config.get_server().m_upload_store, upload_store);
+            return;
+        case ContextName::Location:
+            add_to_context<UploadStore>(m_config.get_server().get_location().m_upload_store, upload_store);
+            return;
+    }  
 }

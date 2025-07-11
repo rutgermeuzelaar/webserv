@@ -1,4 +1,6 @@
-#include "../include/Socket.hpp"
+#include "Pch.hpp"
+#include <cassert>
+#include "Socket.hpp"
 
 /**
  * @brief Constructor for the Socket class
@@ -102,17 +104,13 @@ void Socket::closeAllSockets()
 bool Socket::initSocket(const ServerContext& config)
 {
 	try {
-		std::string port = "1050"; //* default for now
-		std::string server_name = "default";
+        assert("Listen object should be fully initialized here" && config.m_listen.has_value() && config.m_listen.value().m_port.has_value());
+        assert("Config should contain server_name here" && config.m_server_name.has_value());
+        const std::string port = config.m_listen.value().m_port.value().to_string();
+        const std::string server_name = config.m_server_name.value().m_name;
 
-		if (config.m_listen.has_value() && 
-            config.m_listen.value().m_port.has_value())
-            port = config.m_listen.value().m_port.value().to_string();
-		
 		int socketFD = createSocket(port);
 		_serverSockets.push_back(socketFD);
-		if (config.m_server_name.has_value())
-			server_name = config.m_server_name.value().m_name;
 		_socketToServer[socketFD] = server_name;
 		_isRunning = true;
 		return true;
