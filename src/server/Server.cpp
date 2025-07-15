@@ -1,6 +1,7 @@
 #include "Pch.hpp"
 #include "Server.hpp"
 #include "Client.hpp"
+#include <cassert>
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
@@ -195,7 +196,9 @@ void Server::removeClient(int fd)
 
 Client& Server::getClient(int fd)
 {
-	return m_clients.at(fd);
+    assert("Client should exist" && std::find_if(m_clients.begin(), m_clients.end(), [fd](const auto& pair){return pair.second.getSocketFD() == fd;}) 
+    !=  m_clients.end());
+    return m_clients.at(fd);
 }
 
 void Server::setupListeningSockets()
