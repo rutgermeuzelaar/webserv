@@ -20,8 +20,8 @@ PCH := include/Pch.hpp.gch
 
 all: $(NAME)
 
-debug: CXXFLAGS += -g
-debug: LDFLAGS += -fsanitize=address
+debug: CXXFLAGS += -g -pg
+debug: LDFLAGS += -pg
 debug: CXXFLAGS := $(filter-out -DNDEBUG,$(CXXFLAGS))
 debug: $(NAME)
 
