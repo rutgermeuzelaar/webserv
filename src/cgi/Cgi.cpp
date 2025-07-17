@@ -253,3 +253,28 @@ bool Cgi::is_cgi_fd(int fd) const
     }
     return (true);
 }
+
+bool Cgi::has_children(void) const
+{
+    return (!m_children.empty());
+}
+
+CgiProcess& Cgi::get_child(int fd)
+{
+    auto child = std::find_if(m_children.begin(), m_children.end(), [fd](auto& process){return process.m_read_fd == fd;});
+
+    assert("This function should only be called for existing childprocesses" && child != m_children.end());
+    return *child;
+}
+
+void Cgi::erase_child(int fd)
+{
+    auto child = std::find_if(m_children.begin(), m_children.end(), [fd](auto& process){return process.m_read_fd == fd;});
+
+    m_children.erase(child);
+}
+
+std::list<CgiProcess>& Cgi::get_children(void)
+{
+    return m_children;
+}
