@@ -162,6 +162,10 @@ void Server::removeClient(int fd)
 	auto it = m_clients.find(fd);
 	if (it != m_clients.end())
 	{
+        if (it->second.m_cgi_process != nullptr)
+        {
+            it->second.m_cgi_process->m_client_connected = false;
+        }
 		m_epoll.removeFD(fd);
 		m_client_to_socket_index.erase(fd);
 		m_clients.erase(it);
