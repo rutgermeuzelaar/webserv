@@ -27,12 +27,13 @@ Cgi::Cgi(char **envp, size_t timeout_ms)
 void Cgi::reap_dtor(void)
 {
     int exit_status;
+    auto it = m_children.begin();
 
-    for (const auto& it = m_children.begin(); it != m_children.end();)
+    while (it != m_children.end())
     {
         (void)kill(it->m_pid, SIGINT);
         (void)waitpid(it->m_pid, &exit_status, 0);
-        m_children.erase(it);
+        it = m_children.erase(it);
     }
 }
 
@@ -44,9 +45,9 @@ Cgi::~Cgi()
 void Cgi::timeout(void)
 {
     const auto time_now = std::chrono::steady_clock::now();
-
-    for (std::vector<CgiProcess>::iterator it = m_children.begin(); it != m_children.end(); ++it)
+    for (auto it = m_children.begin(); it != m_children.end(); ++it)
     {
+        if (it->m_reaped) continue;
         const auto ms_diff = std::chrono::duration_cast<std::chrono::milliseconds>(time_now - it->m_start);
         if (ms_diff > m_timeout_ms)
         {
