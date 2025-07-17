@@ -52,7 +52,9 @@ class HttpBody
         MultiPartChunk m_chunk;
         const HttpHeaders* m_headers;
 		bool m_is_chunked;
+        std::string m_content_type;
 		ChunkedDecoder m_chunked_decoder;
+
         void parse(void);
     public:
         HttpBody(void);

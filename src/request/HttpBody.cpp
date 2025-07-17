@@ -24,6 +24,7 @@ HttpBody::HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_
 	, m_complete {false}
 	, m_headers {headers}
 	, m_is_chunked {false}
+    , m_content_type {""}
 {
 	switch (method)
 	{
@@ -34,46 +35,44 @@ HttpBody::HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_
 		return;
 	}
 
-	std::string transfer_encoding = headers->get_header("transfer-encoding");
-	if (transfer_encoding == "chunked")
-	{
-		if (!headers->get_header("content-length").empty())
-			throw HTTPException(HTTPStatusCode::BadRequest, "Chunked Encoding cannot have Content length");
-		m_is_chunked = true;
-		m_chunked_decoder = ChunkedDecoder();
-		m_initialized = true;
-		return;
-	}
+    //* parse and store Content-Type and multipart state first
+    std::string content_type_str = headers->get_header("content-type");
+    if (content_type_str.empty())
+        throw HTTPException(HTTPStatusCode::BadRequest);
+    m_content_type = content_type_str;
+    auto content_type = parse_content_type(content_type_str);
+    bool is_multipart = (std::get<std::string>(content_type) == "multipart/form-data");
+    if (is_multipart) {
+        const auto& attributes = std::get<std::unordered_map<std::string, std::string>>(content_type);
+        auto bound = attributes.find("boundary");
+        if (bound == attributes.end())
+            throw HTTPException(HTTPStatusCode::BadRequest);
+		m_boundary.emplace(bound->second);
+    }
 
-	if (headers->get_header("content-length") == "" || headers->get_header("content-type") == "")
+    std::string transfer_encoding = headers->get_header("transfer-encoding");
+    if (transfer_encoding == "chunked") 
 	{
-		throw HTTPException(HTTPStatusCode::BadRequest);
-	}
-	auto content_type = parse_content_type(headers->get_header("content-type"));
-	if (std::get<std::string>(content_type) != "multipart/form-data") // only supported type for now
+        if (!headers->get_header("content-length").empty())
+            throw HTTPException(HTTPStatusCode::BadRequest, "Chunked Encoding cannot have Content length");
+        m_is_chunked = true;
+        m_chunked_decoder = ChunkedDecoder();
+        m_initialized = true;
+    }
+	else
 	{
-		throw HTTPException(HTTPStatusCode::UnsupportedMediaType);
-	}
-	const auto& attributes = std::get<std::unordered_map<std::string, std::string>>(content_type);
-	auto bound = attributes.find("boundary");
-	if (bound == attributes.end())
-	{
-		throw HTTPException(HTTPStatusCode::BadRequest);
-	}
-	m_boundary.emplace(bound->second);
-	try
-	{
-		m_content_length = std::stoul(headers->get_header("content-length"));
-	}
-	catch (const std::exception& e)
-	{
-		throw HTTPException(HTTPStatusCode::BadRequest, "Invalid Content-Length value");
-	}
-	if (m_content_length == 0)
-	{
-		throw HTTPException(HTTPStatusCode::BadRequest);
-	}
-	m_initialized = true;
+        std::string content_len = headers->get_header("content-length");
+        if (content_len.empty())
+            throw HTTPException(HTTPStatusCode::BadRequest);
+        try {
+            m_content_length = std::stoul(content_len);
+        } catch (const std::exception& e) {
+            throw HTTPException(HTTPStatusCode::BadRequest, "Invalid Content-Length value");
+        }
+        if (m_content_length == 0)
+            throw HTTPException(HTTPStatusCode::BadRequest);
+        m_initialized = true;
+    }
 }
 
 HttpBody::HttpBody(void)
@@ -131,6 +130,16 @@ void HttpBody::append(const std::string& chunk)
 {
 	if (m_is_chunked)
 	{
+		std::cout << "[DEBUG] First 20 bytes of chunk: ";
+		for (size_t i = 0; i < std::min(chunk.size(), size_t(20)); ++i) {
+			unsigned char c = chunk[i];
+			if (std::isprint(c))
+				std::cout << c;
+			else
+				std::cout << "\\x" << std::hex << (int)c << std::dec;
+		}
+		std::cout << std::endl;
+		std::cout << "[DEBUG] m_complete at start of append: " << m_complete << std::endl;
 		m_chunked_decoder.append(chunk);
 		
 		const std::string& current_decoded = m_chunked_decoder.get_decoded();
@@ -139,8 +148,10 @@ void HttpBody::append(const std::string& chunk)
 		if (m_chunked_decoder.complete())
 		{
 			m_raw = current_decoded;
+			std::cout <<"[HttpBody::append] chunk size: " << chunk.size() << ", m_raw size: " << m_raw.size() << std::endl;
 			m_complete = true;
-			parse();
+			if (m_content_type.find("multipart/form-data") != std::string::npos)
+				parse();
 		}
 	}
 	else
@@ -151,7 +162,8 @@ void HttpBody::append(const std::string& chunk)
 		if (m_raw.size() >= m_content_length)
 		{
 			m_complete = true;
-			parse();
+			if (m_content_type.find("multipart/form-data") != std::string::npos)
+				parse();
 		}
 	}
 }
@@ -175,6 +187,10 @@ bool HttpBody::initialized() const
 void HttpBody::parse(void)
 {
 	// make up something better
+	if (!m_boundary.has_value()) {
+        std::cerr << "Error: boundary not set in multipart/form-data" << std::endl;
+        throw HTTPException(HTTPStatusCode::BadRequest, "Missing boundary in multipart/form-data");
+    }
 	const std::string normal_boundary = get_normal_boundary(m_boundary.value());
 	const std::string final_boundary = get_final_boundary(m_boundary.value());
 
@@ -230,10 +246,14 @@ ChunkedDecoder::ChunkedDecoder()
 void ChunkedDecoder::append(const std::string& data)
 {
 	m_buffer.append(data);
-
+    std::cout << "[DEBUG] Appending data, buffer size now: " << m_buffer.size() << std::endl;
+	std::cout << "[DEBUG]m_complete: " << m_complete << std::endl;
+	// m_complete = false; //? WHY DOES IT TURN INTO TRUE IN THIS FUNCTION?!
+	
 	size_t pos = 0;
 	while (!m_complete && pos < m_buffer.size())
 	{
+		std::cout << "going in this loop" << std::endl;
 		switch (m_state)
 		{
 		case READING_SIZE:
@@ -241,6 +261,7 @@ void ChunkedDecoder::append(const std::string& data)
 			{
 				m_state = READING_DATA;
 				m_current_chunk_read = 0;
+                std::cout << "[DEBUG] Parsed chunk size: " << m_expected_chunk_size << std::endl;
 			}
 			break;
 
@@ -251,6 +272,7 @@ void ChunkedDecoder::append(const std::string& data)
 					m_state = READING_TRAILER;
 				else
 					m_state = READING_SIZE;
+                std::cout << "[DEBUG] Finished reading chunk, decoded size: " << m_decoded.size() << std::endl;
 			}
 			break;
 
@@ -259,6 +281,7 @@ void ChunkedDecoder::append(const std::string& data)
 			{
 				m_state = COMPLETE;
 				m_complete = true;
+                    std::cout << "[DEBUG] Finished reading trailers." << std::endl;
 			}
 			break;
 
@@ -268,6 +291,7 @@ void ChunkedDecoder::append(const std::string& data)
 	}
 	if (pos > 0)
 		m_buffer.erase(0, pos);
+	std::cout << "[ChunkedDecoder] m_decoded size: " << m_decoded.size() << std::endl;
 }
 
 /**
@@ -298,6 +322,7 @@ bool ChunkedDecoder::parse_chunk_size(size_t& pos)
 	try
 	{
 		m_expected_chunk_size = hex_to_size(size_line);
+        std::cout << "[DEBUG] parse_chunk_size: size_line='" << size_line << "', m_expected_chunk_size=" << m_expected_chunk_size << std::endl;
 	}
 	catch (const std::exception &)
 	{
@@ -325,6 +350,7 @@ bool ChunkedDecoder::parse_chunk_data(size_t& pos)
 		if (pos + 2 <= m_buffer.size() && m_buffer.substr(pos, 2) == LINE_BREAK)
 		{
 			pos += 2;
+            std::cout << "[DEBUG] parse_chunk_data: zero-sized chunk, pos now " << pos << std::endl;
 			return true;
 		}
 		return false;
@@ -333,6 +359,7 @@ bool ChunkedDecoder::parse_chunk_data(size_t& pos)
 	//* check how much data needed per chunk
 	size_t bytes_needed = m_expected_chunk_size - m_current_chunk_read;
 	size_t available_data = m_buffer.size() - pos;
+    std::cout << "[DEBUG] parse_chunk_data: bytes_needed=" << bytes_needed << ", available_data=" << available_data << std::endl;
 
 	//* all chunks read, only CRLF validation
 	if (bytes_needed == 0)
@@ -343,6 +370,7 @@ bool ChunkedDecoder::parse_chunk_data(size_t& pos)
 		if (m_buffer.substr(pos,2) != LINE_BREAK)
 			throw HTTPException(HTTPStatusCode::BadRequest, "Missing CRLF after chunk data");
 		pos += 2;
+            std::cout << "[DEBUG] parse_chunk_data: chunk data complete, pos now " << pos << std::endl;
 		return true;
 	}
 
@@ -355,6 +383,7 @@ bool ChunkedDecoder::parse_chunk_data(size_t& pos)
 			m_decoded.append(m_buffer.substr(pos, to_read));
 			m_current_chunk_read += to_read;
 			pos += to_read;
+            std::cout << "[DEBUG] parse_chunk_data: partial read, to_read=" << to_read << ", m_current_chunk_read=" << m_current_chunk_read << std::endl;
 		}
 		return false;
 	}
@@ -362,6 +391,7 @@ bool ChunkedDecoder::parse_chunk_data(size_t& pos)
 	//* enough data, read remainder data
 	m_decoded.append(m_buffer.substr(pos, bytes_needed));
 	pos += bytes_needed;
+    std::cout << "[DEBUG] parse_chunk_data: full read, bytes_needed=" << bytes_needed << ", pos now " << pos << std::endl;
 
 	//* CRLF check after chunk data
 	if (m_buffer.substr(pos, 2) != LINE_BREAK)
