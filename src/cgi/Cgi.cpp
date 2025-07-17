@@ -249,7 +249,7 @@ void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, int 
 
 bool Cgi::is_cgi_fd(int fd) const
 {
-    if (std::find_if(m_children.begin(), m_children.end(), [fd](const CgiProcess& process){return process.m_read_fd == fd;}) == m_children.end())
+    if (std::find_if(m_children.begin(), m_children.end(), [fd](auto& process){return process.m_read_fd == fd;}) == m_children.end())
     {
         return (false);
     }
