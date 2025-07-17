@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <cassert>
+#include <chrono>
 #include "CgiProcess.hpp"
 #include "Cgi.hpp"
 #include "Utilities.hpp"
