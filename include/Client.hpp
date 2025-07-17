@@ -6,6 +6,7 @@
 #include <chrono>
 
 class Server;
+class CgiProcess;
 
 class Client {
 private:
@@ -35,4 +36,6 @@ public:
     Request& getRequest();
 	void clearRequest();
 	void reset();  //* for re-use
+
+    CgiProcess* m_cgi_process;
 };
