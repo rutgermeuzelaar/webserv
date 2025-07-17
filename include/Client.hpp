@@ -18,6 +18,7 @@ private:
 	Request m_request;
 public:
 	Client(int socket_fd);
+    Client(const Client& client) = delete;
 	~Client();
 
 	//* connection management
