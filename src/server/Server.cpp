@@ -222,7 +222,7 @@ void Server::processRequest(int client_fd, const Request& request)
 	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(uri))
 	{
 		std::cout << "CGI request\n";
-		m_cgi.add_process(request, m_epoll, client_fd, location, config);
+		m_cgi.add_process(getClient(client_fd), request, m_epoll, client_fd, location, config);
 	}
 	else
 	{

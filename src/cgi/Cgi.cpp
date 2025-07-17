@@ -58,91 +58,30 @@ void Cgi::timeout(void)
     }
 }
 
-static void parse_cgi_response(std::string& cgi_buffer, Response& response)
+void Cgi::reap(void)
 {
-    const std::string content_type_key = "Content-Type:";
-
-    assert("First line of cgi script should contain the content-type header" && starts_with(cgi_buffer, content_type_key));
-    size_t line_break_pos = cgi_buffer.find(LINE_BREAK, content_type_key.size());
-    assert(line_break_pos != std::string::npos);
-    std::string content_type_value = cgi_buffer.substr(content_type_key.size(), line_break_pos - content_type_key.size());
-    content_type_value = trim(content_type_value, WHITE_SPACE);
-    response.setHeader("content-type", content_type_value);
-    response.setBody(cgi_buffer.substr(line_break_pos + 2, cgi_buffer.size() - line_break_pos + 2));
-}
-
-// if child process is ready, return client fd and cgi output
-std::optional<std::pair<int, Response>> Cgi::reap(void)
-{
-    std::optional<std::pair<int, Response>> response_pair;
-
     int exit_status = 0;
 
     pid_t pid = waitpid(-1, &exit_status, WNOHANG);
 
     if (pid == -1)
     {
+        if (errno == ECHILD) return;
+        perror("waitpid");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
     if (pid == 0)
     {
-        return response_pair;
+        return; 
     }
     if (pid > 0)
     {
         auto process = std::find_if(m_children.begin(), m_children.end(), [pid](const CgiProcess& p){return p.m_pid == pid;}); 
         assert(process != m_children.end());
 
-        if (close(process->m_read_fd) == -1)
-        {
-            perror("close");
-            throw HTTPException(HTTPStatusCode::InternalServerError);
-        }
-        if (WIFEXITED(exit_status))
-        {
-            int exit_code = WEXITSTATUS(exit_status);
-            if (exit_code == EXIT_SUCCESS)
-            {
-                Response response(HTTPStatusCode::OK);
-                parse_cgi_response(process->m_buffer, response);
-                response_pair.emplace(process->m_client_fd, response);
-            }
-            else
-            {
-                response_pair.emplace(
-                    process->m_client_fd,
-                    build_error_page(
-                        HTTPStatusCode::InternalServerError,
-                        process->m_location,
-                        process->m_config
-                    )
-                );
-            }
-        }
-        else if (WIFSIGNALED(exit_status))
-        {
-            int signum = WTERMSIG(exit_status);
-            // timed out
-            if (signum == SIGTERM)
-            {
-                response_pair.emplace(
-                    process->m_client_fd,
-                    build_error_page(
-                        HTTPStatusCode::GatewayTimeout,
-                        process->m_location,
-                        process->m_config
-                    )
-                );
-            }
-            else
-            {
-                assert(false);
-            }
-        }
-        m_children.erase(process);
-        return response_pair;
+        process->m_reaped = true;
+        process->m_exit_status = exit_status;
     }
-    return response_pair;
 }
 
 static std::string extract_path_info_envvar(const std::string& uri)
@@ -243,7 +182,7 @@ const std::string Cgi::get_script_name(const std::string& uri) const
     return uri.substr(dir_pos + dir_str.size(), fslash_pos - dir_pos - dir_str.size());
 }
 
-void Cgi::add_process(const Request& request, Epoll& epoll, int client_fd, const LocationContext* location, const ServerContext& config)
+void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, int client_fd, const LocationContext* location, const ServerContext& config)
 {
     const std::vector envvar = get_cgi_envvar(request, location, config.m_root.value());
     const std::string script_name = get_script_name(request.getStartLine().get_uri());
@@ -297,31 +236,13 @@ void Cgi::add_process(const Request& request, Epoll& epoll, int client_fd, const
         perror("fork");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    // close write end of pipe in parent
     if (close(fd_pair[1]) == 1)
     {
         perror(nullptr);
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    m_children.push_back(CgiProcess(fd_pair[0], client_fd, pid, location, config));
-}
-
-void Cgi::read_pipes(void)
-{
-    for (auto& it: m_children)
-    {
-        char buffer[RECV_BUFFER_SIZE];
-
-        ssize_t bytes_read = read(it.m_read_fd, buffer, RECV_BUFFER_SIZE);
-        if (bytes_read == -1)
-        {
-            throw HTTPException(HTTPStatusCode::InternalServerError);
-        }
-        if (bytes_read > 0)
-        {
-            it.m_buffer.append(std::string(buffer, bytes_read));
-        }
-    }
+    m_children.emplace_back(CgiProcess(fd_pair[0], client_fd, pid, location, config));
+    client.m_cgi_process = &m_children.back();
 }
 
 bool Cgi::is_cgi_fd(int fd) const

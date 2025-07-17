@@ -25,9 +25,9 @@ class Cgi
         ~Cgi(); // should reap child processes
         Cgi(const Cgi&) = delete;
         Cgi& operator=(const Cgi&) = delete;
-        std::optional<std::pair<int, Response>> reap(void);
-        void add_process(const Request& request, Epoll& epoll, int client_fd, const LocationContext* location, const ServerContext& config);
-        void read_pipes(void);
+
+        void reap(void);
+        void add_process(Client& client, const Request& request, Epoll& epoll, int client_fd, const LocationContext* location, const ServerContext& config);
         bool is_cgi_fd(int fd) const;
         void timeout(void);
 };
