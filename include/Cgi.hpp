@@ -10,22 +10,8 @@
 
 class Epoll;
 class Request;
-class Response;
-class ServerContext;
-
-class CgiProcess
-{
-    public:
-        CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config);
-        CgiProcess& operator=(const CgiProcess&);
-        int m_read_fd;
-        int m_client_fd;
-        std::chrono::_V2::steady_clock::time_point m_start;
-        pid_t m_pid;
-        std::string m_buffer;
-        const LocationContext* m_location;
-        const ServerContext& m_config;
-};
+class CgiProcess;
+class Client;
 
 class Cgi
 {

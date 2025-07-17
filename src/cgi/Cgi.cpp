@@ -9,30 +9,12 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <cassert>
+#include "CgiProcess.hpp"
 #include "Cgi.hpp"
 #include "Utilities.hpp"
 #include "Request.hpp"
 #include "Epoll.hpp"
-
-CgiProcess::CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config)
-    : m_read_fd {read_fd}
-    , m_client_fd {client_fd}
-    , m_start {std::chrono::steady_clock::now()}
-    , m_pid {pid}
-    , m_location {location}
-    , m_config {config}
-{
-
-}
-
-CgiProcess& CgiProcess::operator=(const CgiProcess& cgi_process)
-{
-    m_read_fd = cgi_process.m_read_fd;
-    m_client_fd = cgi_process.m_client_fd;
-    m_start = cgi_process.m_start;
-    m_pid = cgi_process.m_pid;
-    return *this;
-}
+#include "Server.hpp"
 
 Cgi::Cgi(char **envp, size_t timeout_ms)
     : m_envp {envp}
