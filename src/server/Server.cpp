@@ -239,10 +239,13 @@ void Server::sendResponseToClient(int client_fd, const Response& response)
 	std::cout << "Sending response of length: " << response_str.length() << std::endl; //! TEST
 	ssize_t bytes_sent = send(client_fd, response_str.c_str(), response_str.length(), 0);
 	if (bytes_sent == -1)
+    {
+        assert("We made a mistake if errno is EBADF" && errno != EBADF);
 		std::cerr << "Error sending response: " << strerror(errno) << std::endl; //! TEST 
+    }
 	else
 		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST
-const std::string &connection_header = getClient(client_fd).getRequest().getHeaders().get_header("connection");
+    const std::string &connection_header = getClient(client_fd).getRequest().getHeaders().get_header("connection");
 	if (connection_header == "close")
 		removeClient(client_fd);
 	else
