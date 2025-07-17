@@ -147,7 +147,7 @@ void Server::addClient(int fd)
 		return;
 	try {
 		setNonBlocking(fd); //* client socket
-		m_epoll.addFd(fd, EPOLLIN | EPOLLHUP | EPOLLERR);
+		m_epoll.addFd(fd, EPOLLIN | EPOLLHUP | EPOLLERR | EPOLLRDHUP);
 		std::cout << "Added client fd " << fd << " to epoll" << std::endl;
 		m_clients.try_emplace(fd, fd);
 	} catch (const SocketException& e) {
