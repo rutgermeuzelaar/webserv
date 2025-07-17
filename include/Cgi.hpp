@@ -2,7 +2,7 @@
 # define CGI_HPP
 # include <string>
 # include <filesystem>
-# include <vector>
+# include <list>
 # include <optional>
 # include <chrono>
 # include <sys/types.h>
@@ -17,7 +17,7 @@ class Cgi
 {
     private:
         char **m_envp;
-        std::vector<CgiProcess> m_children;
+        std::list<CgiProcess> m_children;
         const std::chrono::milliseconds m_timeout_ms;
         const std::string get_script_name(const std::string& uri) const;
         void reap_dtor(void);
