@@ -1,11 +1,13 @@
 #include "Pch.hpp"
-#include "Server.hpp"
-#include "Client.hpp"
 #include <cassert>
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
+#include "Utilities.hpp"
+#include "Server.hpp"
+#include "Client.hpp"
+#include "CgiProcess.hpp"
 
 extern bool gLive;
 
@@ -26,6 +28,65 @@ Server::~Server()
 	stop();
 }
 
+void Server::epoll_event_loop(int num_events)
+{
+    for (int i = 0; i < num_events; ++i)
+    {
+        const epoll_event& event = m_epoll.getEvents()[i];
+        std::cout << "Event for fd: " << event.data.fd << ", events: " << event.events << std::endl;
+        if (event.events & EPOLLIN) std::cout << "  EPOLLIN" << std::endl;
+        if (event.events & EPOLLHUP) std::cout << "  EPOLLHUP" << std::endl;
+        if (event.events & EPOLLERR) std::cout << "  EPOLLERR" << std::endl;
+        if (event.events & EPOLLRDHUP) std::cout << "  EPOLLRDHUP" << std::endl;
+        
+        int fd = event.data.fd;
+        std::cout << "Processing event for fd: " << fd << std::endl;
+        if (m_cgi.is_cgi_fd(fd))
+        {
+            CgiProcess& process = m_cgi.get_child(fd);
+            if (m_epoll.isTypeEvent(event, EPOLLIN))
+            {
+                process.read_pipe(m_epoll);
+            }
+            if (m_epoll.isTypeEvent(event, EPOLLERR) || m_epoll.isTypeEvent(event, EPOLLHUP))
+            {
+                process.close_pipe_read_end(m_epoll);
+            }
+            continue;
+        }
+        auto socket_index = getSocketIndex(fd);
+        if (socket_index.has_value())
+        {
+            handleNewConnection(socket_index.value());
+            continue;
+        }
+        if (isClient(fd))
+        {
+            if (m_epoll.isTypeEvent(event, EPOLLIN))
+            {
+                try
+                {
+                    handleClientData(fd);
+                }
+                catch(const HTTPException& e)
+                {
+                    const auto& conf = m_configs[m_client_to_socket_index[fd]];
+                    const std::string& uri = getClient(fd).getRequest().getStartLine().get_uri();
+                    const LocationContext* location = find_location(uri, conf);
+            
+                    Response response = build_error_page(e.getStatusCode(), location, conf);
+                    sendResponseToClient(fd, response);
+                    std::cerr << e.what() << '\n';
+                }
+            }
+            if (!m_epoll.isTypeEvent(event, EPOLLIN))
+            {
+                removeClient(fd);
+            }
+        }
+    }
+}
+
 void Server::run()
 {
 	if (!m_running)
@@ -33,103 +94,16 @@ void Server::run()
 
 	while (m_running && gLive)
 	{
-		try {
-			int num_events = m_epoll.wait();
-            m_cgi.timeout();
-			for (int i = 0; i < num_events; ++i)
-			{
-				const epoll_event& event = m_epoll.getEvents()[i];
-				std::cout << "Event for fd: " << event.data.fd << ", events: " << event.events << std::endl;
-				if (event.events & EPOLLIN) std::cout << "  EPOLLIN" << std::endl;
-				if (event.events & EPOLLHUP) std::cout << "  EPOLLHUP" << std::endl;
-				if (event.events & EPOLLERR) std::cout << "  EPOLLERR" << std::endl;
-				int fd = event.data.fd;
-				std::cout << "Processing event for fd: " << fd << std::endl;
-	            
-                if (m_cgi.is_cgi_fd(fd))
-                {
-                    std::cout << "Is CGI fd\n";
-                    m_cgi.read_pipes();
-                    auto cgi_response = m_cgi.reap();
-                    if (cgi_response.has_value())
-                    {
-                        sendResponseToClient(cgi_response.value().first, cgi_response.value().second);
-                    }
-                    continue;
-                }
-				if (m_epoll.isTypeEvent(event, EPOLLERR) || m_epoll.isTypeEvent(event, EPOLLHUP))
-				{
-					std::cerr << "Error or hangup on fd: " << fd << std::endl;
-					removeClient(fd);
-					continue;
-				}
-				bool is_server_socket = false;
-				for (size_t socket_i = 0; socket_i < m_listening_sockets.size(); ++socket_i) 
-				{
-					const std::vector<int>& serverSockets = m_listening_sockets[socket_i].getServerSockets();
-					if (m_epoll.isServerSocket(fd, serverSockets)) {
-						is_server_socket = true;
-						handleNewConnection(socket_i);
-						break;
-					}
-				}
-				if (is_server_socket)
-					continue;
-
-				if (m_epoll.isTypeEvent(event, EPOLLIN)) 
-				{
-					try
-					{
-						std::cout << "EPOLLIN event detected for fd: " << fd << std::endl;
-						handleClientData(fd);
-					}
-					catch(const HTTPException& e)
-					{
-						const auto& conf = m_configs[m_client_to_socket_index[fd]];
-						const std::string& uri = getClient(fd).getRequest().getStartLine().get_uri();
-						const LocationContext* location = find_location(uri, conf);
-				
-						Response response = build_error_page(e.getStatusCode(), location, conf);
-						sendResponseToClient(fd, response);
-						std::cerr << e.what() << '\n';
-					}
-					continue ;
-				}
-			}
-
-			//* timeout
-			auto now = std::chrono::steady_clock::now();
-			for (auto it = m_clients.begin(); it != m_clients.end();)
-			{
-				int fd = it->first;
-				Client& client = it->second;
-				if (now - client.getLastActivity() > TIMEOUT)
-				{
-					std::cout << "Client " << it->first << " timed out" << std::endl;
-					//* partial request
-					if (!client.hasCompleteRequest() && !client.getRequest().is_empty())
-					{
-						std::cout << "going in this block" << std::endl;
-						HTTPException timeout(HTTPStatusCode::RequestTimeout, "Request timed out\n");
-						sendErrorResponse(fd, timeout);
-					}
-					++it;
-					removeClient(fd);
-				}
-				else
-					++it;
-			}
-		}
-		catch (const EpollException& e) {
-			std::cerr << "Epoll error: " << e.what() << std::endl;
-			stop();
-			return;
-		}
-		catch (const SocketException& e) {
-			std::cerr << "Socket error: " << e.what() << std::endl;
-			return ;
-		}
-	}
+        int num_events = m_epoll.wait();
+        m_cgi.timeout();
+        if (m_cgi.has_children())
+        {
+            m_cgi.reap();
+        }
+        send_cgi_responses();
+        timeout_clients();
+        epoll_event_loop(num_events);
+  }
 }
 
 void Server::start()
@@ -358,4 +332,73 @@ void Server::sendErrorResponse(int client_fd, const HTTPException& e)
 	Response errorResponse(e.getStatusCode());
 	errorResponse.setBody(e.what());
 	sendResponseToClient(client_fd, errorResponse);
+}
+
+bool Server::isClient(int fd) const
+{
+    return (
+        std::find_if(m_clients.begin(), m_clients.end(), [fd](const auto& pair){ return pair.first == fd; })
+         != m_clients.end());
+}
+
+void Server::timeout_clients()
+{
+    auto now = std::chrono::steady_clock::now();
+    for (auto it = m_clients.begin(); it != m_clients.end();)
+    {
+        int fd = it->first;
+        Client& client = it->second;
+        if (now - client.getLastActivity() > TIMEOUT)
+        {
+            std::cout << "Client " << it->first << " timed out" << std::endl;
+            //* partial request
+            if (!client.hasCompleteRequest() && !client.getRequest().is_empty())
+            {
+                std::cout << "going in this block" << std::endl;
+                HTTPException timeout(HTTPStatusCode::RequestTimeout, "Request timed out\n");
+                sendErrorResponse(fd, timeout);
+            }
+            ++it;
+            removeClient(fd);
+        }
+        else
+            ++it;
+    }
+}
+
+void Server::send_cgi_responses()
+{
+    auto& processes = m_cgi.get_children();
+    auto it = processes.begin();
+
+    while (it != processes.end())
+    {
+        if (it->response_ready() && it->m_client_connected)
+        {
+            std::cout << "Sending a cgi response\n";
+            sendResponseToClient(it->m_client_fd, it->get_response());
+            it = processes.erase(it);
+        }
+        else
+        {    
+            it++;
+        }
+    }
+}
+
+std::optional<int> Server::getSocketIndex(int fd) const
+{
+    std::optional<int> socket_index;
+
+    for (const auto& it: m_listening_sockets)
+    {
+        const auto& server_sockets = it.getServerSockets();
+        auto pos = std::find_if(server_sockets.begin(), server_sockets.end(), [fd](int sock){ return fd == sock ;});
+        if (pos != server_sockets.end())
+        {
+            socket_index.emplace(std::distance(server_sockets.begin(), pos));
+            return socket_index;
+        }
+    }
+    return socket_index;
 }
