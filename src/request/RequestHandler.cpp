@@ -342,29 +342,46 @@ static const std::string get_extension(const std::string& mime_type)
 
 Response RequestHandler::handle_post(const Request& request, const UploadStore& upload_store)
 {
-    const MultiPartChunk& chunk = request.getBody().get_multi_part_chunk();
-    const std::string file_name = create_file_name(get_extension(chunk.get_mime_type()));
+    const std::string& content_type = request.getHeaders().get_header("content-type");
     std::string path = upload_store.m_path;
+    std::string file_name;
+    std::string file_data;
+    std::string extension;
+
+    if (content_type.find("multipart/form-data") != std::string::npos) 
+	{
+        const MultiPartChunk& chunk = request.getBody().get_multi_part_chunk();
+        extension = get_extension(chunk.get_mime_type());
+        file_name = create_file_name(extension);
+        file_data = chunk.m_data;
+    } 
+	else 
+	{
+        file_data = request.getBody().get_raw();
+        try {
+            extension = get_extension(content_type);
+        } catch (...) {
+            extension = ""; //* in case of unknown extension (prolly not though lol)
+        }
+        file_name = create_file_name(extension);
+    }
 
     if (ends_with(path, "/"))
-    {
         path.append(file_name);
-    }
-    else
-    {
+    else {
         path.append("/");
         path.append(file_name);
     }
-    std::ofstream file(path);
-    if (file.fail())
-    {
-        if (errno == EACCES)
-        {
+    std::ofstream file(path, std::ios::binary);
+    if (file.fail()) {
+        if (errno == EACCES) {
             throw HTTPException(HTTPStatusCode::Forbidden);
         }
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    file << chunk.m_data;
+	std::cout << "file_data size:"  << file_data.size() << std::endl;
+	std::cout << "file_data content: " << file_data << std::endl;
+    file << file_data;
     file.close();
     Response response(HTTPStatusCode::SeeOther);
     response.setHeader("Location", path);
