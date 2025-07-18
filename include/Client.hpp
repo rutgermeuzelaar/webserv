@@ -6,6 +6,7 @@
 #include <chrono>
 
 class Server;
+class CgiProcess;
 
 class Client {
 private:
@@ -18,6 +19,7 @@ private:
 	Request m_request;
 public:
 	Client(int socket_fd);
+    Client(const Client& client) = delete;
 	~Client();
 
 	//* connection management
@@ -34,4 +36,6 @@ public:
     Request& getRequest();
 	void clearRequest();
 	void reset();  //* for re-use
+
+    CgiProcess* m_cgi_process;
 };

@@ -41,7 +41,11 @@ private:
         //* utils
         void setNonBlocking(int fd);
         void cleanup();
+        void timeout_clients();
+        std::optional<int> getSocketIndex(int fd) const;
 
+        void send_cgi_responses(void);
+        void epoll_event_loop(int num_events);
     public:
         Server(const std::vector<ServerContext>& configs, char **envp);
         ~Server();
@@ -56,6 +60,7 @@ private:
         void addClient(int fd);
         void removeClient(int fd);
         Client& getClient(int fd);
+        bool isClient(int fd) const;
         
         //* socket management
         Socket& getListeningSocket(size_t index);

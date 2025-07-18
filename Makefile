@@ -9,7 +9,7 @@ SOURCES_STANDARD := Config.cpp ConfigDirective.cpp HttpContext.cpp Ipv4Address.c
 LocationContext.cpp Parser.cpp Port.cpp Scanner.cpp ServerContext.cpp HTTPException.cpp \
 HTTPStatusCode.cpp main.cpp Request.cpp HTTPStatusLine.cpp Response.cpp Socket.cpp \
 Utilities.cpp RequestHandler.cpp Server.cpp Client.cpp Epoll.cpp HttpHeaders.cpp HttpBody.cpp \
-HttpMethod.cpp HttpRequestStartLine.cpp MultiPartChunk.cpp Cgi.cpp
+HttpMethod.cpp HttpRequestStartLine.cpp MultiPartChunk.cpp Cgi.cpp CgiProcess.cpp
 NAME := webserv
 OBJECTS_STANDARD := $(SOURCES_STANDARD:%.cpp=$(OBJDIR)/%.o)
 OBJECTS_SHARED := $(SOURCES_SHARED:%.cpp=$(OBJDIR)/%.o)
@@ -20,8 +20,8 @@ PCH := include/Pch.hpp.gch
 
 all: $(NAME)
 
-debug: CXXFLAGS += -g
-debug: LDFLAGS += -fsanitize=address
+debug: CXXFLAGS += -g -pg
+debug: LDFLAGS += -pg
 debug: CXXFLAGS := $(filter-out -DNDEBUG,$(CXXFLAGS))
 debug: $(NAME)
 

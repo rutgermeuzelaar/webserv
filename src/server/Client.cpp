@@ -9,6 +9,7 @@ Client::Client(int socket_fd)
 	: m_socket_fd(socket_fd)
 	, m_is_connected(true)
 	, m_last_activity(std::chrono::steady_clock::now())
+    , m_cgi_process (nullptr)
 {}
 
 Client::~Client()

@@ -8,3 +8,5 @@ cgi
 random/
 root/upload/
 *.gch
+gmon.out
+graphs/
