@@ -271,9 +271,19 @@ Response RequestHandler::handle_get(const LocationContext* location, std::filesy
         {
             local_path.append(page_name_buf);
         }
+        else if (location != nullptr && location->m_auto_index.has_value())
+        {
+            if (location->m_auto_index.value().m_on)
+            {
+                Response response(HTTPStatusCode::OK);
+                response.setBody(create_directory_listing(local_path));
+                response.setContentType("text/html");
+                return response;
+            }
+            return build_error_page(HTTPStatusCode::NotFound, location, m_config);
+        }
         else if (m_config.m_auto_index.value().m_on)
         {
-            // create directory listing
             Response response(HTTPStatusCode::OK);
             response.setBody(create_directory_listing(local_path));
             response.setContentType("text/html");
