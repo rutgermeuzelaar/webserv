@@ -1,0 +1,8 @@
+Normal chunked curl test:
+curl -X POST http://localhost:1050 --header "Transfer-Encoding: chunked" --data-binary @test.txt --verbose
+
+curl POST as raw file upload
+curl -X POST http://localhost:1050 --header "Content-Type: image/jpeg" --data-binary @8bit_luffy_by_kiritomj02_d8w6khy-pre.jpg --verbose
+
+curl POST as multipart/form-data upload
+curl -X POST http://localhost:1050 -F "file=@8bit_luffy_by_kiritomj02_d8w6khy-pre.jpg" --verbose
