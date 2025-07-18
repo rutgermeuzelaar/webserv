@@ -241,6 +241,7 @@ ChunkedDecoder::ChunkedDecoder()
 	: m_state(READING_SIZE)
 	, m_expected_chunk_size(0)
 	, m_current_chunk_read(0)
+    , m_complete(false)
 {}
 
 void ChunkedDecoder::append(const std::string& data)
