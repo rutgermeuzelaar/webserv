@@ -264,8 +264,7 @@ void ChunkedDecoder::append(const std::string& data)
 				m_current_chunk_read = 0;
                 std::cout << "[DEBUG] Parsed chunk size: " << m_expected_chunk_size << std::endl;
 			}
-			break;
-
+            [[fallthrough]];
 		case READING_DATA:
 			if (parse_chunk_data(pos))
 			{
@@ -275,8 +274,7 @@ void ChunkedDecoder::append(const std::string& data)
 					m_state = READING_SIZE;
                 std::cout << "[DEBUG] Finished reading chunk, decoded size: " << m_decoded.size() << std::endl;
 			}
-			break;
-
+            [[fallthrough]];
 		case READING_TRAILER:
 			if (parse_trailer(pos))
 			{
