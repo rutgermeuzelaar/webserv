@@ -11,12 +11,9 @@ class Epoll;
 
 class CgiProcess
 {
-    public:
-        CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config);
-        CgiProcess& operator=(const CgiProcess&);
-
     private:
         Server& m_server;
+        bool m_client_connected;
         bool m_reaped;
         int m_read_fd;
         bool m_in_notify;
@@ -24,13 +21,16 @@ class CgiProcess
         void notify_observer(CgiProcessEvent);
         void check_state(void);
 
+    public:
+        CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config, Server& server);
+        CgiProcess& operator=(const CgiProcess&);
+        ~CgiProcess();
         int m_client_fd;
         std::chrono::_V2::steady_clock::time_point m_start;
         pid_t m_pid;
         std::string m_buffer;
         const LocationContext* m_location;
         const ServerContext& m_config;
-        bool m_client_connected;
         int m_exit_status;
 
         void set_client_connected(bool status);
