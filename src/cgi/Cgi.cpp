@@ -205,7 +205,7 @@ void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, cons
         perror("pipe");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    epoll.addFd(fd_pair[0], EPOLLIN); // mark read end of pipe for reading
+    epoll.addFd(fd_pair[0], EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR); // mark read end of pipe for reading
     // setting argv
     argv[0] = const_cast<char*>(binary.value().c_str());
     argv[1] = const_cast<char*>(cgi_file_path.c_str());
