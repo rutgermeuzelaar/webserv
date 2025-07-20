@@ -269,14 +269,14 @@ CgiProcess& Cgi::get_child(int fd)
     return *(*child);
 }
 
-void Cgi::erase_child(int fd)
+void Cgi::erase_child(int client_fd)
 {
-    auto child = std::find_if(m_children.begin(), m_children.end(), [fd](auto& process){return process.m_read_fd == fd;});
-
-    m_children.erase(child);
-}
-
-std::list<CgiProcess>& Cgi::get_children(void)
-{
-    return m_children;
+    m_children.erase(
+        std::remove_if(
+            m_children.begin(),
+            m_children.end(),
+            [client_fd](std::shared_ptr<CgiProcess> p){ return p->m_client_fd == client_fd; }
+        ),
+        m_children.end()
+    );
 }

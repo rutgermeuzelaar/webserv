@@ -33,7 +33,7 @@ class Cgi
         void timeout(void);
         bool has_children(void) const;
         CgiProcess& get_child(int fd);
-        void erase_child(int fd);
+        void erase_child(int client_fd);
 };
 
 std::optional<const std::string> find_binary(char *const *envp, const std::string& binary);
