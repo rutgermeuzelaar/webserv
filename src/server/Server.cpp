@@ -47,6 +47,10 @@ void Server::epoll_event_loop(int num_events)
             if (m_epoll.isTypeEvent(event, EPOLLIN))
             {
                 process.read_pipe(m_epoll);
+                if (!m_cgi.is_cgi_fd(fd))
+                {
+                    continue;
+                }
             }
             if (m_epoll.isTypeEvent(event, EPOLLERR) || m_epoll.isTypeEvent(event, EPOLLHUP))
             {
