@@ -34,7 +34,6 @@ class Cgi
         bool has_children(void) const;
         CgiProcess& get_child(int fd);
         void erase_child(int fd);
-        std::list<CgiProcess>& get_children();
 };
 
 std::optional<const std::string> find_binary(char *const *envp, const std::string& binary);
