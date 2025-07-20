@@ -4,6 +4,7 @@
 # include <filesystem>
 # include <list>
 # include <optional>
+# include <memory>
 # include <sys/types.h>
 # include "LocationContext.hpp"
 
@@ -16,7 +17,7 @@ class Cgi
 {
     private:
         char **m_envp;
-        std::list<CgiProcess> m_children;
+        std::vector<std::shared_ptr<CgiProcess>> m_children;
         const std::chrono::milliseconds m_timeout_ms;
         const std::string get_script_name(const std::string& uri) const;
         void reap_dtor(void);
