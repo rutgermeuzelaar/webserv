@@ -100,7 +100,6 @@ void Server::run()
         {
             m_cgi.reap();
         }
-        send_cgi_responses();
         timeout_clients();
         epoll_event_loop(num_events);
   }
@@ -373,26 +372,6 @@ void Server::timeout_clients()
     }
 }
 
-void Server::send_cgi_responses()
-{
-    auto& processes = m_cgi.get_children();
-    auto it = processes.begin();
-
-    while (it != processes.end())
-    {
-        if (it->response_ready() && it->m_client_connected)
-        {
-            std::cout << "Sending a cgi response\n";
-            sendResponseToClient(it->m_client_fd, it->get_response());
-            it = processes.erase(it);
-        }
-        else
-        {    
-            it++;
-        }
-    }
-}
-
 std::optional<int> Server::getSocketIndex(int fd) const
 {
     std::optional<int> socket_index;
@@ -408,4 +387,17 @@ std::optional<int> Server::getSocketIndex(int fd) const
         }
     }
     return socket_index;
+}
+
+void Server::notify(CgiProcess& process, CgiProcessEvent event)
+{
+    switch (event)
+    {
+        case CgiProcessEvent::ResponseReady:
+            sendResponseToClient(process.m_client_fd, process.get_response());
+            m_cgi.erase_child(process.m_client_fd);
+            return;
+        case CgiProcessEvent::IsRemovable:
+            m_cgi.erase_child(process.m_client_fd);
+    }
 }

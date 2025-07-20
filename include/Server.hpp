@@ -13,6 +13,11 @@
 #include <memory>
 #include <vector>
 
+enum class CgiProcessEvent {
+    ResponseReady,
+    IsRemovable
+};
+
 class Server
 {
     private:
@@ -44,7 +49,6 @@ class Server
         void timeout_clients();
         std::optional<int> getSocketIndex(int fd) const;
 
-        void send_cgi_responses(void);
         void epoll_event_loop(int num_events);
     public:
         Server(const std::vector<ServerContext>& configs, char **envp);
@@ -71,4 +75,6 @@ class Server
         void sendResponseToClient(int client_fd, const Response& response);
         const Config& getConfig() const;
         RequestHandler& getRequestHandler();
+
+        void notify(CgiProcess&, CgiProcessEvent);
 };

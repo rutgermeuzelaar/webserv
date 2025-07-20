@@ -12,6 +12,7 @@
 #include "CgiProcess.hpp"
 #include "RequestHandler.hpp"
 #include "Epoll.hpp"
+#include "Server.hpp"
 
 CgiProcess::CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config)
     : m_reaped {false}
@@ -44,7 +45,11 @@ void CgiProcess::close_pipe_read_end(Epoll& epoll)
         return;
     }
     epoll.removeFD(m_read_fd);
-    m_read_fd = -1;
+    if (close(m_read_fd) == -1)
+    {
+        perror("close");
+    }
+    set_read_fd(-1);
 }
 
 void CgiProcess::read_pipe(Epoll& epoll)
@@ -85,6 +90,27 @@ bool CgiProcess::response_ready() const
     {
         return false;
     }
+    if (!m_client_connected)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool CgiProcess::is_removable() const
+{
+    if (m_read_fd != -1)
+    {
+        return false;
+    }
+    if (!m_reaped)
+    {
+        return false;
+    }
+    if (m_client_connected)
+    {
+        return false;
+    }
     return true;
 }
 
@@ -122,4 +148,59 @@ Response CgiProcess::get_response()
         m_location,
         m_config
     );
+}
+
+void CgiProcess::check_state(void)
+{
+    if (response_ready())
+    {
+        notify_observer(CgiProcessEvent::ResponseReady);
+    }
+    else if (is_removable())
+    {
+        notify_observer(CgiProcessEvent::IsRemovable);
+    }
+}
+
+void CgiProcess::notify_observer(CgiProcessEvent event)
+{
+    if (m_in_notify)
+    {
+        return;   
+    }
+    m_in_notify = true;
+    m_server.notify(*this, event); // self-destructs here
+}
+
+void CgiProcess::set_client_connected(bool status)
+{
+    m_client_connected = status;
+    check_state();
+}
+
+void CgiProcess::set_reaped(bool status)
+{
+    m_reaped = status;
+    check_state();
+}
+
+void CgiProcess::set_read_fd(int fd)
+{
+    m_read_fd = fd;
+    check_state();
+}
+
+bool CgiProcess::get_client_connected(void) const
+{
+    return m_client_connected;
+}
+
+bool CgiProcess::get_reaped(void) const
+{
+    return m_reaped;
+}
+
+int CgiProcess::get_read_fd(void) const
+{
+    return m_read_fd;
 }
