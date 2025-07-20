@@ -248,6 +248,7 @@ void Server::sendResponseToClient(int client_fd, const Response& response)
 	ssize_t bytes_sent = send(client_fd, response_str.c_str(), response_str.length(), 0);
 	if (bytes_sent == -1)
     {
+        assert("We made a mistake if errno is ENOTSOCK" && errno != ENOTSOCK);
         assert("We made a mistake if errno is EBADF" && errno != EBADF);
 		std::cerr << "Error sending response: " << strerror(errno) << std::endl; //! TEST 
     }
