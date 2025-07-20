@@ -184,7 +184,7 @@ const std::string Cgi::get_script_name(const std::string& uri) const
     return uri.substr(dir_pos + dir_str.size(), fslash_pos - dir_pos - dir_str.size());
 }
 
-void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, int client_fd, const LocationContext* location, const ServerContext& config)
+void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server)
 {
     const std::vector envvar = get_cgi_envvar(request, location, config.m_root.value());
     const std::string script_name = get_script_name(request.getStartLine().get_uri());

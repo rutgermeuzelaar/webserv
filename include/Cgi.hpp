@@ -27,7 +27,7 @@ class Cgi
         Cgi& operator=(const Cgi&) = delete;
 
         void reap(void);
-        void add_process(Client& client, const Request& request, Epoll& epoll, int client_fd, const LocationContext* location, const ServerContext& config);
+        void add_process(Client& client, const Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server);
         bool is_cgi_fd(int fd) const;
         void timeout(void);
         bool has_children(void) const;
