@@ -115,3 +115,15 @@ bool Epoll::isTypeEvent(const epoll_event& event, int event_type) const
 {
 	return event.events & event_type;
 }
+
+bool Epoll::isTypeEvent(const epoll_event& event, const std::vector<int>& event_types) const
+{
+    for (const auto& it: event_types)
+    {
+        if (event.events & it)
+        {
+            return true;
+        }
+    }
+    return false;
+}

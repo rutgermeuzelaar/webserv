@@ -40,4 +40,5 @@ public:
 
 	bool isServerSocket(int fd, const std::vector<int>& server_sockets) const;
 	bool isTypeEvent(const epoll_event& event, int event_type) const;
+    bool isTypeEvent(const epoll_event& event, const std::vector<int>& event_types) const;
 };
