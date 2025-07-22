@@ -186,6 +186,16 @@ const std::string Cgi::get_script_name(const std::string& uri) const
 
 void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server)
 {
+    const int client_fd = client.getSocketFD();
+    (void)client_fd;
+    assert("Client can't have multiple processes" && std::find_if(
+        m_children.begin(),
+        m_children.end(),
+        [client_fd](auto ptr){
+            return ptr->m_client_fd == client_fd && ptr->get_client_connected();
+        }
+    )
+    == m_children.end());
     const std::vector envvar = get_cgi_envvar(request, location, config.m_root.value());
     const std::string script_name = get_script_name(request.getStartLine().get_uri());
     auto binary = find_binary(m_envp, get_interpreter(script_name));
