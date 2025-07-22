@@ -41,4 +41,6 @@ public:
 
     void setProcessPtr(std::shared_ptr<CgiProcess>);
     std::shared_ptr<CgiProcess> getProcessPtr(void);
+
+    void resetProcessPtr(void);
 };

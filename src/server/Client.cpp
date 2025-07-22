@@ -92,3 +92,8 @@ std::shared_ptr<CgiProcess> Client::getProcessPtr(void)
 {
     return m_process_ptr;
 }
+
+void Client::resetProcessPtr(void)
+{
+    m_process_ptr.reset();
+}

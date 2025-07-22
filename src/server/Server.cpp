@@ -400,6 +400,7 @@ void Server::notify(CgiProcess& process, CgiProcessEvent event)
     switch (event)
     {
         case CgiProcessEvent::ResponseReady:
+            getClient(process.m_client_fd).resetProcessPtr();
             sendResponseToClient(process.m_client_fd, process.get_response());
             m_cgi.erase_child(process.m_pid, true);
             return;
