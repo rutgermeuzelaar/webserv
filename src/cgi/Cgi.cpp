@@ -283,7 +283,6 @@ void Cgi::erase_child(pid_t pid, bool require_connection)
 {
     const size_t old_size = m_children.size();
     (void)old_size; // assert can get removed
-    print_children();
     if (require_connection)
     {
         m_children.erase(
