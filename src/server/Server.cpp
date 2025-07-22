@@ -401,9 +401,9 @@ void Server::notify(CgiProcess& process, CgiProcessEvent event)
     {
         case CgiProcessEvent::ResponseReady:
             sendResponseToClient(process.m_client_fd, process.get_response());
-            m_cgi.erase_child(process.m_client_fd);
+            m_cgi.erase_child(process.m_pid, true);
             return;
         case CgiProcessEvent::IsRemovable:
-            m_cgi.erase_child(process.m_client_fd);
+            m_cgi.erase_child(process.m_pid, true);
     }
 }
