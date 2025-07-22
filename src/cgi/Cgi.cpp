@@ -309,5 +309,5 @@ void Cgi::erase_child(pid_t pid, bool require_connection)
             m_children.end()
         );
     }
-    assert("Only one element should be deleted" && (old_size - m_children.size()) == 1);
+    assert("One element should be deleted" && (old_size - m_children.size()) == 1);
 }
