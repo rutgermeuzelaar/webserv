@@ -13,6 +13,7 @@ Client::Client(int socket_fd)
 
 Client::~Client()
 {
+    std::cout << __func__ << " fd: " << m_socket_fd << '\n';
 	disconnect();
 }
 
