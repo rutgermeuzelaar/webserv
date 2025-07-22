@@ -269,14 +269,36 @@ CgiProcess& Cgi::get_child(int fd)
     return *(*child);
 }
 
-void Cgi::erase_child(int client_fd)
+void Cgi::erase_child(pid_t pid, bool require_connection)
 {
-    m_children.erase(
-        std::remove_if(
-            m_children.begin(),
-            m_children.end(),
-            [client_fd](std::shared_ptr<CgiProcess> p){ return p->m_client_fd == client_fd; }
-        ),
-        m_children.end()
-    );
+    const size_t old_size = m_children.size();
+    (void)old_size; // assert can get removed
+    print_children();
+    if (require_connection)
+    {
+        m_children.erase(
+            std::remove_if(
+                m_children.begin(),
+                m_children.end(),
+                [pid](std::shared_ptr<CgiProcess> p){
+                    return p->get_client_connected() && p->m_pid == pid;
+                }
+            ),
+            m_children.end()
+        );
+    }
+    else
+    {
+        m_children.erase(
+            std::remove_if(
+                m_children.begin(),
+                m_children.end(),
+                [pid](std::shared_ptr<CgiProcess> p){
+                    return p->m_pid == pid;
+                }
+            ),
+            m_children.end()
+        );
+    }
+    assert("Only one element should be deleted" && (old_size - m_children.size()) == 1);
 }
