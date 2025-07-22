@@ -32,7 +32,7 @@ public:
 
 	//* epoll operations
 	void addFd(int fd, uint32_t events);
-	void modifyFD(int fd, int events);
+	void modifyFD(int fd, uint32_t events);
 	void removeFD(int fd);
 	int wait();
 	void close_epoll_instance();

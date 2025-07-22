@@ -55,7 +55,7 @@ void Epoll::addFd(int fd, uint32_t events)
 	std::cout << std::endl;
 }
 
-void Epoll::modifyFD(int fd, int events)
+void Epoll::modifyFD(int fd, uint32_t events)
 {
 	struct epoll_event event;
 	event.events = events;
