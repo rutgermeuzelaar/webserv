@@ -68,6 +68,11 @@ void Server::epoll_loop(int num_events)
         }
         if (isClient(fd))
         {
+            if (m_epoll.isTypeEvent(event, {EPOLLRDHUP, EPOLLHUP, EPOLLERR}))
+            {
+                removeClient(fd);
+                continue;
+            }
             if (m_epoll.isTypeEvent(event, EPOLLOUT))
             {
                 m_response_handler.send_response(fd);
@@ -88,10 +93,6 @@ void Server::epoll_loop(int num_events)
                     m_response_handler.add_response(fd, response);
                     std::cerr << e.what() << '\n';
                 }
-            }
-            if (!m_epoll.isTypeEvent(event, EPOLLIN))
-            {
-                removeClient(fd);
             }
         }
     }
