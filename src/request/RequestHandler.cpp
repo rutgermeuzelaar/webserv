@@ -361,6 +361,9 @@ Response RequestHandler::handle_post(const Request& request, const UploadStore& 
     if (content_type.find("multipart/form-data") != std::string::npos) 
 	{
         const MultiPartChunk& chunk = request.getBody().get_multi_part_chunk();
+		const std::string& mime_type = chunk.get_mime_type();
+		if (g_mime_types.find(mime_type) == g_mime_types.end())
+			throw HTTPException(HTTPStatusCode::UnsupportedMediaType);
         extension = get_extension(chunk.get_mime_type());
         file_name = create_file_name(extension);
         file_data = chunk.m_data;
@@ -368,11 +371,9 @@ Response RequestHandler::handle_post(const Request& request, const UploadStore& 
 	else 
 	{
         file_data = request.getBody().get_raw();
-        try {
-            extension = get_extension(content_type);
-        } catch (...) {
-            extension = ""; //* in case of unknown extension (prolly not though lol)
-        }
+		if (g_mime_types.find(content_type) == g_mime_types.end())
+			throw HTTPException(HTTPStatusCode::UnsupportedMediaType);
+		extension = get_extension(content_type);
         file_name = create_file_name(extension);
     }
 
@@ -390,7 +391,7 @@ Response RequestHandler::handle_post(const Request& request, const UploadStore& 
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
 	std::cout << "file_data size:"  << file_data.size() << std::endl;
-	std::cout << "file_data content: " << file_data << std::endl;
+	// std::cout << "file_data content: " << file_data << std::endl;
     file << file_data;
     file.close();
     Response response(HTTPStatusCode::SeeOther);
