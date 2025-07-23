@@ -28,7 +28,7 @@ Server::~Server()
 	stop();
 }
 
-void Server::epoll_event_loop(int num_events)
+void Server::epoll_loop(int num_events)
 {
     for (int i = 0; i < num_events; ++i)
     {
@@ -105,7 +105,7 @@ void Server::run()
             m_cgi.reap();
         }
         timeout_clients();
-        epoll_event_loop(num_events);
+        epoll_loop(num_events);
   }
 }
 

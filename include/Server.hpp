@@ -49,7 +49,7 @@ class Server
         void timeout_clients();
         std::optional<int> getSocketIndex(int fd) const;
 
-        void epoll_event_loop(int num_events);
+        void epoll_loop(int num_events);
     public:
         Server(const std::vector<ServerContext>& configs, char **envp);
         ~Server();
