@@ -54,7 +54,7 @@ void Server::epoll_loop(int num_events)
                     continue;
                 }
             }
-            if (m_epoll.isTypeEvent(event, EPOLLERR) || m_epoll.isTypeEvent(event, EPOLLHUP))
+            if (m_epoll.isTypeEvent(event, {EPOLLHUP, EPOLLRDHUP, EPOLLERR}))
             {
                 process.close_pipe_read_end(m_epoll);
             }
