@@ -24,6 +24,7 @@ class Request
         std::string _raw;
         size_t _index; // index of current byte
         size_t _line_count; // count parsed_lines
+		size_t _body_write_offset;
 
         void parse(void);
     public:
@@ -34,12 +35,13 @@ class Request
         void append(const char* buffer, size_t len, size_t client_max_body_size);
         bool complete(void) const;
 		bool is_empty() const;
+		bool writeChunkToFD(int fd);
 
         //* getters
         HttpRequestStartLine& getStartLine();
         HttpHeaders& getHeaders();
         HttpBody& getBody();
-
+	
         const HttpRequestStartLine& getStartLine() const;
         const HttpHeaders& getHeaders() const;
         const HttpBody& getBody() const;

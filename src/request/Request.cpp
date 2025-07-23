@@ -3,10 +3,12 @@
 #include <iostream>
 #include "Request.hpp"
 #include "Utilities.hpp"
+#include <unistd.h>
 
 Request::Request()
     : _index {0}
     , _line_count {0}
+	, _body_write_offset {0}
 {
 
 }
@@ -153,3 +155,39 @@ bool Request::is_empty() const
 {
 	return _raw.empty();
 }
+
+//* call this function when EPOLLOUT is triggered!
+bool Request::writeChunkToFD(int fd)
+{
+	const std::string& transfer_encoding = _headers.get_header("transfer-encoding");
+	const std::string& content_length_str = _headers.get_header("content-length");
+	const HttpBody& body = _body;
+	std::string data_to_write;
+
+	if (transfer_encoding == "chunked")
+		data_to_write = body.get_raw();
+	else if (!content_length_str.empty())
+	{
+		size_t content_length = std::stoul(content_length_str);
+		const std::string& raw = body.get_raw();
+		data_to_write = raw.substr(0, std::min(content_length, raw.size()));
+	}
+	else
+		data_to_write = body.get_raw(); //* no chunked - content length for security
+
+	if (_body_write_offset >= data_to_write.size())
+		return true;
+	
+	ssize_t written = write(fd, data_to_write.data(), data_to_write.size());
+	if (written < 0)
+	{
+		if (errno == EAGAIN || errno == EWOULDBLOCK)
+			return false;
+		throw HTTPException(HTTPStatusCode::InternalServerError, "Failed to write request request body to fd");
+	}
+	_body_write_offset += written;
+	std::cout << "[writeChunkToFD] Wrote " << written << "bytes, total sent: " << _body_write_offset << "/" << data_to_write.size() << std::endl;
+	//* return true when entire body is written, false if there is more
+	return _body_write_offset == data_to_write.size();
+}
+
