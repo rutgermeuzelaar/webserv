@@ -48,7 +48,7 @@ class Server
         void setNonBlocking(int fd);
         void cleanup();
         void timeout_clients();
-        std::optional<int> getSocketIndex(int fd) const;
+        std::optional<size_t> getSocketIndex(int fd) const;
 
         void epoll_loop(int num_events);
     public:
