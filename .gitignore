@@ -12,3 +12,4 @@ gmon.out
 graphs/
 zen_workaround.py
 dev/
+siege.log
