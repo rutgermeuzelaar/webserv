@@ -393,19 +393,13 @@ void Server::send_cgi_responses()
     }
 }
 
-std::optional<int> Server::getSocketIndex(int fd) const
+std::optional<size_t> Server::getSocketIndex(int fd) const
 {
-    std::optional<int> socket_index;
-
-    for (const auto& it: m_listening_sockets)
-    {
-        const auto& server_sockets = it.getServerSockets();
-        auto pos = std::find_if(server_sockets.begin(), server_sockets.end(), [fd](int sock){ return fd == sock ;});
-        if (pos != server_sockets.end())
-        {
-            socket_index.emplace(std::distance(server_sockets.begin(), pos));
-            return socket_index;
-        }
+    for (size_t i = 0; i < m_listening_sockets.size(); ++i) 
+	{
+        const auto& server_sockets = m_listening_sockets[i].getServerSockets();
+        if (std::find(server_sockets.begin(), server_sockets.end(), fd) != server_sockets.end())
+            return i;
     }
-    return socket_index;
+    return std::nullopt;
 }
