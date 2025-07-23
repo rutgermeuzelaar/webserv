@@ -242,7 +242,7 @@ void Server::processRequest(int client_fd, const Request& request)
 	{
 		Response response = handler.handle(request, uri, location);
 		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST
-		std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST
+		std::cout << "Response body length: " << response.getBodySize() << std::endl; //! TEST
         m_response_handler.add_response(client_fd, response);
 	}
 }
