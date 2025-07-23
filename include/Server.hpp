@@ -12,6 +12,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include "ResponseHandler.hpp"
 
 enum class CgiProcessEvent {
     ResponseReady,
@@ -29,6 +30,7 @@ class Server
         bool m_running;
         static constexpr std::chrono::seconds TIMEOUT{15}; //! change to appriorate timeout
         Cgi m_cgi;
+        ResponseHandler m_response_handler;
 
         //* server initialization
         void setupListeningSockets();
@@ -40,7 +42,6 @@ class Server
         
         //* request processing
         void handleRequest(const Request& request, int client_fd);
-        void sendResponse(int client_fd, const Response& response);
         void sendErrorResponse(int client_fd, const HTTPException& e);
 
         //* utils
@@ -72,9 +73,9 @@ class Server
 
         //* request handling
         void processRequest(int client_fd, const Request& request);
-        void sendResponseToClient(int client_fd, const Response& response);
         const Config& getConfig() const;
         RequestHandler& getRequestHandler();
 
         void notify(CgiProcess&, CgiProcessEvent);
+        void notify_response_sent(int client_fd);
 };

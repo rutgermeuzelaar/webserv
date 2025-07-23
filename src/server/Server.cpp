@@ -19,6 +19,7 @@ Server::Server(const std::vector<ServerContext>& config, char** envp)
 	, m_client_to_socket_index()
 	, m_running(false)
     , m_cgi {envp, CGI_TIMEOUT_MS}
+    , m_response_handler {*this, m_epoll}
 {
 
 }
@@ -66,6 +67,10 @@ void Server::epoll_loop(int num_events)
         }
         if (isClient(fd))
         {
+            if (m_epoll.isTypeEvent(event, EPOLLOUT))
+            {
+                m_response_handler.send_response(fd);
+            }
             if (m_epoll.isTypeEvent(event, EPOLLIN))
             {
                 try
@@ -79,7 +84,7 @@ void Server::epoll_loop(int num_events)
                     const LocationContext* location = find_location(uri, conf);
             
                     Response response = build_error_page(e.getStatusCode(), location, conf);
-                    sendResponseToClient(fd, response);
+                    m_response_handler.add_response(fd, response);
                     std::cerr << e.what() << '\n';
                 }
             }
@@ -170,6 +175,7 @@ void Server::removeClient(int fd)
         {
             it->second.getProcessPtr()->set_client_connected(false);
         }
+        m_response_handler.remove_if_exists(fd);
 		m_epoll.removeFD(fd);
 		m_client_to_socket_index.erase(fd);
 		m_clients.erase(it);
@@ -237,28 +243,8 @@ void Server::processRequest(int client_fd, const Request& request)
 		Response response = handler.handle(request, uri, location);
 		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST
 		std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST
-		sendResponseToClient(client_fd, response);
+        m_response_handler.add_response(client_fd, response);
 	}
-}
-
-void Server::sendResponseToClient(int client_fd, const Response& response)
-{
-	std::string response_str = response.to_str();
-	std::cout << "Sending response of length: " << response_str.length() << std::endl; //! TEST
-	ssize_t bytes_sent = send(client_fd, response_str.c_str(), response_str.length(), 0);
-	if (bytes_sent == -1)
-    {
-        assert("We made a mistake if errno is ENOTSOCK" && errno != ENOTSOCK);
-        assert("We made a mistake if errno is EBADF" && errno != EBADF);
-		std::cerr << "Error sending response: " << strerror(errno) << std::endl; //! TEST 
-    }
-	else
-		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST
-    const std::string &connection_header = getClient(client_fd).getRequest().getHeaders().get_header("connection");
-	if (connection_header == "close")
-		removeClient(client_fd);
-	else
-		getClient(client_fd).clearRequest();
 }
 
 void Server::handleNewConnection(size_t socket_index)
@@ -343,7 +329,7 @@ void Server::sendErrorResponse(int client_fd, const HTTPException& e)
 	//! make better later
 	Response errorResponse(e.getStatusCode());
 	errorResponse.setBody(e.what());
-	sendResponseToClient(client_fd, errorResponse);
+    m_response_handler.add_response(client_fd, errorResponse);
 }
 
 bool Server::isClient(int fd) const
@@ -401,10 +387,25 @@ void Server::notify(CgiProcess& process, CgiProcessEvent event)
     {
         case CgiProcessEvent::ResponseReady:
             getClient(process.m_client_fd).resetProcessPtr();
-            sendResponseToClient(process.m_client_fd, process.get_response());
+            m_response_handler.add_response(process.m_client_fd, process.get_response());
             m_cgi.erase_child(process.m_pid, true);
             return;
         case CgiProcessEvent::IsRemovable: // Initiator is disconnected
             m_cgi.erase_child(process.m_pid, false);
+    }
+}
+
+void Server::notify_response_sent(int client_fd)
+{
+    Client& client = getClient(client_fd);
+    const std::string& connection_header = client.getRequest().getHeaders().get_header("connection");
+
+    if (connection_header == "close")
+    {
+        removeClient(client_fd);
+    }
+    else
+    {
+        client.clearRequest();
     }
 }
