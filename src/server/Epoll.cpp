@@ -1,5 +1,6 @@
 #include "Pch.hpp"
 #include "Epoll.hpp"
+#include "ResponseHandler.hpp"
 
 Epoll::Epoll() : m_epoll_fd(-1)
 {
@@ -126,4 +127,17 @@ bool Epoll::isTypeEvent(const epoll_event& event, const std::vector<int>& event_
         }
     }
     return false;
+}
+
+void Epoll::notify(int client_fd, ResponseEvent response_event)
+{
+    switch (response_event)
+    {
+        case ResponseEvent::MarkEpollOut:
+            modifyFD(client_fd, (EPOLLIN | EPOLLOUT | EPOLLERR | EPOLLHUP | EPOLLRDHUP));
+            break;
+        case ResponseEvent::UnmarkEpollOut:
+            modifyFD(client_fd, (EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLRDHUP));
+            break;
+    }
 }
