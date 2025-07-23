@@ -36,6 +36,7 @@ void Server::epoll_loop(int num_events)
         const epoll_event& event = m_epoll.getEvents()[i];
         std::cout << "Event for fd: " << event.data.fd << ", events: " << event.events << std::endl;
         if (event.events & EPOLLIN) std::cout << "  EPOLLIN" << std::endl;
+        if (event.events & EPOLLOUT) std::cout << "  EPOLLOUT" << std::endl;
         if (event.events & EPOLLHUP) std::cout << "  EPOLLHUP" << std::endl;
         if (event.events & EPOLLERR) std::cout << "  EPOLLERR" << std::endl;
         if (event.events & EPOLLRDHUP) std::cout << "  EPOLLRDHUP" << std::endl;
