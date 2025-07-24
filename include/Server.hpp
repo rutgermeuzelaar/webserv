@@ -12,18 +12,25 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include "ResponseHandler.hpp"
+
+enum class CgiProcessEvent {
+    ResponseReady,
+    IsRemovable
+};
 
 class Server
 {
-private:
-	std::vector<ServerContext> m_configs;
-	std::vector<Socket> m_listening_sockets;
-	Epoll m_epoll;
-	std::map<int, Client> m_clients;
-	std::map<int, size_t> m_client_to_socket_index; //* <client_fd, listening_socket_i>
-	bool m_running;
-	static constexpr std::chrono::seconds TIMEOUT{15}; //! change to appriorate timeout
-	Cgi m_cgi;
+    private:
+        std::vector<ServerContext> m_configs;
+        std::vector<Socket> m_listening_sockets;
+        Epoll m_epoll;
+        std::map<int, Client> m_clients;
+        std::map<int, size_t> m_client_to_socket_index; //* <client_fd, listening_socket_i>
+        bool m_running;
+        static constexpr std::chrono::seconds TIMEOUT{15}; //! change to appriorate timeout
+        Cgi m_cgi;
+        ResponseHandler m_response_handler;
 
         //* server initialization
         void setupListeningSockets();
@@ -35,7 +42,6 @@ private:
         
         //* request processing
         void handleRequest(const Request& request, int client_fd);
-        void sendResponse(int client_fd, const Response& response);
         void sendErrorResponse(int client_fd, const HTTPException& e);
 
         //* utils
@@ -44,8 +50,7 @@ private:
         void timeout_clients();
         std::optional<size_t> getSocketIndex(int fd) const;
 
-        void send_cgi_responses(void);
-        void epoll_event_loop(int num_events);
+        void epoll_loop(int num_events);
     public:
         Server(const std::vector<ServerContext>& configs, char **envp);
         ~Server();
@@ -68,8 +73,9 @@ private:
 
         //* request handling
         void processRequest(int client_fd, const Request& request);
-        void sendResponseToClient(int client_fd, const Response& response);
         const Config& getConfig() const;
         RequestHandler& getRequestHandler();
-};
 
+        void notify(CgiProcess&, CgiProcessEvent);
+        void notify_response_sent(int client_fd);
+};

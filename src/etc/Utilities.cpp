@@ -172,3 +172,11 @@ std::unordered_map<std::string, std::string> parse_http_headers(std::istream& st
 	}
     throw HTTPException(HTTPStatusCode::BadRequest);
 }
+
+void copy_str_bytes(std::vector<std::byte>& bytes, const std::string& str)
+{
+    for (size_t i = 0; i < str.size(); ++i)
+    {
+        bytes.push_back(static_cast<std::byte>(str[i]));
+    }
+}

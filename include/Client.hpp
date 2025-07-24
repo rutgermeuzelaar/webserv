@@ -1,5 +1,5 @@
 #pragma once
-
+#include <memory>
 #include <string>
 #include "Request.hpp"
 #include "HTTPException.hpp"
@@ -17,6 +17,8 @@ private:
 
 	//* request handling
 	Request m_request;
+
+    std::shared_ptr<CgiProcess> m_process_ptr;
 public:
 	Client(int socket_fd);
     Client(const Client& client) = delete;
@@ -37,5 +39,8 @@ public:
 	void clearRequest();
 	void reset();  //* for re-use
 
-    CgiProcess* m_cgi_process;
+    void setProcessPtr(std::shared_ptr<CgiProcess>);
+    std::shared_ptr<CgiProcess> getProcessPtr(void);
+
+    void resetProcessPtr(void);
 };

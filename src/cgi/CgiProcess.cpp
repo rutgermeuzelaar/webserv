@@ -12,29 +12,41 @@
 #include "CgiProcess.hpp"
 #include "RequestHandler.hpp"
 #include "Epoll.hpp"
+#include "Server.hpp"
 
-CgiProcess::CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config)
-    : m_reaped {false}
+CgiProcess::CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config, Server& server)
+    : m_server {server}
+    , m_client_connected {true}
+    , m_reaped {false}
     , m_read_fd {read_fd}
+    , m_in_notify {false}
     , m_client_fd {client_fd}
     , m_start {std::chrono::steady_clock::now()}
     , m_pid {pid}
     , m_location {location}
     , m_config {config}
-    , m_client_connected {true}
+    , m_exit_status {0}
 {
 
 }
 
-CgiProcess& CgiProcess::operator=(const CgiProcess& cgi_process)
+CgiProcess& CgiProcess::operator=(const CgiProcess& other)
 {
-    m_read_fd = cgi_process.m_read_fd;
-    m_client_fd = cgi_process.m_client_fd;
-    m_start = cgi_process.m_start;
-    m_pid = cgi_process.m_pid;
-    m_client_connected = cgi_process.m_client_connected;
-    m_reaped = cgi_process.m_reaped;
+    m_reaped = other.m_reaped;
+    m_read_fd = other.m_read_fd;
+    m_in_notify = other.m_in_notify;
+    m_client_fd = other.m_client_fd;
+    m_start = other.m_start;
+    m_pid = other.m_pid;
+    m_location = other.m_location;
+    m_client_connected = other.m_client_connected;
+    m_exit_status = other.m_exit_status;
     return *this;
+}
+
+CgiProcess::~CgiProcess()
+{
+    std::cout << __func__ << ": " << m_pid << '\n'; 
 }
 
 void CgiProcess::close_pipe_read_end(Epoll& epoll)
@@ -44,7 +56,11 @@ void CgiProcess::close_pipe_read_end(Epoll& epoll)
         return;
     }
     epoll.removeFD(m_read_fd);
-    m_read_fd = -1;
+    if (close(m_read_fd) == -1)
+    {
+        perror("close");
+    }
+    set_read_fd(-1);
 }
 
 void CgiProcess::read_pipe(Epoll& epoll)
@@ -85,6 +101,27 @@ bool CgiProcess::response_ready() const
     {
         return false;
     }
+    if (!m_client_connected)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool CgiProcess::is_removable() const
+{
+    if (m_read_fd != -1)
+    {
+        return false;
+    }
+    if (!m_reaped)
+    {
+        return false;
+    }
+    if (m_client_connected)
+    {
+        return false;
+    }
     return true;
 }
 
@@ -122,4 +159,59 @@ Response CgiProcess::get_response()
         m_location,
         m_config
     );
+}
+
+void CgiProcess::check_state(void)
+{
+    if (response_ready())
+    {
+        notify_observer(CgiProcessEvent::ResponseReady);
+    }
+    else if (is_removable())
+    {
+        notify_observer(CgiProcessEvent::IsRemovable);
+    }
+}
+
+void CgiProcess::notify_observer(CgiProcessEvent event)
+{
+    if (m_in_notify)
+    {
+        return;   
+    }
+    m_in_notify = true;
+    m_server.notify(*this, event); // self-destructs here
+}
+
+void CgiProcess::set_client_connected(bool status)
+{
+    m_client_connected = status;
+    check_state();
+}
+
+void CgiProcess::set_reaped(bool status)
+{
+    m_reaped = status;
+    check_state();
+}
+
+void CgiProcess::set_read_fd(int fd)
+{
+    m_read_fd = fd;
+    check_state();
+}
+
+bool CgiProcess::get_client_connected(void) const
+{
+    return m_client_connected;
+}
+
+bool CgiProcess::get_reaped(void) const
+{
+    return m_reaped;
+}
+
+int CgiProcess::get_read_fd(void) const
+{
+    return m_read_fd;
 }

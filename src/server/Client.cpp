@@ -9,11 +9,11 @@ Client::Client(int socket_fd)
 	: m_socket_fd(socket_fd)
 	, m_is_connected(true)
 	, m_last_activity(std::chrono::steady_clock::now())
-    , m_cgi_process (nullptr)
 {}
 
 Client::~Client()
 {
+    std::cout << __func__ << " fd: " << m_socket_fd << '\n';
 	disconnect();
 }
 
@@ -81,4 +81,19 @@ void Client::reset()
 	clearRequest();
 	//! no socket fd or server reference clear
 	//! maybe better to use disconnect to reset connection state
+}
+
+void Client::setProcessPtr(std::shared_ptr<CgiProcess> process_ptr)
+{
+    m_process_ptr = process_ptr;
+}
+
+std::shared_ptr<CgiProcess> Client::getProcessPtr(void)
+{
+    return m_process_ptr;
+}
+
+void Client::resetProcessPtr(void)
+{
+    m_process_ptr.reset();
 }

@@ -10,3 +10,6 @@ root/upload/
 *.gch
 gmon.out
 graphs/
+zen_workaround.py
+dev/
+siege.log

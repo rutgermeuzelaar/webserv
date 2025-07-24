@@ -4,6 +4,7 @@
 # include <filesystem>
 # include <list>
 # include <optional>
+# include <memory>
 # include <sys/types.h>
 # include "LocationContext.hpp"
 
@@ -16,7 +17,7 @@ class Cgi
 {
     private:
         char **m_envp;
-        std::list<CgiProcess> m_children;
+        std::vector<std::shared_ptr<CgiProcess>> m_children;
         const std::chrono::milliseconds m_timeout_ms;
         const std::string get_script_name(const std::string& uri) const;
         void reap_dtor(void);
@@ -27,13 +28,12 @@ class Cgi
         Cgi& operator=(const Cgi&) = delete;
 
         void reap(void);
-        void add_process(Client& client, const Request& request, Epoll& epoll, int client_fd, const LocationContext* location, const ServerContext& config);
+        void add_process(Client& client, const Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server);
         bool is_cgi_fd(int fd) const;
         void timeout(void);
         bool has_children(void) const;
         CgiProcess& get_child(int fd);
-        void erase_child(int fd);
-        std::list<CgiProcess>& get_children();
+        void erase_child(pid_t pid, bool require_connection);
 };
 
 std::optional<const std::string> find_binary(char *const *envp, const std::string& binary);

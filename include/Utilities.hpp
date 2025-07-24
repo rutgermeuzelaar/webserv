@@ -30,4 +30,5 @@ std::string& rtrim(std::string& str, const char* to_trim);
 std::string& trim(std::string& str, const char* to_trim);
 std::pair<std::string, std::string> parse_single_http_header(const std::string& header);
 std::unordered_map<std::string, std::string> parse_http_headers(std::istream& stream);
+void copy_str_bytes(std::vector<std::byte>& bytes, const std::string& str);
 #endif

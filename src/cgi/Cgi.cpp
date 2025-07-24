@@ -31,8 +31,8 @@ void Cgi::reap_dtor(void)
 
     while (it != m_children.end())
     {
-        (void)kill(it->m_pid, SIGINT);
-        (void)waitpid(it->m_pid, &exit_status, 0);
+        (void)kill((*it)->m_pid, SIGINT);
+        (void)waitpid((*it)->m_pid, &exit_status, 0);
         it = m_children.erase(it);
     }
 }
@@ -47,11 +47,11 @@ void Cgi::timeout(void)
     const auto time_now = std::chrono::steady_clock::now();
     for (auto it = m_children.begin(); it != m_children.end(); ++it)
     {
-        if (it->m_reaped) continue;
-        const auto ms_diff = std::chrono::duration_cast<std::chrono::milliseconds>(time_now - it->m_start);
+        if ((*it)->get_reaped()) continue;
+        const auto ms_diff = std::chrono::duration_cast<std::chrono::milliseconds>(time_now - (*it)->m_start);
         if (ms_diff > m_timeout_ms)
         {
-            if (kill(it->m_pid, SIGTERM) == -1)
+            if (kill((*it)->m_pid, SIGTERM) == -1)
             {
                 perror("kill");
                 throw HTTPException(HTTPStatusCode::InternalServerError);
@@ -78,11 +78,11 @@ void Cgi::reap(void)
     }
     if (pid > 0)
     {
-        auto process = std::find_if(m_children.begin(), m_children.end(), [pid](const CgiProcess& p){return p.m_pid == pid;}); 
+        auto process = std::find_if(m_children.begin(), m_children.end(), [pid](auto p){return p->m_pid == pid;}); 
         assert(process != m_children.end());
 
-        process->m_reaped = true;
-        process->m_exit_status = exit_status;
+        (*process)->m_exit_status = exit_status;
+        (*process)->set_reaped(true);
     }
 }
 
@@ -184,8 +184,18 @@ const std::string Cgi::get_script_name(const std::string& uri) const
     return uri.substr(dir_pos + dir_str.size(), fslash_pos - dir_pos - dir_str.size());
 }
 
-void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, int client_fd, const LocationContext* location, const ServerContext& config)
+void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server)
 {
+    const int client_fd = client.getSocketFD();
+    (void)client_fd;
+    assert("Client can't have multiple processes" && std::find_if(
+        m_children.begin(),
+        m_children.end(),
+        [client_fd](auto ptr){
+            return ptr->m_client_fd == client_fd && ptr->get_client_connected();
+        }
+    )
+    == m_children.end());
     const std::vector envvar = get_cgi_envvar(request, location, config.m_root.value());
     const std::string script_name = get_script_name(request.getStartLine().get_uri());
     auto binary = find_binary(m_envp, get_interpreter(script_name));
@@ -205,7 +215,7 @@ void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, int 
         perror("pipe");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    epoll.addFd(fd_pair[0], EPOLLIN); // mark read end of pipe for reading
+    epoll.addFd(fd_pair[0], EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR); // mark read end of pipe for reading
     // setting argv
     argv[0] = const_cast<char*>(binary.value().c_str());
     argv[1] = const_cast<char*>(cgi_file_path.c_str());
@@ -243,13 +253,13 @@ void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, int 
         perror(nullptr);
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    m_children.emplace_back(CgiProcess(fd_pair[0], client_fd, pid, location, config));
-    client.m_cgi_process = &m_children.back();
+    m_children.push_back(std::make_shared<CgiProcess>(CgiProcess(fd_pair[0], client.getSocketFD(), pid, location, config, server)));
+    client.setProcessPtr(m_children.back());
 }
 
 bool Cgi::is_cgi_fd(int fd) const
 {
-    if (std::find_if(m_children.begin(), m_children.end(), [fd](auto& process){return process.m_read_fd == fd;}) == m_children.end())
+    if (std::find_if(m_children.begin(), m_children.end(), [fd](std::shared_ptr<CgiProcess> process){return process->get_read_fd() == fd;}) == m_children.end())
     {
         return (false);
     }
@@ -263,20 +273,41 @@ bool Cgi::has_children(void) const
 
 CgiProcess& Cgi::get_child(int fd)
 {
-    auto child = std::find_if(m_children.begin(), m_children.end(), [fd](auto& process){return process.m_read_fd == fd;});
+    auto child = std::find_if(m_children.begin(), m_children.end(), [fd](std::shared_ptr<CgiProcess> process){return process->get_read_fd() == fd;});
 
     assert("This function should only be called for existing childprocesses" && child != m_children.end());
-    return *child;
+    return *(*child);
 }
 
-void Cgi::erase_child(int fd)
+void Cgi::erase_child(pid_t pid, bool require_connection)
 {
-    auto child = std::find_if(m_children.begin(), m_children.end(), [fd](auto& process){return process.m_read_fd == fd;});
-
-    m_children.erase(child);
-}
-
-std::list<CgiProcess>& Cgi::get_children(void)
-{
-    return m_children;
+    const size_t old_size = m_children.size();
+    (void)old_size; // assert can get removed
+    if (require_connection)
+    {
+        m_children.erase(
+            std::remove_if(
+                m_children.begin(),
+                m_children.end(),
+                [pid](std::shared_ptr<CgiProcess> p){
+                    return p->get_client_connected() && p->m_pid == pid;
+                }
+            ),
+            m_children.end()
+        );
+    }
+    else
+    {
+        m_children.erase(
+            std::remove_if(
+                m_children.begin(),
+                m_children.end(),
+                [pid](std::shared_ptr<CgiProcess> p){
+                    return p->m_pid == pid;
+                }
+            ),
+            m_children.end()
+        );
+    }
+    assert("One element should be deleted" && (old_size - m_children.size()) == 1);
 }

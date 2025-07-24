@@ -285,8 +285,8 @@ Response RequestHandler::handle_get(const LocationContext* location, std::filesy
         else if (m_config.m_auto_index.value().m_on)
         {
             Response response(HTTPStatusCode::OK);
-            response.setBody(create_directory_listing(local_path));
             response.setContentType("text/html");
+            response.setBody(create_directory_listing(local_path));
             return response;
         }
         else
@@ -299,9 +299,9 @@ Response RequestHandler::handle_get(const LocationContext* location, std::filesy
         return build_error_page(HTTPStatusCode::NotFound, location, m_config);
 	}
 	Response response(HTTPStatusCode::OK);  
-	response.setBodyFromFile(local_path);
     response.setContentType(get_mime_type(local_path.extension().string()));
     response.setHeader("Content-Disposition", "inline");
+    response.setBodyFromFile(local_path);
 	return response;
 }
 

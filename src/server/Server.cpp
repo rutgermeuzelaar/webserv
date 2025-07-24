@@ -19,6 +19,7 @@ Server::Server(const std::vector<ServerContext>& config, char** envp)
 	, m_client_to_socket_index()
 	, m_running(false)
     , m_cgi {envp, CGI_TIMEOUT_MS}
+    , m_response_handler {*this, m_epoll}
 {
 
 }
@@ -28,13 +29,14 @@ Server::~Server()
 	stop();
 }
 
-void Server::epoll_event_loop(int num_events)
+void Server::epoll_loop(int num_events)
 {
     for (int i = 0; i < num_events; ++i)
     {
         const epoll_event& event = m_epoll.getEvents()[i];
         std::cout << "Event for fd: " << event.data.fd << ", events: " << event.events << std::endl;
         if (event.events & EPOLLIN) std::cout << "  EPOLLIN" << std::endl;
+        if (event.events & EPOLLOUT) std::cout << "  EPOLLOUT" << std::endl;
         if (event.events & EPOLLHUP) std::cout << "  EPOLLHUP" << std::endl;
         if (event.events & EPOLLERR) std::cout << "  EPOLLERR" << std::endl;
         if (event.events & EPOLLRDHUP) std::cout << "  EPOLLRDHUP" << std::endl;
@@ -47,8 +49,12 @@ void Server::epoll_event_loop(int num_events)
             if (m_epoll.isTypeEvent(event, EPOLLIN))
             {
                 process.read_pipe(m_epoll);
+                if (!m_cgi.is_cgi_fd(fd))
+                {
+                    continue;
+                }
             }
-            if (m_epoll.isTypeEvent(event, EPOLLERR) || m_epoll.isTypeEvent(event, EPOLLHUP))
+            if (m_epoll.isTypeEvent(event, {EPOLLHUP, EPOLLRDHUP, EPOLLERR}))
             {
                 process.close_pipe_read_end(m_epoll);
             }
@@ -62,6 +68,15 @@ void Server::epoll_event_loop(int num_events)
         }
         if (isClient(fd))
         {
+            if (m_epoll.isTypeEvent(event, {EPOLLRDHUP, EPOLLHUP, EPOLLERR}))
+            {
+                removeClient(fd);
+                continue;
+            }
+            if (m_epoll.isTypeEvent(event, EPOLLOUT))
+            {
+                m_response_handler.send_response(fd);
+            }
             if (m_epoll.isTypeEvent(event, EPOLLIN))
             {
                 try
@@ -75,13 +90,9 @@ void Server::epoll_event_loop(int num_events)
                     const LocationContext* location = find_location(uri, conf);
             
                     Response response = build_error_page(e.getStatusCode(), location, conf);
-                    sendResponseToClient(fd, response);
+                    m_response_handler.add_response(fd, response);
                     std::cerr << e.what() << '\n';
                 }
-            }
-            if (!m_epoll.isTypeEvent(event, EPOLLIN))
-            {
-                removeClient(fd);
             }
         }
     }
@@ -100,9 +111,8 @@ void Server::run()
         {
             m_cgi.reap();
         }
-        send_cgi_responses();
         timeout_clients();
-        epoll_event_loop(num_events);
+        epoll_loop(num_events);
   }
 }
 
@@ -162,10 +172,12 @@ void Server::removeClient(int fd)
 	auto it = m_clients.find(fd);
 	if (it != m_clients.end())
 	{
-        if (it->second.m_cgi_process != nullptr)
+        // auto process = m_cgi.get_child_by_client_fd(fd);
+        if (it->second.getProcessPtr().use_count() > 0)
         {
-            it->second.m_cgi_process->m_client_connected = false;
+            it->second.getProcessPtr()->set_client_connected(false);
         }
+        m_response_handler.remove_if_exists(fd);
 		m_epoll.removeFD(fd);
 		m_client_to_socket_index.erase(fd);
 		m_clients.erase(it);
@@ -226,34 +238,15 @@ void Server::processRequest(int client_fd, const Request& request)
 	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(uri))
 	{
 		std::cout << "CGI request\n";
-		m_cgi.add_process(getClient(client_fd), request, m_epoll, client_fd, location, config);
+		m_cgi.add_process(getClient(client_fd), request, m_epoll, location, config, *this);
 	}
 	else
 	{
 		Response response = handler.handle(request, uri, location);
 		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST
-		std::cout << "Response body length: " << response.getBody().length() << std::endl; //! TEST
-		sendResponseToClient(client_fd, response);
+		std::cout << "Response body length: " << response.getBodySize() << std::endl; //! TEST
+        m_response_handler.add_response(client_fd, response);
 	}
-}
-
-void Server::sendResponseToClient(int client_fd, const Response& response)
-{
-	std::string response_str = response.to_str();
-	std::cout << "Sending response of length: " << response_str.length() << std::endl; //! TEST
-	ssize_t bytes_sent = send(client_fd, response_str.c_str(), response_str.length(), 0);
-	if (bytes_sent == -1)
-    {
-        assert("We made a mistake if errno is EBADF" && errno != EBADF);
-		std::cerr << "Error sending response: " << strerror(errno) << std::endl; //! TEST 
-    }
-	else
-		std::cout << "Successfully sent " << bytes_sent << " bytes" << std::endl; //! TEST
-    const std::string &connection_header = getClient(client_fd).getRequest().getHeaders().get_header("connection");
-	if (connection_header == "close")
-		removeClient(client_fd);
-	else
-		getClient(client_fd).clearRequest();
 }
 
 void Server::handleNewConnection(size_t socket_index)
@@ -338,7 +331,7 @@ void Server::sendErrorResponse(int client_fd, const HTTPException& e)
 	//! make better later
 	Response errorResponse(e.getStatusCode());
 	errorResponse.setBody(e.what());
-	sendResponseToClient(client_fd, errorResponse);
+    m_response_handler.add_response(client_fd, errorResponse);
 }
 
 bool Server::isClient(int fd) const
@@ -373,26 +366,6 @@ void Server::timeout_clients()
     }
 }
 
-void Server::send_cgi_responses()
-{
-    auto& processes = m_cgi.get_children();
-    auto it = processes.begin();
-
-    while (it != processes.end())
-    {
-        if (it->response_ready() && it->m_client_connected)
-        {
-            std::cout << "Sending a cgi response\n";
-            sendResponseToClient(it->m_client_fd, it->get_response());
-            it = processes.erase(it);
-        }
-        else
-        {    
-            it++;
-        }
-    }
-}
-
 std::optional<size_t> Server::getSocketIndex(int fd) const
 {
     for (size_t i = 0; i < m_listening_sockets.size(); ++i) 
@@ -402,4 +375,33 @@ std::optional<size_t> Server::getSocketIndex(int fd) const
             return i;
     }
     return std::nullopt;
+}
+
+void Server::notify(CgiProcess& process, CgiProcessEvent event)
+{
+    switch (event)
+    {
+        case CgiProcessEvent::ResponseReady:
+            getClient(process.m_client_fd).resetProcessPtr();
+            m_response_handler.add_response(process.m_client_fd, process.get_response());
+            m_cgi.erase_child(process.m_pid, true);
+            return;
+        case CgiProcessEvent::IsRemovable: // Initiator is disconnected
+            m_cgi.erase_child(process.m_pid, false);
+    }
+}
+
+void Server::notify_response_sent(int client_fd)
+{
+    Client& client = getClient(client_fd);
+    const std::string& connection_header = client.getRequest().getHeaders().get_header("connection");
+
+    if (connection_header == "close")
+    {
+        removeClient(client_fd);
+    }
+    else
+    {
+        client.clearRequest();
+    }
 }

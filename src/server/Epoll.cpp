@@ -1,5 +1,6 @@
 #include "Pch.hpp"
 #include "Epoll.hpp"
+#include "ResponseHandler.hpp"
 
 Epoll::Epoll() : m_epoll_fd(-1)
 {
@@ -55,7 +56,7 @@ void Epoll::addFd(int fd, uint32_t events)
 	std::cout << std::endl;
 }
 
-void Epoll::modifyFD(int fd, int events)
+void Epoll::modifyFD(int fd, uint32_t events)
 {
 	struct epoll_event event;
 	event.events = events;
@@ -114,4 +115,29 @@ bool Epoll::isServerSocket(int fd, const std::vector<int>& server_sockets) const
 bool Epoll::isTypeEvent(const epoll_event& event, int event_type) const
 {
 	return event.events & event_type;
+}
+
+bool Epoll::isTypeEvent(const epoll_event& event, const std::vector<int>& event_types) const
+{
+    for (const auto& it: event_types)
+    {
+        if (event.events & it)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Epoll::notify(int client_fd, ResponseEvent response_event)
+{
+    switch (response_event)
+    {
+        case ResponseEvent::MarkEpollOut:
+            modifyFD(client_fd, (EPOLLIN | EPOLLOUT | EPOLLERR | EPOLLHUP | EPOLLRDHUP));
+            break;
+        case ResponseEvent::UnmarkEpollOut:
+            modifyFD(client_fd, (EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLRDHUP));
+            break;
+    }
 }
