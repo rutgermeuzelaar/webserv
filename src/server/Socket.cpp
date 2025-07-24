@@ -44,15 +44,16 @@ Socket::~Socket() {
  * @throw SocketException if any step fails (getaddrinfo, socket creation, 
  *        setsockopt, bind, or listen)
  */
-int Socket::createSocket(const std::string& port)
+int Socket::createSocket(const std::string &port, const std::string &ip_addr)
 {
 	//*define struct
 	struct addrinfo *node;
 	struct addrinfo *server_addr;
 	int socketFD = -1;
 	
+	assert("IP address gotta be a string" && !ip_addr.empty());
 	//*get address info
-	if (getaddrinfo(NULL, port.c_str(), &_hints, &server_addr) != 0)
+	if (getaddrinfo(ip_addr.c_str(), port.c_str(), &_hints, &server_addr) != 0)
 		throw SocketException("Failed to get address info: " + std::string(gai_strerror(errno)));
 
 	for (node = server_addr; node != NULL; node = node->ai_next)
@@ -108,8 +109,10 @@ bool Socket::initSocket(const ServerContext& config)
         assert("Config should contain server_name here" && config.m_server_name.has_value());
         const std::string port = config.m_listen.value().m_port.value().to_string();
         const std::string server_name = config.m_server_name.value().m_name;
+		const std::string ip_address = config.m_listen.value().m_ipv4.value().to_string();
 
-		int socketFD = createSocket(port);
+		std::cout << ip_address << '\n';
+		int socketFD = createSocket(port, ip_address);
 		_serverSockets.push_back(socketFD);
 		_socketToServer[socketFD] = server_name;
 		_isRunning = true;
@@ -122,23 +125,7 @@ bool Socket::initSocket(const ServerContext& config)
 	}
 }
 
-bool Socket::initTestSocket(const std::string& port)
-{
-	try {
-		int socketFD = createSocket(port);
-		_serverSockets.push_back(socketFD);
-		_socketToServer[socketFD] = "TestServer";
-		_isRunning = true;
-		return true;
-	} 
-	catch (const SocketException& e)
-	{
-		std::cerr << e.what() << std::endl;
-		return false;
-	}
-}
-
-int	Socket::acceptConnection(int serverSocket)
+int Socket::acceptConnection(int serverSocket)
 {
 	_peerSize = sizeof(_peerAddr); //! test
 	int peerFD = accept(serverSocket, (struct sockaddr*)&_peerAddr, &_peerSize);
