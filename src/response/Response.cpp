@@ -224,6 +224,7 @@ int Response::getClientFD(void) const
 void Response::headersToBytes(void)
 {
     assert(_headers_complete);
+	assert(_bytes.empty());
     std::ostringstream stream;
 
     stream << _status_line << LINE_BREAK;

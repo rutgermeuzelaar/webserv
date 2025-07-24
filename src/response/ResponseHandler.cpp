@@ -28,7 +28,7 @@ std::vector<Response>::iterator ResponseHandler::find_response(int client_fd)
 void ResponseHandler::add_response(int client_fd, Response& response)
 {
     assert(find_response(client_fd) == m_pending_responses.end());
-
+	assert("Headers should be complete here" && response.getHeadersComplete());
     response.setClientFD(client_fd);
     m_pending_responses.emplace_back(response);
     notify_epoll(client_fd, ResponseEvent::MarkEpollOut);
