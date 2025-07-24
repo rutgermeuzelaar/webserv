@@ -55,6 +55,7 @@ public:
     int getClientFD(void) const;
     size_t getHeadersSize(void) const;
     size_t getBodySize(void) const;
+	bool getHeadersComplete(void) const;
 
     const std::byte* getNextBytes(size_t* length);
     void incrementBytesSent(size_t amount);
