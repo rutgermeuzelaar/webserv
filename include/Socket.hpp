@@ -29,7 +29,7 @@ private:
 	struct sockaddr_storage _peerAddr; //* peer address info for accept();
 	socklen_t	_peerSize;
 
-	int createSocket(const std::string& port);
+	int createSocket(const std::string& port, const std::string& ip_address);
 	void closeAllSockets();
 
 public:
@@ -38,7 +38,6 @@ public:
 
 	//! consider socket configuration - TCP_NODELAY, no timeout, keep alive, no socket buffer size
 	bool	initSocket(const ServerContext& config);
-	bool	initTestSocket(const std::string& port = "1050"); //! delete later
 	int		acceptConnection(int serverSocket);
 	void	closeSocket(int socketFD);
 
