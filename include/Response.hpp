@@ -61,7 +61,7 @@ public:
     void incrementBytesSent(size_t amount);
     void printResponse() const; //* for debugging
     bool fullySent(void) const;
-
+	void finalize(void);
     void printHeaders() const;
     void printBody() const;
 };

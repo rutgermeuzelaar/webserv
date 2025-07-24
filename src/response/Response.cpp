@@ -262,6 +262,13 @@ void Response::printBody(void) const
         std::putchar(static_cast<char>(_bytes[i]));
     }
 }
+
+void Response::finalize(void)
+{
+	_headers_complete = true;
+	headersToBytes();
+}
+
 bool Response::getHeadersComplete(void) const
 {
 	return _headers_complete;
