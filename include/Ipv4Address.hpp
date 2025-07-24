@@ -10,7 +10,7 @@ class Ipv4Address
         Ipv4Address(const std::string);
         Ipv4Address(int32_t);
         uint32_t from_string(const std::string&) const;
-        std::string to_string(void) const;
+        const std::string to_string(void) const;
 };
 
 std::vector<std::string> split(const std::string to_split, const char delimiter);

@@ -41,3 +41,13 @@ bool operator==(const Ipv4Address& a, const Ipv4Address& b)
 {
     return a.m_address == b.m_address;
 }
+
+const std::string Ipv4Address::to_string(void) const
+{
+	return (
+		std::to_string((m_address >> 24)) + "." +
+		std::to_string(((m_address << 8) >> 24)) + "." +
+		std::to_string(((m_address << 16) >> 24)) + "." +
+		std::to_string(((m_address << 24) >> 24))
+	);
+}
