@@ -1,3 +1,5 @@
+Curl -v http://localhost:1050
+----
 Normal chunked curl test:
 curl -X POST http://localhost:1050 --header "Transfer-Encoding: chunked" --data-binary @test.txt --verbose
 
@@ -6,3 +8,26 @@ curl -X POST http://localhost:1050 --header "Content-Type: image/jpeg" --data-bi
 
 curl POST as multipart/form-data upload
 curl -X POST http://localhost:1050 -F "file=@8bit_luffy_by_kiritomj02_d8w6khy-pre.jpg" --verbose
+----
+
+
+telnet localhost 1050
+-----------------
+Partial request:
+GET / HTTP/1.1
+Host:localhost
+dont press enter
+
+Full request:
+GET / HTTP/1.1
+Host: autoindex.nl
+Connection: Close
+
+404 trigger:
+GET /stommekikkers HTTP/1.1
+Host: autoindex.nl
+
+Redirect:
+GET /home HTTP/1.1
+Host: autoindex.nl
+------------
