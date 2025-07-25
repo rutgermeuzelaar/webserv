@@ -180,3 +180,36 @@ void copy_str_bytes(std::vector<std::byte>& bytes, const std::string& str)
         bytes.push_back(static_cast<std::byte>(str[i]));
     }
 }
+
+// ./root + ./root/css+stylesheet.css
+static std::filesystem::path& resolve_overlap(std::filesystem::path& root, const std::filesystem::path& to_join)
+{
+	std::filesystem::path::iterator root_it = root.begin();
+	std::filesystem::path::iterator join_it = to_join.begin();
+
+	if (*root_it == ".")
+	{
+		root_it++;
+	}
+	while (root_it != root.end() && join_it != to_join.end() && *root_it == *join_it)
+	{
+		root_it++;
+		join_it++;
+	}
+	while (join_it != to_join.end())
+	{
+		root /= *join_it;
+		join_it++;
+	}
+	return root;
+}
+
+std::filesystem::path map_uri_helper(std::filesystem::path root_path, std::filesystem::path& uri_path)
+{
+	if (uri_path.is_absolute())
+	{
+		uri_path = uri_path.relative_path();
+	}
+	resolve_overlap(root_path, uri_path);
+	return root_path;
+}

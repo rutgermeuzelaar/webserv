@@ -1,6 +1,7 @@
 #include "Pch.hpp"
 #include <cassert>
 #include <sys/stat.h>
+#include <unistd.h>
 #include "RequestHandler.hpp"
 #include "Utilities.hpp"
 #include "MIMETypes.hpp"
@@ -108,39 +109,6 @@ RequestHandler::RequestHandler(const ServerContext& config)
 	: m_config {config}
 {
 
-}
-
-// ./root + ./root/css+stylesheet.css
-static std::filesystem::path& resolve_overlap(std::filesystem::path& root, const std::filesystem::path& to_join)
-{
-	std::filesystem::path::iterator root_it = root.begin();
-	std::filesystem::path::iterator join_it = to_join.begin();
-
-	if (*root_it == ".")
-	{
-		root_it++;
-	}
-	while (root_it != root.end() && join_it != to_join.end() && *root_it == *join_it)
-	{
-		root_it++;
-		join_it++;
-	}
-	while (join_it != to_join.end())
-	{
-		root /= *join_it;
-		join_it++;
-	}
-	return root;
-}
-
-static std::filesystem::path map_uri_helper(std::filesystem::path root_path, std::filesystem::path& uri_path)
-{
-	if (uri_path.is_absolute())
-	{
-		uri_path = uri_path.relative_path();
-	}
-	resolve_overlap(root_path, uri_path);
-	return root_path;
 }
 
 static void find_page(const Index& index, std::string& buffer, std::filesystem::path uri)
@@ -402,20 +370,45 @@ Response RequestHandler::handle_post(const Request& request, const UploadStore& 
     return response;
 }
 
-bool is_cgi_request(const std::string& uri)
+bool is_cgi_request(const std::filesystem::path& root, const std::string& uri)
 {
     const std::string cgi_str = "/" CGI_DIR "/";
 
     size_t str_pos = uri.find("/" CGI_DIR "/", 0);
 
+	std::cout << uri << '\n';
     if (str_pos == std::string::npos)
     {
         return (false);
     }
-    if (str_pos + cgi_str.size() == uri.size())
-    {
-        return (false);
-    }
+	if (str_pos + cgi_str.size() >= uri.size())
+	{
+		return (false);
+	}
+	std::string_view view_uri(uri);
+	const size_t fslash_pos = view_uri.find("/", str_pos + cgi_str.size());
+
+	std::string_view sanitized_uri;
+	if (fslash_pos == std::string::npos)
+	{
+		sanitized_uri = view_uri.substr(0, view_uri.size());
+	}
+	else
+	{
+		sanitized_uri = view_uri.substr(0, fslash_pos);
+	}
+	std::cout << sanitized_uri << '\n';
+	std::filesystem::path uri_path(sanitized_uri);
+	const auto local_path = map_uri_helper(root, uri_path);
+	std::cout << local_path << '\n';
+	if (std::filesystem::is_directory(local_path))
+	{
+		return (false);
+	}
+	if (access(local_path.c_str(), X_OK) != -1)
+	{
+		return (false);
+	}
     return (true);
 }
 

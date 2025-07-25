@@ -5,6 +5,7 @@
 # include <string>
 # include <optional>
 # include <unordered_map>
+# include <filesystem>
 
 std::vector<std::string> split(const std::string to_split, const char delimiter);
 
@@ -31,4 +32,5 @@ std::string& trim(std::string& str, const char* to_trim);
 std::pair<std::string, std::string> parse_single_http_header(const std::string& header);
 std::unordered_map<std::string, std::string> parse_http_headers(std::istream& stream);
 void copy_str_bytes(std::vector<std::byte>& bytes, const std::string& str);
+std::filesystem::path map_uri_helper(std::filesystem::path root_path, std::filesystem::path& uri_path);
 #endif
