@@ -55,12 +55,13 @@ public:
     int getClientFD(void) const;
     size_t getHeadersSize(void) const;
     size_t getBodySize(void) const;
+	bool getHeadersComplete(void) const;
 
     const std::byte* getNextBytes(size_t* length);
     void incrementBytesSent(size_t amount);
     void printResponse() const; //* for debugging
     bool fullySent(void) const;
-
+	void finalize(void);
     void printHeaders() const;
     void printBody() const;
 };

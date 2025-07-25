@@ -198,6 +198,7 @@ static Response build_redirect(const Return& return_obj)
     Response response(return_obj.m_status_code);
     response.setHeader("Location", return_obj.m_uri);
     response.setHeader("Content-Length", "0");
+	response.finalize();
     return response;
 }
 
@@ -397,6 +398,7 @@ Response RequestHandler::handle_post(const Request& request, const UploadStore& 
     Response response(HTTPStatusCode::SeeOther);
     response.setHeader("Location", path);
     response.setHeader("Content-Length", "0");
+	response.finalize();
     return response;
 }
 
