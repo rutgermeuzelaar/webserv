@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <cassert>
 #include "Config.hpp"
 #include "Parser.hpp"
 #include "Scanner.hpp"
@@ -71,37 +72,48 @@ void merge_config(const ServerContext& merge_from, ServerContext& merge_into)
     merge_directive<UploadStore>(merge_from.m_upload_store, merge_into.m_upload_store);
 }
 
-void load_defaults(const std::filesystem::path& path, std::vector<ServerContext>& servers)
+static const ServerContext get_default_conf(const std::filesystem::path& path)
 {
     Config config;
 
     read_config_file(config, path);
     ServerContext def = config.m_servers.at(0);
-    for (auto& it: servers)
-    {
-        merge_config(def, it);
-    }
+	return def;
+}
+
+static void load_defaults(const ServerContext& default_conf, ServerContext& server_conf)
+{
+	merge_config(default_conf, server_conf);
 }
 
 std::vector<ServerContext> get_server_config(const std::filesystem::path& path)
 {
+    if (!std::filesystem::exists(DEFAULT_CONF))
+	{
+		throw std::runtime_error("no such file or directory: " DEFAULT_CONF);
+	}
     Config config;
-
     read_config_file(config, path);
     config.finalize();
-    if (std::filesystem::exists(DEFAULT_CONF))
-    {
-        load_defaults(DEFAULT_CONF, config.m_servers);
-        for (size_t i = 0; i < config.m_servers.size(); ++i)
-        {
-            merge_config(config.m_http_context, config.m_servers[i]);
-            if (!config.m_servers[i].is_valid())
-            {
-                std::cerr << "Unvalid config for server config: " << i + 1 << '\n';
-                throw std::runtime_error("Invalid configuration file");
-            }
-        }
-        return config.m_servers;
-    }
-    throw std::runtime_error("no such file or directory: " DEFAULT_CONF);
+	std::filesystem::path default_path(DEFAULT_CONF);
+	const ServerContext default_conf = get_default_conf(default_path);
+
+	if (config.m_servers.empty())
+	{
+		config.m_servers.push_back(ServerContext());
+	}
+	for (size_t i = 0; i < config.m_servers.size(); ++i)
+	{
+		merge_config(config.m_http_context, config.m_servers[i]);
+		if (!config.m_servers[i].is_valid())
+		{
+			std::cout << "Loading settings from default configuration file\n";
+			load_defaults(default_conf, config.m_servers[i]);
+			if (!config.m_servers[i].is_valid())
+			{
+				throw std::runtime_error("Invalid configuration file, don't touch the defaults!");
+			}
+		}
+	}
+	return config.m_servers;
 }

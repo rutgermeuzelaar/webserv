@@ -62,7 +62,6 @@ template <typename T> void merge_directive(const std::vector<T>& from, std::vect
 
 void merge_config(const HttpContext& http, ServerContext& server);
 void merge_config(const ServerContext& merge_from, ServerContext& merge_into);
-void load_defaults(const std::filesystem::path& path, std::vector<ServerContext>& servers);
 void read_config_file(Config& config, const std::filesystem::path& path);
 std::vector<ServerContext> get_server_config(const std::filesystem::path& path);
 #endif
