@@ -14,11 +14,12 @@
 #include "Epoll.hpp"
 #include "Server.hpp"
 
-CgiProcess::CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config, Server& server)
+CgiProcess::CgiProcess(int fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config, Server& server)
     : m_server {server}
     , m_client_connected {true}
     , m_reaped {false}
-    , m_read_fd {read_fd}
+    , m_fd {fd}
+    , m_is_post {false}
     , m_in_notify {false}
     , m_client_fd {client_fd}
     , m_start {std::chrono::steady_clock::now()}
@@ -33,7 +34,8 @@ CgiProcess::CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationCont
 CgiProcess& CgiProcess::operator=(const CgiProcess& other)
 {
     m_reaped = other.m_reaped;
-    m_read_fd = other.m_read_fd;
+    m_fd = other.m_fd;
+    m_is_post = other.m_is_post;
     m_in_notify = other.m_in_notify;
     m_client_fd = other.m_client_fd;
     m_start = other.m_start;
@@ -51,12 +53,12 @@ CgiProcess::~CgiProcess()
 
 void CgiProcess::close_pipe_read_end(Epoll& epoll)
 {
-    if (m_read_fd == -1)
+    if (m_fd == -1)
     {
         return;
     }
-    epoll.removeFD(m_read_fd);
-    if (close(m_read_fd) == -1)
+    epoll.removeFD(m_fd);
+    if (close(m_fd) == -1)
     {
         perror("close");
     }
@@ -68,12 +70,12 @@ void CgiProcess::read_pipe(Epoll& epoll)
     char buffer[RECV_BUFFER_SIZE];
     
     std::cout << __func__ << '\n';
-    std::cout << "read(" << m_read_fd << ")\n";
-    if (m_read_fd == -1)
+    std::cout << "read(" << m_fd << ")\n";
+    if (m_fd == -1)
     {
         return;
     }
-    ssize_t bytes_read = read(m_read_fd, buffer, RECV_BUFFER_SIZE);
+    ssize_t bytes_read = read(m_fd, buffer, RECV_BUFFER_SIZE);
     if (bytes_read == -1)
     {
         perror("read");
@@ -82,7 +84,7 @@ void CgiProcess::read_pipe(Epoll& epoll)
     // closing read end of pipe
     if (bytes_read == 0)
     {
-        std::cout << "close(" << m_read_fd << ")\n";
+        std::cout << "close(" << m_fd << ")\n";
         close_pipe_read_end(epoll);
     }
     else
@@ -93,7 +95,7 @@ void CgiProcess::read_pipe(Epoll& epoll)
 
 bool CgiProcess::response_ready() const
 {
-    if (m_read_fd != -1)
+    if (m_fd != -1)
     {
         return false;
     }
@@ -110,7 +112,7 @@ bool CgiProcess::response_ready() const
 
 bool CgiProcess::is_removable() const
 {
-    if (m_read_fd != -1)
+    if (m_fd != -1)
     {
         return false;
     }
@@ -197,7 +199,7 @@ void CgiProcess::set_reaped(bool status)
 
 void CgiProcess::set_read_fd(int fd)
 {
-    m_read_fd = fd;
+    m_fd = fd;
     check_state();
 }
 
@@ -211,7 +213,17 @@ bool CgiProcess::get_reaped(void) const
     return m_reaped;
 }
 
-int CgiProcess::get_read_fd(void) const
+void CgiProcess::write_pipe(int fd, void *buffer, size_t count)
 {
-    return m_read_fd;
+    const ssize_t bytes_written = write(fd, buffer, count);
+
+    if (bytes_written == -1)
+    {
+
+    }
+}
+
+int CgiProcess::get_fd(void) const
+{
+    return m_fd;
 }

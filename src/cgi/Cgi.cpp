@@ -8,6 +8,7 @@
 #include <optional>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/socket.h>
 #include <cassert>
 #include <chrono>
 #include "CgiProcess.hpp"
@@ -217,19 +218,26 @@ static int execve_wrapper(const Request& request, const LocationContext* locatio
     return (execve(binary.value().c_str(), argv, cstring_envvar.data()));
 }
 
+void Cgi::add_process_default(Client& client, const Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server)
+{
+    int socket_pair[2];
+    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, socket_pair) == -1)
     {
-        envp[i] = const_cast<char*>(envvar[i].c_str());   
+        perror("socketpair");
+        throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    envp[envvar.size()] = NULL;
+    // socket_pair[0] parent
+    // socket_pair[1] child
+    epoll.addFd(socket_pair[0], EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR);
     pid_t pid = fork();
     if (pid == 0)
     {
-        // close read end of pipe in child
-        if (close(fd_pair[0]) == -1)
+        // close parent socket in child
+        if (close(socket_pair[0]) == -1)
         {
             exit(EXIT_FAILURE);
         }
-        if (dup2(fd_pair[1], STDOUT_FILENO) == -1)
+        if (dup2(socket_pair[1], STDOUT_FILENO) == -1)
         {
             perror("dup2");
             exit(EXIT_FAILURE);
@@ -243,22 +251,48 @@ static int execve_wrapper(const Request& request, const LocationContext* locatio
         perror("fork");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    if (close(fd_pair[1]) == 1)
+    if (close(socket_pair[1]) == 1)
     {
         perror(nullptr);
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    m_children.push_back(std::make_shared<CgiProcess>(CgiProcess(fd_pair[0], client.getSocketFD(), pid, location, config, server)));
+    auto cgi_process = std::make_shared<CgiProcess>(socket_pair[0], client.getSocketFD(), pid, location, config, server);
+    m_children.push_back(cgi_process);
     client.setProcessPtr(m_children.back());
+}
+
+void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server)
+{
+    const int client_fd = client.getSocketFD();
+    (void)client_fd;
+    assert("Client can't have multiple processes" && std::find_if(
+        m_children.begin(),
+        m_children.end(),
+        [client_fd](auto ptr){
+            return ptr->m_client_fd == client_fd && ptr->get_client_connected();
+        }
+    )
+    == m_children.end());
+    if (request.getStartLine().get_http_method() == HTTPMethod::POST)
+    {
+        // TODO
+    }
+    else
+    {
+        add_process_default(client, request, epoll, location, config, server);
+    }
 }
 
 bool Cgi::is_cgi_fd(int fd) const
 {
-    if (std::find_if(m_children.begin(), m_children.end(), [fd](std::shared_ptr<CgiProcess> process){return process->get_read_fd() == fd;}) == m_children.end())
-    {
-        return (false);
-    }
-    return (true);
+    auto pos = std::find_if(
+        m_children.begin(),
+        m_children.end(),
+        [fd](std::shared_ptr<CgiProcess> process) {
+            return (process->get_fd() == fd);
+        }
+    );
+    return (pos != m_children.end());    
 }
 
 bool Cgi::has_children(void) const
@@ -268,7 +302,14 @@ bool Cgi::has_children(void) const
 
 CgiProcess& Cgi::get_child(int fd)
 {
-    auto child = std::find_if(m_children.begin(), m_children.end(), [fd](std::shared_ptr<CgiProcess> process){return process->get_read_fd() == fd;});
+    assert(fd != -1);
+    auto child = std::find_if(
+        m_children.begin(),
+        m_children.end(),
+        [fd](std::shared_ptr<CgiProcess> process){
+            return (process->get_fd() == fd);
+        }
+    );
 
     assert("This function should only be called for existing childprocesses" && child != m_children.end());
     return *(*child);

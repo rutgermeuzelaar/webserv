@@ -20,6 +20,7 @@ class Cgi
         std::vector<std::shared_ptr<CgiProcess>> m_children;
         const std::chrono::milliseconds m_timeout_ms;
         void reap_dtor(void);
+        void add_process_default(Client& client, const Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server);
     public:
         Cgi(char **envp, size_t timeout_ms);
         ~Cgi(); // should reap child processes

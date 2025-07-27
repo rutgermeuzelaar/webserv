@@ -15,14 +15,15 @@ class CgiProcess
         Server& m_server;
         bool m_client_connected;
         bool m_reaped;
-        int m_read_fd;
+        int m_fd; // will be bidirectional if the request method was POST
+        bool m_is_post;
         bool m_in_notify;
 
         void notify_observer(CgiProcessEvent);
         void check_state(void);
 
     public:
-        CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config, Server& server);
+        CgiProcess(int fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config, Server& server);
         CgiProcess& operator=(const CgiProcess&);
         ~CgiProcess();
         int m_client_fd;
@@ -35,13 +36,17 @@ class CgiProcess
 
         void set_client_connected(bool status);
         void set_reaped(bool status);
+        void set_is_post(bool is_post);
         void set_read_fd(int fd);
-
+    
         bool get_client_connected(void) const;
         bool get_reaped(void) const;
-        int  get_read_fd(void) const;     
+        int  get_fd(void) const;
+        bool get_is_post(void) const;
+
         void close_pipe_read_end(Epoll& epoll);
         void read_pipe(Epoll& epoll);
+        void write_pipe(int fd, void *buffer, size_t count);
         bool response_ready() const;
         bool is_removable() const;
 
