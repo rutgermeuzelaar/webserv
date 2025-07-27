@@ -19,7 +19,6 @@ class Cgi
         char **m_envp;
         std::vector<std::shared_ptr<CgiProcess>> m_children;
         const std::chrono::milliseconds m_timeout_ms;
-        const std::string get_script_name(const std::string& uri) const;
         void reap_dtor(void);
     public:
         Cgi(char **envp, size_t timeout_ms);
@@ -36,5 +35,4 @@ class Cgi
         void erase_child(pid_t pid, bool require_connection);
 };
 
-std::optional<const std::string> find_binary(char *const *envp, const std::string& binary);
 #endif

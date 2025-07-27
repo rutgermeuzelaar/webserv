@@ -101,9 +101,9 @@ static std::string extract_path_info_envvar(const std::string& uri)
     return uri.substr(next_fslash + 1, uri.size() - next_fslash - 1);
 }
 
-std::vector<std::string> get_cgi_envvar(const Request& request, const LocationContext* location, const Root& root)
+static std::vector<std::string> get_cgi_envvar(const Request& request, const LocationContext* location, const Root& root)
 {
-    std::vector<std::string> envvar;
+    std::vector<std::string> envvar(6);
     const std::string request_method = stringify(request.getStartLine().get_http_method());
     const std::string content_length = request.getHeaders().get_header("content-length");
     const std::string content_type = request.getHeaders().get_header("content-type");
@@ -128,6 +128,7 @@ std::vector<std::string> get_cgi_envvar(const Request& request, const LocationCo
         envvar.push_back("PATH_TRANSLATED=" + path_translated);
     }
     envvar.push_back("REQUEST_METHOD=" + request_method);
+    envvar.push_back(""); // needs to end with nullptr for execve
     return envvar;
 }
 
@@ -145,7 +146,7 @@ static const char* get_interpreter(const std::string& script_name)
     return nullptr;
 }
 
-std::optional<const std::string> find_binary(char *const *envp, const std::string& binary)
+static std::optional<const std::string> find_binary(char *const *envp, const std::string& binary)
 {
     std::vector<std::string> paths;
     std::optional<const std::string> path_envvar = get_envvar(envp, "PATH");
@@ -169,7 +170,7 @@ std::optional<const std::string> find_binary(char *const *envp, const std::strin
     return std::optional<const std::string>(std::nullopt);
 }
 
-const std::string Cgi::get_script_name(const std::string& uri) const
+static const std::string get_script_name(const std::string& uri)
 {
     const std::string dir_str = "/" CGI_DIR "/";
     size_t dir_pos = uri.find(dir_str, 0);
@@ -184,44 +185,38 @@ const std::string Cgi::get_script_name(const std::string& uri) const
     return uri.substr(dir_pos + dir_str.size(), fslash_pos - dir_pos - dir_str.size());
 }
 
-void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server)
+static int execve_wrapper(const Request& request, const LocationContext* location, const ServerContext& config, char **envp)
 {
-    const int client_fd = client.getSocketFD();
-    (void)client_fd;
-    assert("Client can't have multiple processes" && std::find_if(
-        m_children.begin(),
-        m_children.end(),
-        [client_fd](auto ptr){
-            return ptr->m_client_fd == client_fd && ptr->get_client_connected();
-        }
-    )
-    == m_children.end());
-    const std::vector envvar = get_cgi_envvar(request, location, config.m_root.value());
     const std::string script_name = get_script_name(request.getStartLine().get_uri());
-    auto binary = find_binary(m_envp, get_interpreter(script_name));
+    const char* interpreter = get_interpreter(script_name);
+    const std::vector<std::string> envvar = get_cgi_envvar(request, location, config.m_root.value());
+    std::optional<std::string> binary;
+    std::vector<char*> cstring_envvar(envvar.size());
     std::filesystem::path cgi_file_path = std::filesystem::current_path();
+    char *argv[3];
+
     cgi_file_path /= "root/" CGI_DIR "/";
-    std::cout << cgi_file_path << '\n';
-    char *argv[3]; // no extra arguments for now
-    char *envp[envvar.size() + 1];
-
-    cgi_file_path.append(script_name);
-
-    int fd_pair[2];
+    cgi_file_path.append(script_name); 
     assert(std::filesystem::exists(cgi_file_path));
-    assert(binary.has_value());
-    if (pipe(fd_pair) == -1)
+    if (interpreter == nullptr)
     {
-        perror("pipe");
-        throw HTTPException(HTTPStatusCode::InternalServerError);
+        binary.emplace(cgi_file_path);
     }
-    epoll.addFd(fd_pair[0], EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR); // mark read end of pipe for reading
-    // setting argv
+    else
+    {
+        binary = find_binary(envp, interpreter);
+    }
+    assert(binary.has_value());
     argv[0] = const_cast<char*>(binary.value().c_str());
     argv[1] = const_cast<char*>(cgi_file_path.c_str());
-    argv[2] = NULL;
-    // setting envp
-    for (size_t i = 0; i < envvar.size(); ++i)
+    argv[2] = nullptr;
+    for (auto &it: envvar)
+    {
+        cstring_envvar.push_back(const_cast<char*>(it.c_str()));
+    }
+    return (execve(binary.value().c_str(), argv, cstring_envvar.data()));
+}
+
     {
         envp[i] = const_cast<char*>(envvar[i].c_str());   
     }
@@ -239,7 +234,7 @@ void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, cons
             perror("dup2");
             exit(EXIT_FAILURE);
         }
-        execve(binary.value().c_str(), argv, envp);
+        execve_wrapper(request, location, config, m_envp);
         perror("execve");
         exit(EXIT_FAILURE);
     }
