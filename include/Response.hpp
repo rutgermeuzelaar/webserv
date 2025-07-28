@@ -14,15 +14,14 @@
 #include "HTTPStatusLine.hpp"
 #include "HTTPException.hpp"
 #include "Defines.hpp"
+#include "PartialWriter.hpp"
 
-class Response
+class Response: public PartialWriter
 {
 private:
     HTTPStatusLine                      _status_line;
     std::map<std::string, std::string>  _headers; //* key-value headers
     std::string                         _body;
-    std::vector<std::byte>              _bytes;
-    size_t                              _bytes_sent;
     int                                 _client_fd;
     bool                                _headers_complete;
     size_t                              _headers_size; // Byte count of status line, headers and linebreak
@@ -57,10 +56,7 @@ public:
     size_t getBodySize(void) const;
 	bool getHeadersComplete(void) const;
 
-    const std::byte* getNextBytes(size_t* length);
-    void incrementBytesSent(size_t amount);
     void printResponse() const; //* for debugging
-    bool fullySent(void) const;
 	void finalize(void);
     void printHeaders() const;
     void printBody() const;
