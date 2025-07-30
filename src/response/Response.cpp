@@ -70,7 +70,7 @@ void Response::setHeader(const std::string& key, const std::string& value)
     
     std::string lowerKey = key;
     std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
-    _headers[lowerKey] = value;
+    _headers.add_header(lowerKey, value);
 }
 
 void Response::setBody(const std::string& content)
@@ -167,13 +167,7 @@ std::string Response::getStatusText() const
 
 std::string Response::getHeader(const std::string& key) const
 {
-    std::string lowerKey = key;
-    std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
-
-    std::map<std::string, std::string>::const_iterator headerIt = _headers.find(lowerKey);
-    if (headerIt != _headers.end())
-        return headerIt->second;
-    return "";
+    return _headers.get_header(key);
 }
 
 void Response::printResponse() const
@@ -203,7 +197,8 @@ void Response::headersToBytes(void)
     std::ostringstream stream;
 
     stream << _status_line << LINE_BREAK;
-    for (const auto& header : _headers)
+    const auto& headers = _headers.get_headers();
+    for (const auto& header: headers)
     {
         stream << header.first << ": " << header.second << LINE_BREAK;
     }
@@ -247,4 +242,14 @@ void Response::finalize(void)
 bool Response::getHeadersComplete(void) const
 {
 	return _headers_complete;
+}
+
+void Response::setStatusLine(HTTPStatusCode status_code)
+{
+    _status_line = HTTPStatusCode(status_code);
+}
+
+HttpHeaders& Response::getHeaders()
+{
+    return _headers;
 }
