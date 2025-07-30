@@ -8,6 +8,7 @@
 # include "HttpMethod.hpp"
 # include "HttpHeaders.hpp"
 # include "MultiPartChunk.hpp"
+# include "PartialWriter.hpp"
 
 class ChunkedDecoder 
 {
@@ -35,10 +36,11 @@ public:
 	void append(const std::string& data);
 	bool complete() const;
 	size_t hex_to_size(const std::string& hex_str);
+
 	const std::string& get_decoded() const;
 };
 
-class HttpBody
+class HttpBody: public PartialWriter
 {
     private:
         std::string m_raw;
@@ -61,6 +63,7 @@ class HttpBody
         HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_max_body_size);
         HttpBody(const HttpBody&);
         HttpBody& operator=(const HttpBody&) = default;
+
         bool complete(void) const;
         bool initialized(void) const;
         void append(const std::string&);
