@@ -72,7 +72,7 @@ class Server
         size_t getListeningSocketCount() const;
 
         //* request handling
-        void processRequest(int client_fd, const Request& request);
+        void processRequest(int client_fd, Request& request);
         const Config& getConfig() const;
         RequestHandler& getRequestHandler();
 

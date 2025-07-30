@@ -224,7 +224,7 @@ size_t Server::getListeningSocketCount() const
 	return m_listening_sockets.size(); //? need still?
 }
 
-void Server::processRequest(int client_fd, const Request& request)
+void Server::processRequest(int client_fd, Request& request)
 {
 	//* check which socket to handle
 	size_t socket_index = 0;
@@ -242,6 +242,16 @@ void Server::processRequest(int client_fd, const Request& request)
 	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(uri))
 	{
 		std::cout << "CGI request\n";
+        HttpBody& http_body = request.getBody();
+
+        if (http_body.is_chunked())
+        {
+            http_body.append_bytes(http_body.get_chunked_decoder().get_decoded());
+        }
+        else
+        {
+            http_body.append_bytes(http_body.get_raw());
+        }
 		m_cgi.add_process(getClient(client_fd), request, m_epoll, location, config, *this);
 	}
 	else
