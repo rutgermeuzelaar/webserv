@@ -458,3 +458,13 @@ const std::string &ChunkedDecoder::get_decoded() const
 {
 	return m_decoded;
 }
+
+bool HttpBody::is_chunked(void) const
+{
+    return m_is_chunked;
+}
+
+const ChunkedDecoder& HttpBody::get_chunked_decoder(void) const
+{
+    return m_chunked_decoder;
+}

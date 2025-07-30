@@ -64,8 +64,11 @@ class HttpBody
         bool complete(void) const;
         bool initialized(void) const;
         void append(const std::string&);
+        bool is_chunked(void) const;
+
         const std::string& get_raw(void) const;
         const MultiPartChunk& get_multi_part_chunk(void) const;
+        const ChunkedDecoder& get_chunked_decoder(void) const;
 };
 
 #endif
