@@ -60,3 +60,19 @@ const std::vector<std::byte>& PartialWriter::get_bytes() const
 {
     return m_bytes;
 }
+
+void PartialWriter::print() const
+{
+    for (size_t i = 0; i < m_bytes.size(); ++i)
+    {
+        std::putchar(static_cast<char>(m_bytes[i]));
+    }
+}
+
+void PartialWriter::print(size_t start, size_t end) const
+{
+    for (size_t i = start; i < end; ++i)
+    {
+        std::putchar(static_cast<char>(m_bytes[i]));
+    }
+}

@@ -30,5 +30,6 @@ class PartialWriter
         void increment_bytes_sent(size_t amount);
         bool fully_sent(void) const;
         void print(void) const;
+        void print(size_t start, size_t end) const;
 };
 #endif
