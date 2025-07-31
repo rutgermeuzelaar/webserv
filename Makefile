@@ -4,6 +4,7 @@ INC := $(foreach dir, $(INC_DIRS), -I$(dir))
 CXXFLAGS := -Wall -Wextra -Werror -Wshadow $(INC) -std=c++17 -DNDEBUG
 LDFLAGS :=
 OBJDIR := build
+UPLOADDIR := ./root/upload
 VPATH = $(shell find src/ -maxdepth 1 -mindepth 1)
 SOURCES_STANDARD := Config.cpp ConfigDirective.cpp HttpContext.cpp Ipv4Address.cpp Lexer.cpp \
 LocationContext.cpp Parser.cpp Port.cpp Scanner.cpp ServerContext.cpp HTTPException.cpp \
@@ -29,11 +30,14 @@ debug: $(NAME)
 $(PCH): include/Pch.hpp
 	$(CXX) $(CXXFLAGS) -c -o $(PCH) include/Pch.hpp
 
+$(UPLOADDIR):
+	mkdir $(UPLOADDIR)
+
 $(OBJDIR)/%.o: %.cpp | $(OBJDIR)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-$(NAME): $(PCH) $(OBJECTS_STANDARD) $(OBJECTS_SHARED)
+$(NAME): $(PCH) $(OBJECTS_STANDARD) $(OBJECTS_SHARED) $(UPLOADDIR)
 	$(CXX) $(LDFLAGS) $(OBJECTS_STANDARD) $(OBJECTS_SHARED) -o $(NAME)
 
 $(OBJDIR):
