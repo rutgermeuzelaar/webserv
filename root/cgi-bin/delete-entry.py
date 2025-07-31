@@ -6,6 +6,7 @@ def create_html_button(href: str, text: str) -> None:
         f"<button onclick=\"deleteRequest('/{href}')\">{text}</button"
         )
 print("Content-Type: text/html", end="\r\n")
+print(end="\r\n")
 PATH_TRANSLATED = os.environ.get("PATH_TRANSLATED")
 
 if PATH_TRANSLATED == None:

@@ -7,8 +7,8 @@
 #include "Utilities.hpp"
 
 Response::Response(HTTPStatusCode status_code)
-    : _status_line(status_code)
-    , _bytes_sent (0)
+    : PartialWriter()
+    , _status_line(status_code)
     , _client_fd (0)
     , _headers_complete (false)
     , _headers_size (0)
@@ -21,26 +21,24 @@ Response::Response(HTTPStatusCode status_code)
 }
 
 Response::Response(const Response& src)
-	: _status_line(src._status_line)
+    : PartialWriter(src)
+    , _status_line {src._status_line}
 	, _headers {src._headers}
 	, _body {src._body}
-    , _bytes (src._bytes)
-    , _bytes_sent (src._bytes_sent)
-    , _client_fd (src._client_fd)
-    , _headers_complete (false)
-    , _headers_size (0)
-    , _body_size (0)
+    , _client_fd {src._client_fd}
+    , _headers_complete {false}
+    , _headers_size {0}
+    , _body_size {0}
 {
 
 }
 
 Response& Response::operator=(const Response& src)
 {
+    PartialWriter::operator=(src);
     _status_line = src._status_line;
     _headers = src._headers;
     _body = src._body;
-    _bytes_sent = src._bytes_sent;
-    _bytes = src._bytes;
     _client_fd = src._client_fd;
     _headers_complete = src._headers_complete;
     _headers_size = src._headers_size;
@@ -49,11 +47,10 @@ Response& Response::operator=(const Response& src)
 }
 
 Response::Response(Response&& other) noexcept
-    : _status_line {std::move(other._status_line)}
+    : PartialWriter(std::move(other))
+    , _status_line {std::move(other._status_line)}
     , _headers {std::move(other._headers)}
     , _body {std::move(other._body)}
-    , _bytes {std::move(other._bytes)}
-    , _bytes_sent {std::move(other._bytes_sent)}
     , _client_fd {std::move(other._client_fd)}
     , _headers_complete {std::move(other._headers_complete)}
     , _headers_size {std::move(other._headers_size)}
@@ -73,7 +70,7 @@ void Response::setHeader(const std::string& key, const std::string& value)
     
     std::string lowerKey = key;
     std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
-    _headers[lowerKey] = value;
+    _headers.add_header(lowerKey, value);
 }
 
 void Response::setBody(const std::string& content)
@@ -82,7 +79,7 @@ void Response::setBody(const std::string& content)
     _headers_complete = true;
     headersToBytes();
     _body = content;
-    copy_str_bytes(_bytes, content);
+    append_bytes(content);
     _body_size = content.length();
 }
 
@@ -105,17 +102,13 @@ void Response::setBodyFromFile(const std::filesystem::path& file_path)
         }
         throw HTTPException(HTTPStatusCode::InternalServerError);
     } 
-    _bytes.reserve(file_size + MAX_HEADER_SIZE);
+    get_bytes().reserve(file_size + MAX_HEADER_SIZE);
     setHeader("Content-Length", std::to_string(file_size));
     _headers_complete = true;
     headersToBytes();
     std::vector<std::byte> temp(file_size);
     file.read(reinterpret_cast<char *>(temp.data()), file_size);
-    _bytes.insert(
-        _bytes.end(),
-        temp.begin(),
-        temp.end()
-    );
+    append_bytes(temp);
     if (file.fail())
         throw HTTPException(HTTPStatusCode::InternalServerError, "Failed to read file: " + file_path.string());
     _body_size = file_size;
@@ -174,13 +167,7 @@ std::string Response::getStatusText() const
 
 std::string Response::getHeader(const std::string& key) const
 {
-    std::string lowerKey = key;
-    std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
-
-    std::map<std::string, std::string>::const_iterator headerIt = _headers.find(lowerKey);
-    if (headerIt != _headers.end())
-        return headerIt->second;
-    return "";
+    return _headers.get_header(key);
 }
 
 void Response::printResponse() const
@@ -191,24 +178,6 @@ void Response::printResponse() const
     std::cout << "\nBody:" << std::endl;
     printBody();
     std::cout << "---------------------\n" << std::endl;
-}
-
-const std::byte* Response::getNextBytes(size_t *length)
-{
-    const size_t bytes_length = _bytes.size() - _bytes_sent;
-
-    *length = bytes_length;
-    return (_bytes.data() + _bytes_sent);
-}
-
-void Response::incrementBytesSent(size_t amount)
-{
-    _bytes_sent += amount;
-}
-
-bool Response::fullySent(void) const
-{
-    return _bytes_sent == _bytes.size();
 }
 
 void Response::setClientFD(int client_fd)
@@ -224,17 +193,18 @@ int Response::getClientFD(void) const
 void Response::headersToBytes(void)
 {
     assert(_headers_complete);
-	assert(_bytes.empty());
+	assert(get_bytes().empty());
     std::ostringstream stream;
 
     stream << _status_line << LINE_BREAK;
-    for (const auto& header : _headers)
+    const auto& headers = _headers.get_headers();
+    for (const auto& header: headers)
     {
         stream << header.first << ": " << header.second << LINE_BREAK;
     }
     stream << LINE_BREAK;
-    copy_str_bytes(_bytes, stream.str());
-    _headers_size = _bytes.size();
+    append_bytes(stream.str());
+    _headers_size = get_bytes().size();
 }
 
 size_t Response::getBodySize(void) const
@@ -251,15 +221,15 @@ void Response::printHeaders(void) const
 {
     for (size_t i = 0; i < _headers_size; ++i)
     {
-        std::putchar(static_cast<char>(_bytes[i]));
+        std::putchar(static_cast<char>(get_bytes()[i]));
     }
 }
 
 void Response::printBody(void) const
 {
-    for (size_t i = _headers_size; i < _bytes.size(); ++i)
+    for (size_t i = _headers_size; i < get_bytes().size(); ++i)
     {
-        std::putchar(static_cast<char>(_bytes[i]));
+        std::putchar(static_cast<char>(get_bytes()[i]));
     }
 }
 
@@ -272,4 +242,14 @@ void Response::finalize(void)
 bool Response::getHeadersComplete(void) const
 {
 	return _headers_complete;
+}
+
+void Response::setStatusLine(HTTPStatusCode status_code)
+{
+    _status_line = HTTPStatusCode(status_code);
+}
+
+HttpHeaders& Response::getHeaders()
+{
+    return _headers;
 }

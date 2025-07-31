@@ -23,15 +23,11 @@ class HttpHeaders
          * @return The value of the requested header, or empty string if not found
          */
         const std::string get_header(const std::string& header_name) const;
+        const std::unordered_map<std::string, std::string>& get_headers() const;
 
-        /**
-         * @brief parses HTTP headers from the request stream
-         * @param requestStream string stream containing the HTTP request headers
-         * @note headers are in format "Key: Value"
-         * @note headers end with CRLF (\r\\n)
-         * @return true if headers were parsed successfully
-         */
+        void set_headers(const std::unordered_map<std::string, std::string>& headers);
         void add_header(const std::string& raw_string);
+        void add_header(const std::string& key, const std::string& value);
         bool complete(void) const;
 };
 

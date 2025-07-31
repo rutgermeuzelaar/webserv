@@ -15,16 +15,23 @@ class CgiProcess
         Server& m_server;
         bool m_client_connected;
         bool m_reaped;
-        int m_read_fd;
+        int m_fd;
+        bool m_is_post;
         bool m_in_notify;
+        HttpBody& m_http_body; // needed for POST
+        bool m_reading_complete;
+        bool m_writing_complete;
 
         void notify_observer(CgiProcessEvent);
         void check_state(void);
-
+        
+        void set_fd(int fd);
     public:
-        CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config, Server& server);
+        CgiProcess(int fd, int client_fd, pid_t pid, const LocationContext* location, \
+            const ServerContext& config, Server& server, HttpBody& http_body);
         CgiProcess& operator=(const CgiProcess&);
         ~CgiProcess();
+
         int m_client_fd;
         std::chrono::_V2::steady_clock::time_point m_start;
         pid_t m_pid;
@@ -35,16 +42,21 @@ class CgiProcess
 
         void set_client_connected(bool status);
         void set_reaped(bool status);
-        void set_read_fd(int fd);
-
+        void set_is_post(bool status);
+        void set_reading_complete(bool status);
+        void set_writing_complete(bool status);
+ 
         bool get_client_connected(void) const;
         bool get_reaped(void) const;
-        int  get_read_fd(void) const;     
-        void close_pipe_read_end(Epoll& epoll);
-        void read_pipe(Epoll& epoll);
+        int  get_fd(void) const;
+
+        void close_fd(Epoll& epoll);
+        void read_fd(Epoll& epoll);
+        void write_fd(Epoll& epoll);
         bool response_ready() const;
         bool is_removable() const;
 
+        bool io_complete() const;
         Response get_response();
 };
 #endif

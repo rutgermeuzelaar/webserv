@@ -26,7 +26,14 @@ HttpHeaders::~HttpHeaders()
 
 const std::string HttpHeaders::get_header(const std::string& header_name) const
 {
-    const auto pos = m_headers.find(header_name);
+    std::string header_name_lower = header_name;
+    std::transform(
+        header_name_lower.begin(),
+        header_name_lower.end(),
+        header_name_lower.begin(),
+        tolower
+    );
+    const auto pos = m_headers.find(header_name_lower);
 
     if (pos == m_headers.end())
     {
@@ -43,6 +50,11 @@ void HttpHeaders::add_header(const std::string& header_name)
         return;
     }
     m_headers.insert(parse_single_http_header(header_name));
+}
+
+void HttpHeaders::add_header(const std::string& key, const std::string& value)
+{
+    m_headers[key] = value;
 }
 
 bool HttpHeaders::complete() const
@@ -93,4 +105,15 @@ std::tuple<std::string, std::unordered_map<std::string, std::string>> parse_cont
         return arguments;
     }
     throw HTTPException(HTTPStatusCode::BadRequest);
+}
+
+void HttpHeaders::set_headers(const std::unordered_map<std::string, std::string>& headers)
+{
+    m_line_break_count = 1;
+    m_headers = headers;
+}
+
+const std::unordered_map<std::string, std::string>& HttpHeaders::get_headers(void) const
+{
+    return m_headers;
 }
