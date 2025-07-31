@@ -235,7 +235,7 @@ void Server::processRequest(int client_fd, const Request& request)
 	const std::string& uri = request.getStartLine().get_uri();
 	const LocationContext* location = find_location(uri, config);
 
-	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(uri))
+	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(config.m_root.value().m_path, uri))
 	{
 		std::cout << "CGI request\n";
 		m_cgi.add_process(getClient(client_fd), request, m_epoll, location, config, *this);
