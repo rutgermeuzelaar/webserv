@@ -1,6 +1,8 @@
 #include "Pch.hpp"
 #include <iostream>
 #include <csignal>
+#include <ctime>
+#include <cstdlib>
 #include "Server.hpp"
 #include "Config.hpp"
 
@@ -15,6 +17,7 @@ void signal_handler(int signal)
 
 int main(int argc, char **argv, char **envp)
 {
+	std::srand(std::time(nullptr));
     if (argc != 2)
     {
         std::cout << "Wrong arguments. Usage: ./webserv [config_file]" << std::endl;
