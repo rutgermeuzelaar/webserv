@@ -25,7 +25,7 @@ print(
     "<head>"
         "<style>"
         "body {"
-        f"   background-color: {parsed_qs.get("favorite-color")[0]};"
+        f"   background-color: {parsed_qs.get('favorite-color')[0]};"
         "}"
         "</style>"
     "</head>"
