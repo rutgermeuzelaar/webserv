@@ -46,6 +46,11 @@ void Server::epoll_loop(int num_events)
         if (m_cgi.is_cgi_fd(fd))
         {
             CgiProcess& process = m_cgi.get_child(fd);
+			if (m_epoll.isTypeEvent(event, {EPOLLHUP, EPOLLRDHUP, EPOLLERR}))
+            {
+                process.close_fd(m_epoll);
+				continue;
+            }
             if (m_epoll.isTypeEvent(event, EPOLLIN))
             {
                 process.read_fd(m_epoll);
@@ -54,15 +59,11 @@ void Server::epoll_loop(int num_events)
                     continue;
                 }
             }
-            if (m_epoll.isTypeEvent(event, {EPOLLHUP, EPOLLRDHUP, EPOLLERR}))
-            {
-                process.close_fd(m_epoll);
-            }
             if (m_epoll.isTypeEvent(event, EPOLLOUT))
             {
                 process.write_fd(m_epoll);
             }
-            continue;
+			continue;
         }
         auto socket_index = getSocketIndex(fd);
         if (socket_index.has_value())
