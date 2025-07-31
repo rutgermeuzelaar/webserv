@@ -373,10 +373,8 @@ Response RequestHandler::handle_post(const Request& request, const UploadStore& 
 bool is_cgi_request(const std::filesystem::path& root, const std::string& uri)
 {
     const std::string cgi_str = "/" CGI_DIR "/";
+	const size_t str_pos = uri.find("/" CGI_DIR "/", 0);
 
-    size_t str_pos = uri.find("/" CGI_DIR "/", 0);
-
-	std::cout << uri << '\n';
     if (str_pos == std::string::npos)
     {
         return (false);
@@ -387,8 +385,8 @@ bool is_cgi_request(const std::filesystem::path& root, const std::string& uri)
 	}
 	std::string_view view_uri(uri);
 	const size_t fslash_pos = view_uri.find("/", str_pos + cgi_str.size());
-
 	std::string_view sanitized_uri;
+
 	if (fslash_pos == std::string::npos)
 	{
 		sanitized_uri = view_uri.substr(0, view_uri.size());
@@ -397,15 +395,14 @@ bool is_cgi_request(const std::filesystem::path& root, const std::string& uri)
 	{
 		sanitized_uri = view_uri.substr(0, fslash_pos);
 	}
-	std::cout << sanitized_uri << '\n';
 	std::filesystem::path uri_path(sanitized_uri);
 	const auto local_path = map_uri_helper(root, uri_path);
-	std::cout << local_path << '\n';
-	if (std::filesystem::is_directory(local_path))
+
+	if (!std::filesystem::exists(local_path))
 	{
 		return (false);
 	}
-	if (access(local_path.c_str(), X_OK) != -1)
+	if (std::filesystem::is_directory(local_path))
 	{
 		return (false);
 	}
