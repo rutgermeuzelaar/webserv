@@ -21,7 +21,7 @@ PCH := include/Pch.hpp.gch
 
 all: $(NAME)
 
-debug: CXXFLAGS += -g -pg -fsanitize=address
+debug: CXXFLAGS += -g -pg -fsanitize=address -fstack-protector-strong
 debug: LDFLAGS += -pg -fsanitize=address
 debug: CXXFLAGS := $(filter-out -DNDEBUG,$(CXXFLAGS))
 debug: $(NAME)
