@@ -13,6 +13,8 @@
 #include <memory>
 #include <vector>
 #include "ResponseHandler.hpp"
+#include "SessionHandler.hpp"
+#include "Route.hpp"
 
 enum class CgiProcessEvent {
     ResponseReady,
@@ -27,10 +29,12 @@ class Server
         Epoll m_epoll;
         std::map<int, Client> m_clients;
         std::map<int, size_t> m_client_to_socket_index; //* <client_fd, listening_socket_i>
+        std::vector<Route> m_routes;
         bool m_running;
         static constexpr std::chrono::seconds TIMEOUT{15}; //! change to appriorate timeout
         Cgi m_cgi;
         ResponseHandler m_response_handler;
+        SessionHandler m_session_handler;
 
         //* server initialization
         void setupListeningSockets();
@@ -49,10 +53,15 @@ class Server
         void cleanup();
         void timeout_clients();
         std::optional<size_t> getSocketIndex(int fd) const;
+        
+        void install_route(const std::string& url, route_act_t, const std::vector<HTTPMethod>& allowed_methods);
+        std::vector<Route>::const_iterator find_route(const std::string& url);
 
         void epoll_loop(int num_events);
     public:
         Server(const std::vector<ServerContext>& configs, char **envp);
+        Server& operator=(const Server&) = delete;
+        Server(const Server&) = delete;
         ~Server();
 
         //* server control
@@ -78,4 +87,6 @@ class Server
 
         void notify(CgiProcess&, CgiProcessEvent);
         void notify_response_sent(int client_fd);
+
+        SessionHandler& getSessionHandler(void);
 };
