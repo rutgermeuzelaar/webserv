@@ -29,3 +29,13 @@ figure {
 :is(h1, h2, h3, h4, h5, h6) {
     text-transform: lowercase;
 }
+
+input {
+    margin: 0.2rem 0;
+    border-radius: 0.1rem;
+    width: 100%;
+}
+
+a {
+    text-transform: lowercase;
+}
