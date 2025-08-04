@@ -1,6 +1,7 @@
 #include "Pch.hpp"
 #include <vector>
 #include <cassert>
+#include <optional>
 #include "Defines.hpp"
 #include "Utilities.hpp"
 #include "HttpHeaders.hpp"
@@ -117,3 +118,31 @@ const std::unordered_map<std::string, std::string>& HttpHeaders::get_headers(voi
 {
     return m_headers;
 }
+
+std::optional<std::string> get_header_value(const std::string& header_str, const std::string& header_attr_name)
+{
+    const size_t name_pos = header_str.find(header_attr_name, 0);
+    size_t i = 0;
+
+    if (name_pos == std::string::npos || name_pos + header_attr_name.size() + 1 >= header_str.size())
+    {
+        return std::nullopt;
+    }
+    i = header_attr_name.size();
+    if (header_str[i] != '=')
+    {
+        return std::nullopt;
+    }
+    i++;
+    if (i == header_str.size())
+    {
+        return std::nullopt;
+    }
+    const size_t semi_pos = header_str.find(';', i);
+    if (semi_pos == std::string::npos)
+    {
+        return header_str.substr(i, header_str.size() - i);
+    }
+    return header_str.substr(i, semi_pos - i);
+}
+

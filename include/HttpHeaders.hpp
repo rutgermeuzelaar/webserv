@@ -3,6 +3,7 @@
 # include <tuple>
 # include <unordered_map>
 # include <string>
+# include <optional>
 
 class HttpHeaders
 {
@@ -33,5 +34,6 @@ class HttpHeaders
 
 std::tuple<std::string, std::unordered_map<std::string, std::string>> parse_content_type(const std::string&);
 std::tuple<std::string, std::unordered_map<std::string, std::string>> parse_content_disposition(const std::string&);
+std::optional<std::string> get_header_value(const std::string& header_str, const std::string& header_attr_name);
 #endif
 
