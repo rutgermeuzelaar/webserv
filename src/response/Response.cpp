@@ -71,6 +71,20 @@ void Response::setHeader(const std::string& key, const std::string& value)
     std::string lowerKey = key;
     std::transform(lowerKey.begin(), lowerKey.end(), lowerKey.begin(), ::tolower);
     _headers.add_header(lowerKey, value);
+    // need to insert bytes here
+    if (_headers_complete)
+    {
+        std::vector<std::byte> temp;
+        temp.reserve(key.size() + value.size() + 4);
+        copy_str_bytes(temp, lowerKey);
+        copy_str_bytes(temp, ": ");
+        copy_str_bytes(temp, value);
+        copy_str_bytes(temp, LINE_BREAK);
+        // status_line size + current headers size
+        auto& bytes = get_bytes();
+        bytes.insert((bytes.begin() + _headers_size - 2), temp.begin(), temp.end());
+        _headers_size += temp.size();
+    }
 }
 
 void Response::setBody(const std::string& content)
