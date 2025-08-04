@@ -193,7 +193,7 @@ std::filesystem::path map_uri(std::string uri, const LocationContext* location, 
 	return map_uri_helper(root.m_path, uri_path);
 }
 
-static Response build_redirect(const Return& return_obj)
+Response build_redirect(const Return& return_obj)
 {
     Response response(return_obj.m_status_code);
     response.setHeader("Location", return_obj.m_uri);
