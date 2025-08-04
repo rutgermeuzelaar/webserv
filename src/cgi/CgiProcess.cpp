@@ -141,6 +141,7 @@ bool CgiProcess::is_removable() const
 // CGI scripts are responsible for creating correct HTTP responses
 static void parse_cgi_response(std::string& cgi_buffer, Response& response)
 {
+    assert(!cgi_buffer.empty());
     size_t chars_consumed = 0;
     const auto& headers = parse_http_headers(cgi_buffer, &chars_consumed);
 
