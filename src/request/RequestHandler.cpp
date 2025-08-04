@@ -302,6 +302,7 @@ Response RequestHandler::handle_delete(std::filesystem::path& local_path)
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
     Response response(HTTPStatusCode::NoContent);
+    response.finalize();
     return response;
 }
 
