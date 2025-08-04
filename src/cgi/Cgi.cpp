@@ -245,7 +245,8 @@ static void child_process_default(int socket_pair[2], const std::vector<std::str
     exit(EXIT_FAILURE);
 }
 
-void Cgi::add_process(Client& client, Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server)
+void Cgi::add_process(Client& client, Request& request, Epoll& epoll, const LocationContext* location, \
+    const ServerContext& config, Server& server)
 {   
     const int client_fd = client.getSocketFD();
     (void)client_fd;
