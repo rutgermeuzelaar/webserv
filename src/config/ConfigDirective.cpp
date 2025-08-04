@@ -123,6 +123,14 @@ Return::Return(const std::string& status_code, const std::string uri)
     
 }
 
+Return::Return(HTTPStatusCode status_code, const std::string uri)
+    : ConfigDirective(true)
+    , m_status_code {status_code}
+    , m_uri {uri}
+{
+    
+}
+
 AutoIndex::AutoIndex(const std::string& status)
     : ConfigDirective(true)
     , m_on {status == "on"}

@@ -92,6 +92,7 @@ class Return: public ConfigDirective
         const HTTPStatusCode m_status_code;
         const std::string m_uri;
         Return(const std::string& status_code, const std::string uri);
+        Return(HTTPStatusCode status_code, const std::string uri);
 };
 
 class AutoIndex: public ConfigDirective
