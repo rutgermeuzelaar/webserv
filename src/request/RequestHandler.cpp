@@ -396,7 +396,7 @@ Response RequestHandler::handle_post(const Request& request, const UploadStore& 
     file << file_data;
     file.close();
     Response response(HTTPStatusCode::SeeOther);
-    response.setHeader("Location", path);
+    response.setHeader("Location", "/file-upload-success");
     response.setHeader("Content-Length", "0");
 	response.finalize();
     return response;
