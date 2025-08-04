@@ -35,43 +35,42 @@ HttpBody::HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_
 		m_complete = true;
 		return;
 	}
-
     //* parse and store Content-Type and multipart state first
-    std::string content_type_str = headers->get_header("content-type");
-    if (content_type_str.empty())
+    const std::string content_type_header = headers->get_header("content-type");
+    if (content_type_header.empty())
         throw HTTPException(HTTPStatusCode::BadRequest);
-    m_content_type = content_type_str;
-    auto content_type = parse_content_type(content_type_str);
-    bool is_multipart = (std::get<std::string>(content_type) == "multipart/form-data");
-    if (is_multipart) {
-        const auto& attributes = std::get<std::unordered_map<std::string, std::string>>(content_type);
-        auto bound = attributes.find("boundary");
-        if (bound == attributes.end())
-            throw HTTPException(HTTPStatusCode::BadRequest);
-		m_boundary.emplace(bound->second);
-    }
-
-    std::string transfer_encoding = headers->get_header("transfer-encoding");
-    if (transfer_encoding == "chunked") 
+    m_content_type = content_type_header;
+    auto content_type = parse_content_type(content_type_header);
+    if (headers->get_header("transfer-encoding") == "chunked") 
 	{
         if (!headers->get_header("content-length").empty())
             throw HTTPException(HTTPStatusCode::BadRequest, "Chunked Encoding cannot have Content length");
         m_is_chunked = true;
         m_chunked_decoder = ChunkedDecoder();
         m_initialized = true;
+        return;
     }
-	else
-	{
-        std::string content_len = headers->get_header("content-length");
-        if (content_len.empty())
+    const std::string content_len = headers->get_header("content-length");
+    if (content_len.empty())
+        throw HTTPException(HTTPStatusCode::BadRequest);
+    try {
+        m_content_length = std::stoul(content_len);
+    } catch (const std::exception& e) {
+        throw HTTPException(HTTPStatusCode::BadRequest, "Invalid Content-Length value");
+    }
+    if (std::get<std::string>(content_type) == "multipart/form-data")
+    {
+        const auto& attributes = std::get<std::unordered_map<std::string, std::string>>(content_type);
+        auto bound = attributes.find("boundary");
+        if (bound == attributes.end())
             throw HTTPException(HTTPStatusCode::BadRequest);
-        try {
-            m_content_length = std::stoul(content_len);
-        } catch (const std::exception& e) {
-            throw HTTPException(HTTPStatusCode::BadRequest, "Invalid Content-Length value");
-        }
+		m_boundary.emplace(bound->second);
         if (m_content_length == 0)
             throw HTTPException(HTTPStatusCode::BadRequest);
+        m_initialized = true;
+    }
+    else if (std::get<std::string>(content_type) == "application/x-www-form-urlencoded")
+    {
         m_initialized = true;
     }
 }
