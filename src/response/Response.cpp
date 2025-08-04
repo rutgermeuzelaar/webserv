@@ -64,7 +64,6 @@ Response::~Response()
 
 void Response::setHeader(const std::string& key, const std::string& value)
 {
-    assert("You cannot add a header after a body is set" && !_headers_complete);
     if (key.empty())
         throw HTTPException(HTTPStatusCode::BadRequest, "Empty header key");
     
