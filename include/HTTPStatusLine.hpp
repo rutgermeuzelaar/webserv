@@ -7,9 +7,9 @@
 class HTTPStatusLine
 {
     private:
-        static std::string    m_protocol;
-        std::string           m_status_text;           
-        HTTPStatusCode              m_status_code;
+        static std::string  m_protocol;
+        std::string         m_status_text;           
+        HTTPStatusCode      m_status_code;
 
     public:
         HTTPStatusLine(HTTPStatusCode status_code);
