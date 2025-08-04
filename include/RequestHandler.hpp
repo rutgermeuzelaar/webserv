@@ -14,6 +14,7 @@ Response build_error_page(HTTPStatusCode status_code, const LocationContext* loc
 bool is_cgi_request(const std::filesystem::path& root, const std::string& uri);
 bool request_method_allowed(const LocationContext* location, HTTPMethod method);
 std::filesystem::path map_uri(std::string uri, const LocationContext* location, const Root& root);
+Response build_redirect(const Return& return_obj);
 
 class RequestHandler
 {
