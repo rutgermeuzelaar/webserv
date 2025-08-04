@@ -8,6 +8,7 @@
 #include "Server.hpp"
 #include "Client.hpp"
 #include "CgiProcess.hpp"
+#include "Route.hpp"
 
 extern bool gLive;
 
@@ -125,7 +126,10 @@ void Server::start()
 {
 	m_running = true;
 	setupListeningSockets();
-	std::cout << "Server started with epoll" << std::endl;
+    install_route("/create-session", create_session, {HTTPMethod::POST});
+    install_route("/file-upload-success", file_upload_success, {HTTPMethod::GET});
+    install_route("/whoami", whoami, {HTTPMethod::GET});
+    std::cout << "Server started with epoll" << std::endl;
 }
 
 void Server::stop()
@@ -239,7 +243,17 @@ void Server::processRequest(int client_fd, Request& request)
 	std::cout << "Handling request for URI: " << request.getStartLine().get_uri() << std::endl; //! TEST
 	const std::string& uri = request.getStartLine().get_uri();
 	const LocationContext* location = find_location(uri, config);
+    auto session_id_opt = get_header_value(request.getHeaders().get_header("Cookie"), "session");
 
+    if (session_id_opt.has_value())
+    {
+        auto session_it = m_session_handler.find_session(session_id_opt.value());
+        if (session_it != m_session_handler.get_sessions().end())
+        {
+            session_it->second.add_request(request.getStartLine().get_http_method());
+            session_it->second.print();
+        }
+    }
 	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(uri))
 	{
 		std::cout << "CGI request\n";
@@ -253,15 +267,37 @@ void Server::processRequest(int client_fd, Request& request)
         {
             http_body.append_bytes(http_body.get_raw());
         }
-		m_cgi.add_process(getClient(client_fd), request, m_epoll, location, config, *this);
+        m_cgi.add_process(getClient(client_fd), request, m_epoll, location, config, *this);
+        return;
 	}
-	else
-	{
-		Response response = handler.handle(request, uri, location);
-		std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST
-		std::cout << "Response body length: " << response.getBodySize() << std::endl; //! TEST
+    const auto& route_it = std::find_if(
+        m_routes.begin(),
+        m_routes.end(),
+        [&uri](const Route& route) {
+            return route.get_url() == uri;
+        }
+    );
+    if (route_it == m_routes.end())
+    {
+        Response response = handler.handle(request, uri, location);
+        std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST
+        std::cout << "Response body length: " << response.getBodySize() << std::endl; //! TEST
         m_response_handler.add_response(client_fd, response);
-	}
+    }
+    else
+    {
+        const HTTPMethod http_method = request.getStartLine().get_http_method();
+        const auto& allowed_methods = route_it->get_allowed_methods();
+
+        if (std::find(allowed_methods.begin(), allowed_methods.end(), http_method) == allowed_methods.end())
+        {
+            m_response_handler.add_response(client_fd, build_error_page(HTTPStatusCode::MethodNotAllowed, location, config));  
+        }
+        else
+        {
+            m_response_handler.add_response(client_fd, route_it->get_action()(*this, request, location, config));
+        }
+    }
 }
 
 void Server::handleNewConnection(size_t socket_index)
@@ -397,10 +433,13 @@ void Server::notify(CgiProcess& process, CgiProcessEvent event)
     switch (event)
     {
         case CgiProcessEvent::ResponseReady:
+        {
             getClient(process.m_client_fd).resetProcessPtr();
-            m_response_handler.add_response(process.m_client_fd, process.get_response());
+            Response response = process.get_response();
+            m_response_handler.add_response(process.m_client_fd, response);
             m_cgi.erase_child(process.m_pid, true);
             return;
+        }
         case CgiProcessEvent::IsRemovable: // Initiator is disconnected
             m_cgi.erase_child(process.m_pid, false);
     }
@@ -419,4 +458,14 @@ void Server::notify_response_sent(int client_fd)
     {
         client.clearRequest();
     }
+}
+
+SessionHandler& Server::getSessionHandler(void)
+{
+    return m_session_handler;
+}
+
+void Server::install_route(const std::string& url, route_act_t action, const std::vector<HTTPMethod>& allowed_methods)
+{
+    m_routes.push_back(Route(url, allowed_methods, action));
 }
