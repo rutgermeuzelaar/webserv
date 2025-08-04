@@ -190,3 +190,47 @@ void copy_str_bytes(std::vector<std::byte>& bytes, const std::string& str)
         bytes.push_back(static_cast<std::byte>(str[i]));
     }
 }
+
+static void replace_all(std::string& str, const std::string& what, char by)
+{
+    size_t i = 0;
+
+    while (i < str.size())
+    {
+        const size_t what_pos = str.find(what, i);
+
+        if (what_pos != std::string::npos)
+        {
+            str.replace(what_pos, what.size(), 1, by);
+        }
+        i++;
+    }
+}
+
+static std::string& percent_decode(std::string& str)
+{
+    for (const auto& it: g_percent_encoding_table)
+    {
+        replace_all(str, it.second, it.first);
+    }
+    return str;
+}
+
+std::unordered_map<std::string, std::string> parse_query_string(const std::string& query_string)
+{
+    auto split_str = split(query_string, '&');
+    std::unordered_map<std::string, std::string> attributes;
+
+    for (auto& it: split_str)
+    {
+        auto kv_pair = split(it, '=');
+        if (kv_pair.size() != 2)
+        {
+            return attributes;
+        }
+        percent_decode(kv_pair[0]);
+        percent_decode(kv_pair[1]);
+        attributes.insert({kv_pair[0], kv_pair[1]});
+    }
+    return attributes;
+}
