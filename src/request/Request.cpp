@@ -81,29 +81,9 @@ const HttpBody& Request::getBody() const
     return _body;
 }
 
-
-void Request::printRequest() const
-{
-	// std::cout << "\n--- Request Details ---" << std::endl;
-	// std::cout << "Method: " << _method << std::endl;
-	// std::cout << "\nURI Components:" << std::endl;
-	// std::cout << "  Full URI: '" << _uri << "'" << std::endl;
-	// std::cout << "  Path:     '" << _path << "'" << std::endl;
-	// std::cout << "  Query:    '" << _query << "'" << std::endl;
-	// std::cout << "  Fragment: '" << _fragment << "'" << std::endl;
-	// std::cout << "\nHTTP Version: " << _HTTPVersion << std::endl;
-	
-	// std::cout << "\nHeaders:" << std::endl;
-	// for (const auto& header : _headers)
-	// 	std::cout << "  " << header.first << ": " << header.second << std::endl;
-	// std::cout << "\nBody:" << std::endl;
-	// std::cout << _body.get_raw() << std::endl;
-	// std::cout << "---------------------\n" << std::endl;
-}
-
 void Request::append(const char* buffer, size_t len, size_t client_max_body_size)
 {
-    size_t index_copy = _index;
+    [[maybe_unused]]size_t index_copy = _index;
 
     if (!_start_line.complete() || !_headers.complete())
     {
@@ -121,12 +101,7 @@ void Request::append(const char* buffer, size_t len, size_t client_max_body_size
     {
         return;
     }
-    // assert(_start_line.get_http_method() == HTTPMethod::POST); //! finish @rutger
-	if (_start_line.get_http_method() == HTTPMethod::POST)
-	{
-		std::cout << "";	
-	}
-    std::cout << "index: " << _index << "index_copy: " << index_copy << '\n';
+    DEBUG("index: " << _index << "index_copy: " << index_copy);
     if (_start_line.complete() && _headers.complete())
     {
         std::string str_buffer;

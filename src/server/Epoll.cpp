@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include "Epoll.hpp"
 #include "ResponseHandler.hpp"
+#include "Defines.hpp"
 
 Epoll::Epoll() : m_epoll_fd(-1)
 {
@@ -9,7 +10,7 @@ Epoll::Epoll() : m_epoll_fd(-1)
 	if (m_epoll_fd == -1)
 		throw EpollException("Failed to create epoll: " + std::string(strerror(errno)));
 	m_events.resize(m_max_events);
-	std::cout << "Epoll instance created with fd: " << m_epoll_fd << std::endl;
+	DEBUG("Epoll instance created with fd: " << m_epoll_fd);
 }
 
 Epoll::~Epoll()
@@ -23,7 +24,7 @@ Epoll::Epoll(const Epoll& src) : m_epoll_fd(-1)
 	if (m_epoll_fd == -1)
 		throw EpollException("Failed to create epoll in copy constructor: " + std::string(strerror(errno)));
 	m_events = src.m_events;
-	std::cout << "Epoll instance created in copy constructor with fd: " << m_epoll_fd << std::endl;
+	DEBUG("Epoll instance created in copy constructor with fd: " << m_epoll_fd);
 }
 
 Epoll& Epoll::operator=(const Epoll& src)
@@ -35,7 +36,7 @@ Epoll& Epoll::operator=(const Epoll& src)
 		if (m_epoll_fd == -1)
 			throw EpollException("Failed to create epoll in assignment operator: " + std::string(strerror(errno)));
 		m_events.resize(m_max_events);
-		std::cout << "Epoll instance created in assignment operator with fd: " << m_epoll_fd << std::endl;
+		DEBUG("Epoll instance created in assignment operator with fd: " << m_epoll_fd);
 	}
 	return *this;
 }
@@ -46,15 +47,13 @@ void Epoll::addFd(int fd, uint32_t events)
 	event.events = events;
 	event.data.fd = fd;
 
-   	// std::cout << "fd before epoll_ctl: " << fd << std::endl; //! TEST
-    // if (epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, fd, &event) == -1)
-	std::cout << "[epoll_ctl ADD] m_epoll_fd: " << m_epoll_fd << ", fd: " << fd << ", events: " << events << std::endl; //! DEBUG
+	DEBUG("[epoll_ctl ADD] m_epoll_fd: " << m_epoll_fd << ", fd: " << fd << ", events: " << events);
 	int ret = epoll_ctl(m_epoll_fd, EPOLL_CTL_ADD, fd, &event);
-	std::cout << "epoll_ctl(ADD) return: " << ret << ", errno: " << errno << " (" << strerror(errno) << ")" << std::endl;
+	DEBUG("epoll_ctl(ADD) return: " << ret << ", errno: " << errno << " (" << strerror(errno) << ")");
 	if (ret == -1)
 		throw EpollException("Failed to add fd " + std::to_string(fd) + " to epoll: " + std::string(strerror(errno)));
-	std::cout << "Added fd " << fd << " to epoll with events: " << events << std::endl;
-	std::cout << std::endl;
+	DEBUG("Added fd " << fd << " to epoll with events: " << events);
+	DEBUG(std::endl);
 }
 
 void Epoll::modifyFD(int fd, uint32_t events)
@@ -71,7 +70,7 @@ void Epoll::removeFD(int fd)
 {
 	if (epoll_ctl(m_epoll_fd, EPOLL_CTL_DEL, fd, nullptr) == -1)
 		throw EpollException("Failed to delete fd " + std::to_string(fd) + " in epoll: " + std::string(strerror(errno)));
-	std::cout << "Removed fd " << fd << " from epoll" << std::endl;
+	DEBUG("Removed fd " << fd << " from epoll");
 }
 
 int Epoll::wait()
@@ -95,7 +94,7 @@ void Epoll::close_epoll_instance()
 		if (close(m_epoll_fd) == -1)
 			std::cerr << "failed to close epollfd error" << std::endl; //TODO use correct exception
 		m_epoll_fd = -1;
-		std::cout << "Epoll instance closed" << std::endl;
+		DEBUG("Epoll instance closed");
 	}
 
 }

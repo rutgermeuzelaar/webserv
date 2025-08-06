@@ -53,7 +53,7 @@ CgiProcess& CgiProcess::operator=(const CgiProcess& other)
 
 CgiProcess::~CgiProcess()
 {
-    std::cout << __func__ << ": " << m_pid << '\n'; 
+    DEBUG(__func__ << ": " << m_pid); 
 }
 
 void CgiProcess::close_fd(Epoll& epoll)
