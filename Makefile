@@ -6,7 +6,7 @@ LDFLAGS :=
 OBJDIR := build
 UPLOADDIR := ./root/upload
 VPATH = $(shell find src/ -maxdepth 1 -mindepth 1)
-SOURCES_STANDARD := Config.cpp ConfigDirective.cpp HttpContext.cpp Ipv4Address.cpp Lexer.cpp \
+SOURCES_STANDARD := Config.cpp ConfigDirective.cpp Ipv4Address.cpp Lexer.cpp \
 LocationContext.cpp Parser.cpp Port.cpp Scanner.cpp ServerContext.cpp HTTPException.cpp \
 HTTPStatusCode.cpp main.cpp Request.cpp HTTPStatusLine.cpp Response.cpp Socket.cpp \
 Utilities.cpp RequestHandler.cpp Server.cpp Client.cpp Epoll.cpp HttpHeaders.cpp HttpBody.cpp \
