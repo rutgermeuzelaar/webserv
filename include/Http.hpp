@@ -7,7 +7,39 @@
 # include <unordered_map>
 # include <stdexcept>
 # include <filesystem>
-# include "PartialWriter.hpp"
+# include <vector>
+# include <cstddef>
+
+//-----------------------------------------------------------------------------
+// Helper classes/enums
+//-----------------------------------------------------------------------------
+class PartialWriter
+{
+    private:
+        std::vector<std::byte>  m_bytes;
+        size_t                  m_bytes_sent;
+
+    public:
+        PartialWriter();
+        PartialWriter(size_t bytes_size);
+        PartialWriter& operator=(const PartialWriter&) = default;
+        PartialWriter(const PartialWriter&) = default;
+        ~PartialWriter() = default;
+
+        void set_bytes(const std::vector<std::byte>& bytes);
+
+        std::vector<std::byte>& get_bytes(void);
+        const std::vector<std::byte>& get_bytes(void) const;
+
+        void append_bytes(const std::vector<std::byte>& bytes);
+        void append_bytes(const std::string& bytes);
+
+        const std::byte* get_next_bytes(size_t* length);
+        void increment_bytes_sent(size_t amount);
+        bool fully_sent(void) const;
+        void print(void) const;
+        void print(size_t start, size_t end) const;
+};
 
 class MultiPartChunk;
 
@@ -92,7 +124,6 @@ const char *get_http_status_text(HTTPStatusCode status);
 bool is_http_status_code(int);
 std::ostream& operator<<(std::ostream&, const HTTPStatusCode&);
 HTTPStatusCode from_string(const std::string& str);
-
 
 //-----------------------------------------------------------------------------
 // Classes to parse HTTP requests
