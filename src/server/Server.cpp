@@ -9,6 +9,7 @@
 #include "Client.hpp"
 #include "CgiProcess.hpp"
 #include "Route.hpp"
+#include "Defines.hpp"
 
 extern bool gLive;
 

@@ -1,9 +1,8 @@
 #include "Pch.hpp"
 #include <vector>
-#include "HttpRequestStartLine.hpp"
 #include "Utilities.hpp"
 #include "Defines.hpp"
-#include "HTTPException.hpp"
+#include "Http.hpp"
 
 HttpRequestStartLine::HttpRequestStartLine()
     : m_complete {false}

@@ -5,14 +5,12 @@
 #include <optional>
 #include <cassert>
 #include "Utilities.hpp"
-#include "Response.hpp"
-#include "HTTPStatusCode.hpp"
-#include "HTTPException.hpp"
 #include "Defines.hpp"
 #include "CgiProcess.hpp"
 #include "RequestHandler.hpp"
 #include "Epoll.hpp"
 #include "Server.hpp"
+#include "Http.hpp"
 
 CgiProcess::CgiProcess(int fd, int client_fd, pid_t pid, const LocationContext* location, \
     const ServerContext& config, Server& server, HttpBody& http_body)

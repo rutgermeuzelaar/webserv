@@ -2,11 +2,11 @@
 #include <cassert>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <fstream>
+#include "Defines.hpp"
 #include "RequestHandler.hpp"
 #include "Utilities.hpp"
 #include "MIMETypes.hpp"
-#include "Response.hpp"
-#include "Request.hpp"
 
 static std::string create_header(const std::filesystem::path& directory)
 {

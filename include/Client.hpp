@@ -1,9 +1,8 @@
 #pragma once
 #include <memory>
 #include <string>
-#include "Request.hpp"
-#include "HTTPException.hpp"
 #include <chrono>
+#include "Http.hpp"
 
 class Server;
 class CgiProcess;

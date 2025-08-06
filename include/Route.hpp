@@ -2,7 +2,7 @@
 #ifndef ROUTE_HPP
 # define ROUTE_HPP
 # include <vector>
-# include "HttpMethod.hpp"
+# include "Http.hpp"
 
 class Server;
 class Response;

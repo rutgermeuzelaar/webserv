@@ -4,7 +4,7 @@
 #include <iostream>
 #include "Utilities.hpp"
 #include "Defines.hpp"
-#include "HTTPException.hpp"
+#include "Http.hpp"
 
 std::vector<std::string> split(const std::string to_split, const char delimiter)
 {

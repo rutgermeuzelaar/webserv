@@ -1,11 +1,9 @@
 #include "Pch.hpp"
 #include <fstream>
 #include <cassert>
-#include "HttpBody.hpp"
-#include "HTTPException.hpp"
 #include "Utilities.hpp"
-#include "HttpHeaders.hpp"
 #include "Defines.hpp"
+#include "Http.hpp"
 
 /**
  * @brief parses the request body based on Content-Length header

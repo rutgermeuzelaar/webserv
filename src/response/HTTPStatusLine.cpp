@@ -1,8 +1,7 @@
 #include "Pch.hpp"
 #include <string>
 #include "Defines.hpp"
-#include "HTTPStatusLine.hpp"
-#include "HTTPStatusCode.hpp"
+#include "Http.hpp"
 
 std::string HTTPStatusLine::m_protocol = PROTOCOL;
 

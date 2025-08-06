@@ -1,7 +1,6 @@
 #include "Pch.hpp"
-#include "MultiPartChunk.hpp"
 #include "Utilities.hpp"
-#include "HTTPException.hpp"
+#include "Http.hpp"
 
 MultiPartChunk::MultiPartChunk()
 {

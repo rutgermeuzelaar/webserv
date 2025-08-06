@@ -5,7 +5,7 @@
 #include <limits>
 #include <cassert>
 #include "ConfigDirective.hpp"
-#include "HTTPStatusCode.hpp"
+#include "Http.hpp"
 
 ConfigDirective::ConfigDirective(bool is_unique)
     : m_is_unique {is_unique}

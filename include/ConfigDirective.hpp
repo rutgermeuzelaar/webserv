@@ -7,8 +7,7 @@
 # include "Ipv4Address.hpp"
 # include "Port.hpp"
 # include "ContextName.hpp"
-# include "HTTPStatusCode.hpp"
-# include "Request.hpp"
+# include "Http.hpp"
 
 class ConfigDirective
 {

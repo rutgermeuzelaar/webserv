@@ -2,7 +2,7 @@
 #ifndef RESPONSE_HANDLER_HPP
 # define RESPONSE_HANDLER_HPP
 # include <vector>
-# include "Response.hpp"
+# include "Http.hpp"
 
 class Server;
 class Epoll;

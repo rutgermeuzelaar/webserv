@@ -1,7 +1,7 @@
 #include "Session.hpp"
 #include <cstdlib>
 #include <algorithm>
-#include "HttpMethod.hpp"
+#include "Http.hpp"
 
 Session::Session(const std::string& id)
 	: m_id {id}
