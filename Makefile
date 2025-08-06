@@ -1,7 +1,7 @@
 CXX := g++
 INC_DIRS := include
 INC := $(foreach dir, $(INC_DIRS), -I$(dir))
-CXXFLAGS := -Wall -Wextra -Werror -Wshadow -Wvla $(INC) -std=c++17 -DNDEBUG
+CXXFLAGS := -Wall -Wextra -Werror -Wshadow $(INC) -std=c++17 -DNDEBUG
 LDFLAGS :=
 OBJDIR := build
 UPLOADDIR := ./root/upload
@@ -22,7 +22,7 @@ PCH := include/Pch.hpp.gch
 
 all: $(NAME)
 
-debug: CXXFLAGS += -g -pg -fsanitize=address -fstack-protector-strong
+debug: CXXFLAGS += -g -pg -fsanitize=address -fstack-protector-strong -Wvla
 debug: LDFLAGS += -pg -fsanitize=address
 debug: CXXFLAGS := $(filter-out -DNDEBUG,$(CXXFLAGS))
 debug: $(NAME)
