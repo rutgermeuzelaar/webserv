@@ -10,4 +10,10 @@
 #  define CGI_DIR "cgi-bin"
 #  define CGI_TIMEOUT_MS 450
 #  define STYLESHEET "/root/css/stylesheet.css"
+// shoutout: https://stackoverflow.com/questions/31860255/console-output-only-in-debug-mode-c
+# ifndef NDEBUG
+#  define DEBUG(message) do { std::cout << message << std::endl; } while (0)
+# else
+#  define DEBUG(message)
+# endif
 #endif

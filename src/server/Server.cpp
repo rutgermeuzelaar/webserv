@@ -34,15 +34,15 @@ void Server::epoll_loop(int num_events)
     for (int i = 0; i < num_events; ++i)
     {
         const epoll_event& event = m_epoll.getEvents()[i];
-        std::cout << "Event for fd: " << event.data.fd << ", events: " << event.events << std::endl;
-        if (event.events & EPOLLIN) std::cout << "  EPOLLIN" << std::endl;
-        if (event.events & EPOLLOUT) std::cout << "  EPOLLOUT" << std::endl;
-        if (event.events & EPOLLHUP) std::cout << "  EPOLLHUP" << std::endl;
-        if (event.events & EPOLLERR) std::cout << "  EPOLLERR" << std::endl;
-        if (event.events & EPOLLRDHUP) std::cout << "  EPOLLRDHUP" << std::endl;
+        DEBUG("Event for fd: " << event.data.fd << ", events: " << event.events);
+        if (event.events & EPOLLIN) { DEBUG("  EPOLLIN") };
+        if (event.events & EPOLLOUT) { DEBUG("  EPOLLOUT") };
+        if (event.events & EPOLLHUP) { DEBUG("  EPOLLHUP") };
+        if (event.events & EPOLLERR) { DEBUG("  EPOLLERR") };
+        if (event.events & EPOLLRDHUP) { DEBUG("  EPOLLRDHUP") };
         
         int fd = event.data.fd;
-        std::cout << "Processing event for fd: " << fd << std::endl;
+        DEBUG("Processing event for fd: " << fd);
         if (m_cgi.is_cgi_fd(fd))
         {
             CgiProcess& process = m_cgi.get_child(fd);
@@ -128,7 +128,6 @@ void Server::start()
     install_route("/create-session", create_session, {HTTPMethod::POST});
     install_route("/file-upload-success", file_upload_success, {HTTPMethod::GET});
     install_route("/whoami", whoami, {HTTPMethod::GET});
-    std::cout << "Server started with epoll" << std::endl;
 }
 
 void Server::stop()
@@ -166,7 +165,7 @@ void Server::addClient(int fd)
 	try {
 		setNonBlocking(fd); //* client socket
 		m_epoll.addFd(fd, EPOLLIN | EPOLLHUP | EPOLLERR | EPOLLRDHUP);
-		std::cout << "Added client fd " << fd << " to epoll" << std::endl;
+		DEBUG("Added client fd " << fd << " to epoll");
 		m_clients.try_emplace(fd, fd);
 	} catch (const SocketException& e) {
 		std::cerr << "Error setting up client socket: " << e.what() << std::endl;
@@ -239,7 +238,7 @@ void Server::processRequest(int client_fd, Request& request)
 	// 	socket_index = 0; //! handle error, comment in if it works
 	const ServerContext& config = m_configs[socket_index];
 	RequestHandler handler(config);
-	std::cout << "Handling request for URI: " << request.getStartLine().get_uri() << std::endl; //! TEST
+	DEBUG("Handling request for URI: " << request.getStartLine().get_uri()); //! TEST
 	const std::string& uri = request.getStartLine().get_uri();
 	const LocationContext* location = find_location(uri, config);
     auto session_id_opt = get_header_value(request.getHeaders().get_header("Cookie"), "session");
@@ -255,7 +254,7 @@ void Server::processRequest(int client_fd, Request& request)
     }
 	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(config.m_root.value().m_path, uri))
 	{
-		std::cout << "CGI request\n";
+		DEBUG("CGI request");
         HttpBody& http_body = request.getBody();
 
         if (http_body.is_chunked())
@@ -279,8 +278,8 @@ void Server::processRequest(int client_fd, Request& request)
     if (route_it == m_routes.end())
     {
         Response response = handler.handle(request, uri, location);
-        std::cout << "Response status: " << response.getStatusCode() << std::endl; //! TEST
-        std::cout << "Response body length: " << response.getBodySize() << std::endl; //! TEST
+        DEBUG("Response status: " << response.getStatusCode()); //! TEST
+        DEBUG("Response body length: " << response.getBodySize()); //! TEST
         m_response_handler.add_response(client_fd, response);
     }
     else
@@ -311,7 +310,7 @@ void Server::handleNewConnection(size_t socket_index)
 			try {
 				addClient(client_fd);
 				m_client_to_socket_index[client_fd] = socket_index;
-				std::cout << "Client added successfully" << std::endl;
+				DEBUG("Client added successfully");
 			} catch (const std::exception& e) {
 				std::cerr << "Failed to set up client: " << e.what() << std::endl;
 				close(client_fd);
@@ -325,7 +324,7 @@ void Server::handleNewConnection(size_t socket_index)
 
 void Server::handleClientData(int client_fd)
 {
-	std::cout << "\n=== Handling Client Data for fd: " << client_fd << " ===" << std::endl;
+	DEBUG("\n=== Handling Client Data for fd: " << client_fd << " ===");
 	
 	Client& client = getClient(client_fd);
 	char buffer[RECV_BUFFER_SIZE];
@@ -343,28 +342,23 @@ void Server::handleClientData(int client_fd)
 		removeClient(client_fd);
 		return;
 	}
-
-	// std::cout << "\n--- Raw Request Data ---" << std::endl;
-	// std::cout << std::string(buffer, bytes_read) << std::endl;
-	// std::cout << "------------------------\n" << std::endl;
-
     const auto& conf = m_configs[m_client_to_socket_index[client_fd]];
 	client.receiveData(buffer, bytes_read, conf.m_client_max_body_size.value().m_size);
 	
-	std::cout << "Checking if request is complete..." << std::endl;
+	DEBUG("Checking if request is complete...");
 	if (client.hasCompleteRequest())
 	{
-		std::cout << "Processing complete request" << std::endl;
+		DEBUG("Processing complete request");
 		Request& req = client.getRequest();
-		std::cout << "Request method: " << req.getStartLine().get_http_method() << std::endl;
-		std::cout << "Request URI: " << req.getStartLine().get_uri() << std::endl;
+		DEBUG("Request method: " << req.getStartLine().get_http_method());
+		DEBUG("Request URI: " << req.getStartLine().get_uri());
 		processRequest(client_fd, req);
 	}
 	else
 	{
-		std::cout << "Request not complete yet" << std::endl;
+		DEBUG("Request not complete yet");
 	}
-	std::cout << "=== End of Client Data Handling ===\n" << std::endl;
+	DEBUG("=== End of Client Data Handling ===\n");
 }
 
 void Server::setNonBlocking(int fd)
@@ -404,7 +398,7 @@ void Server::timeout_clients()
             //* partial request
             if (!client.hasCompleteRequest() && !client.getRequest().is_empty())
             {
-                std::cout << "going in this block" << std::endl;
+                DEBUG("going in this block");
                 HTTPException timeout(HTTPStatusCode::RequestTimeout, "Request timed out\n");
                 sendErrorResponse(fd, timeout);
             }

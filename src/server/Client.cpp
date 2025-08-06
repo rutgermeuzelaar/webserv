@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
+#include <Defines.hpp>
 
 Client::Client(int socket_fd) 
 	: m_socket_fd(socket_fd)
@@ -12,7 +13,7 @@ Client::Client(int socket_fd)
 
 Client::~Client()
 {
-    std::cout << __func__ << " fd: " << m_socket_fd << '\n';
+    DEBUG(__func__ << " fd: " << m_socket_fd);
 	disconnect();
 }
 

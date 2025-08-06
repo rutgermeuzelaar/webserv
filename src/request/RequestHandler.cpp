@@ -361,8 +361,7 @@ Response RequestHandler::handle_post(const Request& request, const UploadStore& 
         }
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-	std::cout << "file_data size:"  << file_data.size() << std::endl;
-	// std::cout << "file_data content: " << file_data << std::endl;
+	DEBUG("file_data size:"  << file_data.size());
     file << file_data;
     file.close();
     Response response(HTTPStatusCode::SeeOther);
