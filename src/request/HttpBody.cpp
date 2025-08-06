@@ -1,6 +1,7 @@
 #include "Pch.hpp"
 #include <fstream>
 #include <cassert>
+#include <iostream>
 #include "Utilities.hpp"
 #include "Defines.hpp"
 #include "Http.hpp"

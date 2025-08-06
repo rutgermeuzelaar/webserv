@@ -1,6 +1,7 @@
 #include "Pch.hpp"
 #include <stdexcept>
 #include <algorithm>
+#include <iostream>
 #include "Config.hpp"
 
 ServerContext::ServerContext()
