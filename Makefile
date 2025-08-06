@@ -1,7 +1,7 @@
 CXX := g++
 INC_DIRS := include
 INC := $(foreach dir, $(INC_DIRS), -I$(dir))
-CXXFLAGS := -Wall -Wextra -Werror -Wshadow $(INC) -std=c++17 -DNDEBUG
+CXXFLAGS := -Wall -Wextra -Werror -Wshadow -Wvla $(INC) -std=c++17 -DNDEBUG
 LDFLAGS :=
 OBJDIR := build
 UPLOADDIR := ./root/upload
@@ -11,7 +11,7 @@ LocationContext.cpp Parser.cpp Port.cpp Scanner.cpp ServerContext.cpp HTTPExcept
 HTTPStatusCode.cpp main.cpp Request.cpp HTTPStatusLine.cpp Response.cpp Socket.cpp \
 Utilities.cpp RequestHandler.cpp Server.cpp Client.cpp Epoll.cpp HttpHeaders.cpp HttpBody.cpp \
 HttpMethod.cpp HttpRequestStartLine.cpp MultiPartChunk.cpp Cgi.cpp CgiProcess.cpp \
-ResponseHandler.cpp
+ResponseHandler.cpp PartialWriter.cpp
 NAME := webserv
 OBJECTS_STANDARD := $(SOURCES_STANDARD:%.cpp=$(OBJDIR)/%.o)
 OBJECTS_SHARED := $(SOURCES_SHARED:%.cpp=$(OBJDIR)/%.o)

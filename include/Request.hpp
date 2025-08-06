@@ -39,10 +39,10 @@ class Request
         HttpRequestStartLine& getStartLine();
         HttpHeaders& getHeaders();
         HttpBody& getBody();
+        const HttpBody& getBody() const;
 
         const HttpRequestStartLine& getStartLine() const;
         const HttpHeaders& getHeaders() const;
-        const HttpBody& getBody() const;
 
         void printRequest() const;
 };

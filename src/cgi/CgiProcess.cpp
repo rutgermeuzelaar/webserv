@@ -14,12 +14,17 @@
 #include "Epoll.hpp"
 #include "Server.hpp"
 
-CgiProcess::CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationContext* location, const ServerContext& config, Server& server)
+CgiProcess::CgiProcess(int fd, int client_fd, pid_t pid, const LocationContext* location, \
+    const ServerContext& config, Server& server, HttpBody& http_body)
     : m_server {server}
     , m_client_connected {true}
     , m_reaped {false}
-    , m_read_fd {read_fd}
+    , m_fd {fd}
+    , m_is_post {false}
     , m_in_notify {false}
+    , m_http_body {http_body}
+    , m_reading_complete {false}
+    , m_writing_complete {false}
     , m_client_fd {client_fd}
     , m_start {std::chrono::steady_clock::now()}
     , m_pid {pid}
@@ -33,8 +38,12 @@ CgiProcess::CgiProcess(int read_fd, int client_fd, pid_t pid, const LocationCont
 CgiProcess& CgiProcess::operator=(const CgiProcess& other)
 {
     m_reaped = other.m_reaped;
-    m_read_fd = other.m_read_fd;
+    m_fd = other.m_fd;
+    m_is_post = other.m_is_post;
     m_in_notify = other.m_in_notify;
+    m_http_body = other.m_http_body;
+    m_reading_complete = other.m_reading_complete;
+    m_writing_complete = other.m_writing_complete;
     m_client_fd = other.m_client_fd;
     m_start = other.m_start;
     m_pid = other.m_pid;
@@ -49,41 +58,45 @@ CgiProcess::~CgiProcess()
     std::cout << __func__ << ": " << m_pid << '\n'; 
 }
 
-void CgiProcess::close_pipe_read_end(Epoll& epoll)
+void CgiProcess::close_fd(Epoll& epoll)
 {
-    if (m_read_fd == -1)
+    if (m_fd == -1)
     {
         return;
     }
-    epoll.removeFD(m_read_fd);
-    if (close(m_read_fd) == -1)
+    epoll.removeFD(m_fd);
+    if (close(m_fd) == -1)
     {
         perror("close");
     }
-    set_read_fd(-1);
+    set_fd(-1);
 }
 
-void CgiProcess::read_pipe(Epoll& epoll)
+void CgiProcess::read_fd(Epoll& epoll)
 {
     char buffer[RECV_BUFFER_SIZE];
     
-    std::cout << __func__ << '\n';
-    std::cout << "read(" << m_read_fd << ")\n";
-    if (m_read_fd == -1)
+    if (m_fd == -1)
     {
         return;
     }
-    ssize_t bytes_read = read(m_read_fd, buffer, RECV_BUFFER_SIZE);
+    ssize_t bytes_read = read(m_fd, buffer, RECV_BUFFER_SIZE);
     if (bytes_read == -1)
     {
         perror("read");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    // closing read end of pipe
     if (bytes_read == 0)
     {
-        std::cout << "close(" << m_read_fd << ")\n";
-        close_pipe_read_end(epoll);
+        m_reading_complete = true;
+        if (shutdown(m_fd, SHUT_RD) == -1)
+        {
+            perror("shutdown");
+        }
+        if (io_complete())
+        {
+            close_fd(epoll);
+        }
     }
     else
     {
@@ -93,7 +106,7 @@ void CgiProcess::read_pipe(Epoll& epoll)
 
 bool CgiProcess::response_ready() const
 {
-    if (m_read_fd != -1)
+    if (m_fd != -1)
     {
         return false;
     }
@@ -110,7 +123,7 @@ bool CgiProcess::response_ready() const
 
 bool CgiProcess::is_removable() const
 {
-    if (m_read_fd != -1)
+    if (m_fd != -1)
     {
         return false;
     }
@@ -125,17 +138,20 @@ bool CgiProcess::is_removable() const
     return true;
 }
 
+// CGI scripts are responsible for creating correct HTTP responses
 static void parse_cgi_response(std::string& cgi_buffer, Response& response)
 {
-    const std::string content_type_key = "Content-Type:";
+    size_t chars_consumed = 0;
+    const auto& headers = parse_http_headers(cgi_buffer, &chars_consumed);
 
-    assert("First line of cgi script should contain the content-type header" && starts_with(cgi_buffer, content_type_key));
-    size_t line_break_pos = cgi_buffer.find(LINE_BREAK, content_type_key.size());
-    assert(line_break_pos != std::string::npos);
-    std::string content_type_value = cgi_buffer.substr(content_type_key.size(), line_break_pos - content_type_key.size());
-    content_type_value = trim(content_type_value, WHITE_SPACE);
-    response.setHeader("content-type", content_type_value);
-    response.setBody(cgi_buffer.substr(line_break_pos + 2, cgi_buffer.size() - line_break_pos + 2));
+    response.getHeaders().set_headers(headers);
+    const std::string& status_header = response.getHeader("Status");
+    if (status_header != "")
+    {
+        response.setStatusLine(static_cast<HTTPStatusCode>(std::atoi(status_header.c_str())));
+    }
+    assert(response.getHeader("Content-Type") != "");
+    response.setBody(cgi_buffer.substr(chars_consumed, cgi_buffer.size() - chars_consumed));
 }
 
 Response CgiProcess::get_response()
@@ -195,9 +211,9 @@ void CgiProcess::set_reaped(bool status)
     check_state();
 }
 
-void CgiProcess::set_read_fd(int fd)
+void CgiProcess::set_fd(int fd)
 {
-    m_read_fd = fd;
+    m_fd = fd;
     check_state();
 }
 
@@ -211,7 +227,54 @@ bool CgiProcess::get_reaped(void) const
     return m_reaped;
 }
 
-int CgiProcess::get_read_fd(void) const
+int CgiProcess::get_fd(void) const
 {
-    return m_read_fd;
+    return m_fd;
+}
+
+void CgiProcess::write_fd(Epoll& epoll)
+{
+    size_t bytes_count;
+
+    auto bytes = m_http_body.get_next_bytes(&bytes_count);
+    const ssize_t bytes_sent = write(m_fd, bytes, bytes_count);
+    if (bytes_sent == -1)
+    {
+        perror("write");
+        assert(false);
+    }
+    m_http_body.increment_bytes_sent(bytes_sent);
+    if (m_http_body.fully_sent())
+    {
+        epoll.notify(m_fd, ResponseEvent::UnmarkEpollOut);
+        if (shutdown(m_fd, SHUT_WR) == -1)
+        {
+            perror("shutdown");
+        }
+        m_writing_complete = true;
+        if (io_complete())
+        {
+            close_fd(epoll);
+        }
+    }
+}
+
+bool CgiProcess::io_complete(void) const
+{
+    return (m_reading_complete && m_writing_complete);
+}
+
+void CgiProcess::set_is_post(bool status)
+{
+    m_is_post = status;
+}
+
+void CgiProcess::set_reading_complete(bool status)
+{
+    m_reading_complete = status;
+}
+
+void CgiProcess::set_writing_complete(bool status)
+{
+    m_writing_complete = status;
 }

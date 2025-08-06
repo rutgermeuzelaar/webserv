@@ -58,7 +58,7 @@ void ResponseHandler::send_response(int client_fd)
     auto it = find_response(client_fd);
     assert(it != m_pending_responses.end());
     size_t bytes_length;
-    const std::byte* bytes = it->getNextBytes(&bytes_length);
+    const std::byte* bytes = it->get_next_bytes(&bytes_length);
 	ssize_t bytes_sent = write(client_fd, bytes, bytes_length);
 	if (bytes_sent == -1)
     {
@@ -68,7 +68,7 @@ void ResponseHandler::send_response(int client_fd)
         remove_response(client_fd);
         return;
     }
-    it->incrementBytesSent(bytes_sent);
+    it->increment_bytes_sent(bytes_sent);
     if (static_cast<size_t>(bytes_sent) == bytes_length)
     {
         m_pending_responses.erase(find_response(client_fd));

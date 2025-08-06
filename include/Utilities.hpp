@@ -25,12 +25,11 @@ std::optional<const std::string> get_envvar(char *const *envp, const std::string
 const std::string create_file_name(const std::string extension);
 bool starts_with(const std::string& str, const std::string& start);
 bool ends_with(const std::string& str, const std::string& ending);
-std::istream& getline_delim(std::istream& is, std::string& str, const std::string& delim);
 std::string& ltrim(std::string& str, const char* to_trim);
 std::string& rtrim(std::string& str, const char* to_trim);
 std::string& trim(std::string& str, const char* to_trim);
 std::pair<std::string, std::string> parse_single_http_header(const std::string& header);
-std::unordered_map<std::string, std::string> parse_http_headers(std::istream& stream);
+std::unordered_map<std::string, std::string> parse_http_headers(const std::string& str, size_t* chars_consumed);
 void copy_str_bytes(std::vector<std::byte>& bytes, const std::string& str);
 std::filesystem::path map_uri_helper(std::filesystem::path root_path, std::filesystem::path& uri_path);
 #endif

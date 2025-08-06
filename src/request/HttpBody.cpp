@@ -16,7 +16,8 @@
  */
 
 HttpBody::HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_max_body_size)
-	: m_index {0}
+	: PartialWriter()
+    , m_index {0}
 	, m_data_start {0}
 	, m_content_length {0}
 	, m_client_max_body_size {client_max_body_size}
@@ -76,7 +77,8 @@ HttpBody::HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_
 }
 
 HttpBody::HttpBody(void)
-	: m_index {0}
+	: PartialWriter()
+    , m_index {0}
 	, m_data_start {0}
 	, m_content_length {0}
 	, m_client_max_body_size {0}
@@ -87,7 +89,7 @@ HttpBody::HttpBody(void)
 {}
 
 HttpBody::HttpBody(const HttpBody& http_body)
-    : m_raw {http_body.m_raw}
+    : PartialWriter(http_body)
     , m_index {http_body.m_index}
     , m_data_start {http_body.m_data_start}
     , m_boundary {http_body.m_boundary}
@@ -457,4 +459,14 @@ bool ChunkedDecoder::complete() const
 const std::string &ChunkedDecoder::get_decoded() const
 {
 	return m_decoded;
+}
+
+bool HttpBody::is_chunked(void) const
+{
+    return m_is_chunked;
+}
+
+const ChunkedDecoder& HttpBody::get_chunked_decoder(void) const
+{
+    return m_chunked_decoder;
 }

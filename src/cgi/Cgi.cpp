@@ -8,6 +8,7 @@
 #include <optional>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/socket.h>
 #include <cassert>
 #include <chrono>
 #include "CgiProcess.hpp"
@@ -101,7 +102,7 @@ static std::string extract_path_info_envvar(const std::string& uri)
     return uri.substr(next_fslash + 1, uri.size() - next_fslash - 1);
 }
 
-std::vector<std::string> get_cgi_envvar(const Request& request, const LocationContext* location, const Root& root)
+static std::vector<std::string> get_cgi_envvar(const Request& request, const LocationContext* location, const Root& root)
 {
     std::vector<std::string> envvar;
     const std::string request_method = stringify(request.getStartLine().get_http_method());
@@ -110,6 +111,7 @@ std::vector<std::string> get_cgi_envvar(const Request& request, const LocationCo
     const std::string path_info = extract_path_info_envvar(request.getStartLine().get_uri());
     const std::string path_translated = map_uri(path_info, location, root);
 
+    envvar.reserve(5);
     assert(request_method.size() > 0);
     if (content_length.size() > 0)
     {
@@ -145,7 +147,7 @@ static const char* get_interpreter(const std::string& script_name)
     return nullptr;
 }
 
-std::optional<const std::string> find_binary(char *const *envp, const std::string& binary)
+static std::optional<const std::string> find_binary(char *const *envp, const std::string& binary)
 {
     std::vector<std::string> paths;
     std::optional<const std::string> path_envvar = get_envvar(envp, "PATH");
@@ -169,7 +171,7 @@ std::optional<const std::string> find_binary(char *const *envp, const std::strin
     return std::optional<const std::string>(std::nullopt);
 }
 
-const std::string Cgi::get_script_name(const std::string& uri) const
+static const std::string get_script_name(const std::string& uri)
 {
     const std::string dir_str = "/" CGI_DIR "/";
     size_t dir_pos = uri.find(dir_str, 0);
@@ -184,8 +186,67 @@ const std::string Cgi::get_script_name(const std::string& uri) const
     return uri.substr(dir_pos + dir_str.size(), fslash_pos - dir_pos - dir_str.size());
 }
 
-void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server)
+static int execve_wrapper(const std::vector<std::string> envvar, const std::string& binary_path, const std::filesystem::path& cgi_file_path)
 {
+    std::vector<char*> cstring_envvar;
+    char* argv[3];
+    char* binary_cstring = const_cast<char*>(binary_path.c_str());
+
+    cstring_envvar.reserve(envvar.size() + 1); // + 1 for nullptr
+    argv[0] = binary_cstring;
+    argv[1] = const_cast<char*>(cgi_file_path.c_str());
+    argv[2] = nullptr;
+    for (auto &it: envvar)
+    {
+        cstring_envvar.push_back(const_cast<char*>(it.c_str()));
+    }
+    cstring_envvar.push_back(nullptr);
+    return (execve(binary_cstring, argv, cstring_envvar.data()));
+}
+
+static void child_process_post(int socket_pair[2], const std::vector<std::string>& envvar, \
+    const std::string& binary_path, const std::filesystem::path& cgi_file_path)
+{
+    // close parent socket in child
+    if (close(socket_pair[0]) == -1)
+    {
+        exit(EXIT_FAILURE);
+    }
+    if (dup2(socket_pair[1], STDOUT_FILENO) == -1)
+    {
+        perror("dup2");
+        exit(EXIT_FAILURE);
+    }
+    if (dup2(socket_pair[1], STDIN_FILENO) == -1)
+    {
+        perror("dup2");
+        exit(EXIT_FAILURE);
+    }
+    execve_wrapper(envvar, binary_path, cgi_file_path);
+    perror("execve");
+    exit(EXIT_FAILURE);
+}
+
+static void child_process_default(int socket_pair[2], const std::vector<std::string>& envvar, \
+    const std::string& binary_path, const std::filesystem::path& cgi_file_path)
+{
+    // close parent socket in child
+    if (close(socket_pair[0]) == -1)
+    {
+        exit(EXIT_FAILURE);
+    }
+    if (dup2(socket_pair[1], STDOUT_FILENO) == -1)
+    {
+        perror("dup2");
+        exit(EXIT_FAILURE);
+    }
+    execve_wrapper(envvar, binary_path, cgi_file_path);
+    perror("execve");
+    exit(EXIT_FAILURE);
+}
+
+void Cgi::add_process(Client& client, Request& request, Epoll& epoll, const LocationContext* location, const ServerContext& config, Server& server)
+{   
     const int client_fd = client.getSocketFD();
     (void)client_fd;
     assert("Client can't have multiple processes" && std::find_if(
@@ -196,74 +257,95 @@ void Cgi::add_process(Client& client, const Request& request, Epoll& epoll, cons
         }
     )
     == m_children.end());
-    const std::vector envvar = get_cgi_envvar(request, location, config.m_root.value());
+ 
+    const HTTPMethod http_method = request.getStartLine().get_http_method();
     const std::string script_name = get_script_name(request.getStartLine().get_uri());
-    auto binary = find_binary(m_envp, get_interpreter(script_name));
+    const char* interpreter = get_interpreter(script_name);
+    const std::vector<std::string> envvar = get_cgi_envvar(request, location, config.m_root.value());
+
+    std::string binary_path;
     std::filesystem::path cgi_file_path = std::filesystem::current_path();
+
     cgi_file_path /= "root/" CGI_DIR "/";
-    std::cout << cgi_file_path << '\n';
-    char *argv[3]; // no extra arguments for now
-    char *envp[envvar.size() + 1];
-
-    cgi_file_path.append(script_name);
-
-    int fd_pair[2];
+    cgi_file_path.append(script_name); 
     assert(std::filesystem::exists(cgi_file_path));
-    assert(binary.has_value());
-    if (pipe(fd_pair) == -1)
+    if (interpreter == nullptr)
     {
-        perror("pipe");
+        binary_path = cgi_file_path;
+    }
+    else
+    {
+        auto binary_opt = find_binary(m_envp, interpreter);
+        if (binary_opt.has_value())
+        {
+            binary_path = binary_opt.value();
+        }
+        else
+        {
+            binary_path = cgi_file_path;
+        }
+    }
+    // socket_pair[0] parent
+    // socket_pair[1] child
+    int socket_pair[2];
+    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, socket_pair) == -1)
+    {
+        perror("socketpair");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    epoll.addFd(fd_pair[0], EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR); // mark read end of pipe for reading
-    // setting argv
-    argv[0] = const_cast<char*>(binary.value().c_str());
-    argv[1] = const_cast<char*>(cgi_file_path.c_str());
-    argv[2] = NULL;
-    // setting envp
-    for (size_t i = 0; i < envvar.size(); ++i)
+    if (http_method == HTTPMethod::POST)
     {
-        envp[i] = const_cast<char*>(envvar[i].c_str());   
+        epoll.addFd(socket_pair[0], EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR);
     }
-    envp[envvar.size()] = NULL;
+    else
+    {
+        epoll.addFd(socket_pair[0], EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR);
+    }
     pid_t pid = fork();
     if (pid == 0)
     {
-        // close read end of pipe in child
-        if (close(fd_pair[0]) == -1)
+        if (http_method == HTTPMethod::POST)
         {
-            exit(EXIT_FAILURE);
+            child_process_post(socket_pair, envvar, binary_path, cgi_file_path);
         }
-        if (dup2(fd_pair[1], STDOUT_FILENO) == -1)
+        else
         {
-            perror("dup2");
-            exit(EXIT_FAILURE);
+            child_process_default(socket_pair, envvar, binary_path, cgi_file_path);
         }
-        execve(binary.value().c_str(), argv, envp);
-        perror("execve");
-        exit(EXIT_FAILURE);
     }
     if (pid == -1)
     {
         perror("fork");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    if (close(fd_pair[1]) == 1)
+    if (close(socket_pair[1]) == 1)
     {
         perror(nullptr);
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    m_children.push_back(std::make_shared<CgiProcess>(CgiProcess(fd_pair[0], client.getSocketFD(), pid, location, config, server)));
+    auto cgi_process = std::make_shared<CgiProcess>(socket_pair[0], client.getSocketFD(), pid, location, config, server, request.getBody());
+    if (http_method == HTTPMethod::POST)
+    {
+        cgi_process->set_is_post(true);
+    }
+    else
+    {
+        cgi_process->set_writing_complete(true);
+    }
+    m_children.push_back(cgi_process);
     client.setProcessPtr(m_children.back());
 }
 
 bool Cgi::is_cgi_fd(int fd) const
 {
-    if (std::find_if(m_children.begin(), m_children.end(), [fd](std::shared_ptr<CgiProcess> process){return process->get_read_fd() == fd;}) == m_children.end())
-    {
-        return (false);
-    }
-    return (true);
+    auto pos = std::find_if(
+        m_children.begin(),
+        m_children.end(),
+        [fd](std::shared_ptr<CgiProcess> process) {
+            return (process->get_fd() == fd);
+        }
+    );
+    return (pos != m_children.end());    
 }
 
 bool Cgi::has_children(void) const
@@ -273,7 +355,14 @@ bool Cgi::has_children(void) const
 
 CgiProcess& Cgi::get_child(int fd)
 {
-    auto child = std::find_if(m_children.begin(), m_children.end(), [fd](std::shared_ptr<CgiProcess> process){return process->get_read_fd() == fd;});
+    assert(fd != -1);
+    auto child = std::find_if(
+        m_children.begin(),
+        m_children.end(),
+        [fd](std::shared_ptr<CgiProcess> process){
+            return (process->get_fd() == fd);
+        }
+    );
 
     assert("This function should only be called for existing childprocesses" && child != m_children.end());
     return *(*child);

@@ -90,14 +90,15 @@ bool starts_with(const std::string& str, const std::string& start)
     return (true);
 }
 
-std::istream& getline_delim(std::istream& is, std::string& str, const std::string& delim)
+static size_t getline_delim(const std::string& input, const size_t start, std::string& str, const std::string& delim)
 {
     std::string buffer;
-    char glyph;
+    size_t i = start;
 
     buffer.reserve(delim.size() + 1);
-    while (is.get(glyph))
+    while (i < input.size())
     {
+        char glyph = input[i];
         str += glyph;
         buffer += glyph;
 
@@ -107,10 +108,11 @@ std::istream& getline_delim(std::istream& is, std::string& str, const std::strin
         }
         if (buffer == delim)
         {
-            return is;
+            return i;
         }
+        i++;
     }
-    return is;
+    return i;
 }
 
 std::string& ltrim(std::string& str, const char* to_trim)
@@ -154,16 +156,24 @@ std::pair<std::string, std::string> parse_single_http_header(const std::string& 
     return std::pair(lowerKey, value);
 }
 
-std::unordered_map<std::string, std::string> parse_http_headers(std::istream& stream)
+std::unordered_map<std::string, std::string> parse_http_headers(const std::string& str, size_t* chars_consumed)
 {
+    const size_t str_size = str.size();
+    size_t i = 0;
 	std::string line;
 	std::unordered_map<std::string, std::string> http_headers;
 
-	while (getline_delim(stream, line, LINE_BREAK))
+	while (i < str_size)
 	{
+        i = getline_delim(str, i, line, LINE_BREAK);
+        i += 1;
         // header end is indicated by double CRLF
 		if (line == LINE_BREAK)
         {
+            if (chars_consumed != nullptr)
+            {
+                *chars_consumed = i;
+            }
             return http_headers;
         }
         std::pair<std::string, std::string> pair = parse_single_http_header(line);

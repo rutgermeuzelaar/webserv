@@ -46,19 +46,24 @@ void Server::epoll_loop(int num_events)
         if (m_cgi.is_cgi_fd(fd))
         {
             CgiProcess& process = m_cgi.get_child(fd);
+			if (m_epoll.isTypeEvent(event, {EPOLLHUP, EPOLLRDHUP, EPOLLERR}))
+            {
+                process.close_fd(m_epoll);
+				continue;
+            }
             if (m_epoll.isTypeEvent(event, EPOLLIN))
             {
-                process.read_pipe(m_epoll);
+                process.read_fd(m_epoll);
                 if (!m_cgi.is_cgi_fd(fd))
                 {
                     continue;
                 }
             }
-            if (m_epoll.isTypeEvent(event, {EPOLLHUP, EPOLLRDHUP, EPOLLERR}))
+            if (m_epoll.isTypeEvent(event, EPOLLOUT))
             {
-                process.close_pipe_read_end(m_epoll);
+                process.write_fd(m_epoll);
             }
-            continue;
+			continue;
         }
         auto socket_index = getSocketIndex(fd);
         if (socket_index.has_value())
@@ -220,7 +225,7 @@ size_t Server::getListeningSocketCount() const
 	return m_listening_sockets.size(); //? need still?
 }
 
-void Server::processRequest(int client_fd, const Request& request)
+void Server::processRequest(int client_fd, Request& request)
 {
 	//* check which socket to handle
 	size_t socket_index = 0;
@@ -238,6 +243,16 @@ void Server::processRequest(int client_fd, const Request& request)
 	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(config.m_root.value().m_path, uri))
 	{
 		std::cout << "CGI request\n";
+        HttpBody& http_body = request.getBody();
+
+        if (http_body.is_chunked())
+        {
+            http_body.append_bytes(http_body.get_chunked_decoder().get_decoded());
+        }
+        else
+        {
+            http_body.append_bytes(http_body.get_raw());
+        }
 		m_cgi.add_process(getClient(client_fd), request, m_epoll, location, config, *this);
 	}
 	else
