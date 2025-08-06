@@ -4,6 +4,7 @@
 #include <cassert>
 #include <iterator>
 #include <fstream>
+#include <iostream>
 #include "Defines.hpp"
 #include "Utilities.hpp"
 #include "Http.hpp"

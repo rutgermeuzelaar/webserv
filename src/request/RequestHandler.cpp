@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fstream>
+#include <iostream>
 #include "Defines.hpp"
 #include "RequestHandler.hpp"
 #include "Utilities.hpp"

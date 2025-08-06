@@ -7,6 +7,7 @@
 # include <optional>
 # include <filesystem>
 # include <stack>
+# include <algorithm>
 # include "Http.hpp"
 
 //-----------------------------------------------------------------------------
