@@ -1,5 +1,4 @@
-#include "SessionHandler.hpp"
-#include "Session.hpp"
+#include "Server.hpp"
 
 std::unordered_map<std::string, Session>::iterator SessionHandler::find_session(const std::string& id)
 {

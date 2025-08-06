@@ -12,6 +12,7 @@ class Epoll;
 class Request;
 class CgiProcess;
 class Client;
+class Server;
 
 class Cgi
 {

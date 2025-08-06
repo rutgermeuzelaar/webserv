@@ -1,7 +1,8 @@
 #include "Pch.hpp"
+#include <unistd.h>
 #include <cassert>
 #include "Config.hpp"
-#include "Socket.hpp"
+#include "Server.hpp"
 
 /**
  * @brief Constructor for the Socket class

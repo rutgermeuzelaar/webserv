@@ -1,6 +1,6 @@
-#include "Session.hpp"
 #include <cstdlib>
 #include <algorithm>
+#include "Server.hpp"
 #include "Http.hpp"
 
 Session::Session(const std::string& id)
