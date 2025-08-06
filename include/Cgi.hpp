@@ -6,7 +6,7 @@
 # include <optional>
 # include <memory>
 # include <sys/types.h>
-# include "LocationContext.hpp"
+# include "Config.hpp"
 
 class Epoll;
 class Request;

@@ -1,5 +1,4 @@
 #pragma once
-
 #include <vector>
 #include <iostream>
 #include <map>
@@ -10,7 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <cstring>
-#include "ServerContext.hpp"
+#include "Config.hpp"
 
 class SocketException : public std::runtime_error {
 public:

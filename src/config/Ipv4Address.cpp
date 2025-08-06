@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
-#include "Ipv4Address.hpp"
 #include "Utilities.hpp"
+#include "Config.hpp"
 
 static uint8_t octet_from_string(const std::string& octet)
 {

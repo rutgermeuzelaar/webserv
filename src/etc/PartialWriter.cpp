@@ -1,6 +1,6 @@
 #include "Pch.hpp"
-#include "PartialWriter.hpp"
 #include "Utilities.hpp"
+#include "Http.hpp"
 
 PartialWriter::PartialWriter()
     : m_bytes_sent {0}

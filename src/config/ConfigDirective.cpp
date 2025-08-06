@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <limits>
 #include <cassert>
-#include "ConfigDirective.hpp"
 #include "Http.hpp"
+#include "Config.hpp"
 
 ConfigDirective::ConfigDirective(bool is_unique)
     : m_is_unique {is_unique}
