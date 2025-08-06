@@ -1,7 +1,7 @@
 #include "Pch.hpp"
 #include <stdexcept>
 #include <algorithm>
-#include "ServerContext.hpp"
+#include "Config.hpp"
 
 ServerContext::ServerContext()
     : ConfigDirective(true)

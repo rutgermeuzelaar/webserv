@@ -1,6 +1,5 @@
 #include "Pch.hpp"
 #include <stdexcept>
-#include "Scanner.hpp"
 #include "Config.hpp"
 
 Scanner::Scanner(std::string in)

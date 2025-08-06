@@ -1,7 +1,7 @@
 #include "Pch.hpp"
 #include <vector>
 #include <algorithm>
-#include "HTTPStatusCode.hpp"
+#include "Http.hpp"
 
 const char *get_http_status_text(HTTPStatusCode status)
 {

@@ -1,6 +1,5 @@
 #include "Pch.hpp"
-#include "HttpMethod.hpp"
-#include "HTTPException.hpp"
+#include "Http.hpp"
 
 HTTPMethod StringToMethod(const std::string& method)
 {

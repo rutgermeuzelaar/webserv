@@ -1,22 +1,25 @@
 #include "Pch.hpp"
+
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/socket.h>
 #include <string.h>
+
 #include <string>
 #include <stdexcept>
 #include <list>
 #include <iostream>
 #include <filesystem>
 #include <optional>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/socket.h>
 #include <cassert>
 #include <chrono>
-#include "CgiProcess.hpp"
-#include "Cgi.hpp"
+
 #include "Utilities.hpp"
-#include "Request.hpp"
 #include "Epoll.hpp"
 #include "Server.hpp"
+#include "Http.hpp"
+#include "Defines.hpp"
+#include "Cgi.hpp"
 
 Cgi::Cgi(char **envp, size_t timeout_ms)
     : m_envp {envp}

@@ -7,10 +7,8 @@
 # include <iostream>
 # include <cstring>
 # include "Config.hpp"
-# include "Socket.hpp"
-# include "Request.hpp"
-# include "Response.hpp"
 # include "RequestHandler.hpp"
+# include "Http.hpp"
 
 enum class ResponseEvent;
 

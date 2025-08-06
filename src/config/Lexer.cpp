@@ -4,7 +4,7 @@
 #include <string>
 #include <cassert>
 #include <algorithm>
-#include "Lexer.hpp"
+#include "Config.hpp"
 
 const std::string single_token_char(TokenType TokenType)
 {

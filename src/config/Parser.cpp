@@ -3,7 +3,7 @@
 #include <iostream>
 #include <filesystem>
 #include <cassert>
-#include "Parser.hpp"
+#include "Config.hpp"
 
 Parser::Parser(const std::vector<Token>& tokens, Config& config)
     : m_tokens {tokens}

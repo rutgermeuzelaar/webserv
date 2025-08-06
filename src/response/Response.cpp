@@ -1,10 +1,12 @@
 #include "Pch.hpp"
-#include "Response.hpp"
 #include <ctime>
 #include <iomanip>
 #include <cassert>
 #include <iterator>
+#include <fstream>
+#include "Defines.hpp"
 #include "Utilities.hpp"
+#include "Http.hpp"
 
 Response::Response(HTTPStatusCode status_code)
     : PartialWriter()

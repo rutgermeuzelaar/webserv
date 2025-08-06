@@ -4,8 +4,7 @@
 #include <optional>
 #include "Defines.hpp"
 #include "Utilities.hpp"
-#include "HttpHeaders.hpp"
-#include "HTTPException.hpp"
+#include "Http.hpp"
 
 HttpHeaders::HttpHeaders()
     : m_line_break_count {0}

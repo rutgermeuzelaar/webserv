@@ -1,8 +1,9 @@
 #include "Pch.hpp"
 #include <cassert>
 #include <iostream>
-#include "Request.hpp"
 #include "Utilities.hpp"
+#include "Http.hpp"
+#include "Defines.hpp"
 
 Request::Request()
     : _index {0}

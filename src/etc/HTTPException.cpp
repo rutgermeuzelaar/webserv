@@ -1,5 +1,5 @@
 #include "Pch.hpp"
-#include "HTTPException.hpp"
+#include "Http.hpp"
 
 HTTPException::HTTPException(HTTPStatusCode status_code, const std::string& message)
     : std::runtime_error(message.empty() ? get_http_status_text(status_code) : message),

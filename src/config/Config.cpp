@@ -4,9 +4,8 @@
 #include <iostream>
 #include <algorithm>
 #include <cassert>
+#include "Defines.hpp"
 #include "Config.hpp"
-#include "Parser.hpp"
-#include "Scanner.hpp"
 #include "Utilities.hpp"
 
 Config::Config()

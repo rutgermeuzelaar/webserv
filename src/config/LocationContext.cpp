@@ -1,5 +1,5 @@
 #include "Pch.hpp"
-#include "LocationContext.hpp"
+#include "Config.hpp"
 
 LocationContext::LocationContext(const std::string& uri)
     : ConfigDirective(true)

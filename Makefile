@@ -1,12 +1,12 @@
 CXX := g++
 INC_DIRS := include
 INC := $(foreach dir, $(INC_DIRS), -I$(dir))
-CXXFLAGS := -Wall -Wextra -Werror -Wshadow -Wvla $(INC) -std=c++17 -DNDEBUG
+CXXFLAGS := -Wall -Wextra -Werror -Wshadow $(INC) -std=c++17 -DNDEBUG
 LDFLAGS :=
 OBJDIR := build
 UPLOADDIR := ./root/upload
 VPATH = $(shell find src/ -maxdepth 1 -mindepth 1)
-SOURCES_STANDARD := Config.cpp ConfigDirective.cpp HttpContext.cpp Ipv4Address.cpp Lexer.cpp \
+SOURCES_STANDARD := Config.cpp ConfigDirective.cpp Ipv4Address.cpp Lexer.cpp \
 LocationContext.cpp Parser.cpp Port.cpp Scanner.cpp ServerContext.cpp HTTPException.cpp \
 HTTPStatusCode.cpp main.cpp Request.cpp HTTPStatusLine.cpp Response.cpp Socket.cpp \
 Utilities.cpp RequestHandler.cpp Server.cpp Client.cpp Epoll.cpp HttpHeaders.cpp HttpBody.cpp \
@@ -22,7 +22,7 @@ PCH := include/Pch.hpp.gch
 
 all: $(NAME)
 
-debug: CXXFLAGS += -g -pg -fsanitize=address -fstack-protector-strong
+debug: CXXFLAGS += -g -pg -fsanitize=address -fstack-protector-strong -Wvla
 debug: LDFLAGS += -pg -fsanitize=address
 debug: CXXFLAGS := $(filter-out -DNDEBUG,$(CXXFLAGS))
 debug: $(NAME)
