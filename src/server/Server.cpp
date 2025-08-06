@@ -6,7 +6,7 @@
 #include <fcntl.h>
 #include "Utilities.hpp"
 #include "Server.hpp"
-#include "CgiProcess.hpp"
+#include "Cgi.hpp"
 #include "Defines.hpp"
 
 extern bool gLive;

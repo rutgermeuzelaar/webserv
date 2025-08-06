@@ -4,9 +4,9 @@
 #include <iostream>
 #include <optional>
 #include <cassert>
+#include "Cgi.hpp"
 #include "Utilities.hpp"
 #include "Defines.hpp"
-#include "CgiProcess.hpp"
 #include "RequestHandler.hpp"
 #include "Epoll.hpp"
 #include "Server.hpp"
