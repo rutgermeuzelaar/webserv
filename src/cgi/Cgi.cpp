@@ -207,42 +207,32 @@ static int execve_wrapper(const std::vector<std::string> envvar, const std::stri
     return (execve(binary_cstring, argv, cstring_envvar.data()));
 }
 
-static void child_process_post(int socket_pair[2], const std::vector<std::string>& envvar, \
-    const std::string& binary_path, const std::filesystem::path& cgi_file_path)
+static void child_process(int read_pipe[2], int write_pipe[2], \
+	const std::vector<std::string>& envvar, const std::string& binary_path, \
+	const std::filesystem::path& cgi_file_path, HTTPMethod http_method)
 {
     // close parent socket in child
-    if (close(socket_pair[0]) == -1)
+    if (close(read_pipe[0]) == -1)
     {
         exit(EXIT_FAILURE);
     }
-    if (dup2(socket_pair[1], STDOUT_FILENO) == -1)
-    {
-        perror("dup2");
-        exit(EXIT_FAILURE);
-    }
-    if (dup2(socket_pair[1], STDIN_FILENO) == -1)
+    if (dup2(read_pipe[1], STDOUT_FILENO) == -1)
     {
         perror("dup2");
         exit(EXIT_FAILURE);
     }
-    execve_wrapper(envvar, binary_path, cgi_file_path);
-    perror("execve");
-    exit(EXIT_FAILURE);
-}
-
-static void child_process_default(int socket_pair[2], const std::vector<std::string>& envvar, \
-    const std::string& binary_path, const std::filesystem::path& cgi_file_path)
-{
-    // close parent socket in child
-    if (close(socket_pair[0]) == -1)
-    {
-        exit(EXIT_FAILURE);
-    }
-    if (dup2(socket_pair[1], STDOUT_FILENO) == -1)
-    {
-        perror("dup2");
-        exit(EXIT_FAILURE);
-    }
+	if (close(write_pipe[1]) == -1)
+	{
+		exit(EXIT_FAILURE);
+	}
+	if (http_method == HTTPMethod::POST)
+	{
+		if (dup2(write_pipe[0], STDIN_FILENO) == -1)
+		{
+			perror("dup2");
+			exit(EXIT_FAILURE);
+		}
+	}
     execve_wrapper(envvar, binary_path, cgi_file_path);
     perror("execve");
     exit(EXIT_FAILURE);
@@ -289,45 +279,51 @@ void Cgi::add_process(Client& client, Request& request, Epoll& epoll, const Loca
             binary_path = cgi_file_path;
         }
     }
-    // socket_pair[0] parent
-    // socket_pair[1] child
-    int socket_pair[2];
-    if (socketpair(AF_LOCAL, SOCK_STREAM, 0, socket_pair) == -1)
-    {
-        perror("socketpair");
-        throw HTTPException(HTTPStatusCode::InternalServerError);
-    }
+	// pipefd[0] refers to the read end of the pipe
+	// pipefd[1] refers to the write end of the pipe
+	int read_pipe[2]; // parent pipefd[0] child pipefd[1]
+	int write_pipe[2]; // parent pipe[1] child pipefd[0]
+
+	if (pipe(read_pipe) == -1 || pipe(write_pipe) == -1)
+	{
+		perror("pipe");
+		throw HTTPException(HTTPStatusCode::InternalServerError);
+	}
+	epoll.addFd(read_pipe[0], EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR);
     if (http_method == HTTPMethod::POST)
     {
-        epoll.addFd(socket_pair[0], EPOLLIN | EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR);
+        epoll.addFd(write_pipe[1], EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR);
     }
-    else
-    {
-        epoll.addFd(socket_pair[0], EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR);
-    }
+	else
+	{
+        epoll.addFd(write_pipe[1], EPOLLHUP | EPOLLRDHUP | EPOLLERR);
+	}
     pid_t pid = fork();
     if (pid == 0)
     {
-        if (http_method == HTTPMethod::POST)
-        {
-            child_process_post(socket_pair, envvar, binary_path, cgi_file_path);
-        }
-        else
-        {
-            child_process_default(socket_pair, envvar, binary_path, cgi_file_path);
-        }
+        child_process(read_pipe, write_pipe, envvar, binary_path, \
+			cgi_file_path, http_method);
     }
     if (pid == -1)
     {
         perror("fork");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    if (close(socket_pair[1]) == 1)
+    if (close(read_pipe[1]) == -1 || close(write_pipe[0]) == -1)
     {
         perror(nullptr);
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    auto cgi_process = std::make_shared<CgiProcess>(socket_pair[0], client.getSocketFD(), pid, location, config, server, request.getBody());
+    auto cgi_process = std::make_shared<CgiProcess>(
+		read_pipe[0],
+		write_pipe[1],
+		client.getSocketFD(),
+		pid,
+		location,
+		config,
+		server,
+		request.getBody()
+	);
     if (http_method == HTTPMethod::POST)
     {
         cgi_process->set_is_post(true);
@@ -346,7 +342,8 @@ bool Cgi::is_cgi_fd(int fd) const
         m_children.begin(),
         m_children.end(),
         [fd](std::shared_ptr<CgiProcess> process) {
-            return (process->get_fd() == fd);
+            return (process->get_read_fd() == fd || \
+			process->get_write_fd() == fd);
         }
     );
     return (pos != m_children.end());    
@@ -364,7 +361,8 @@ CgiProcess& Cgi::get_child(int fd)
         m_children.begin(),
         m_children.end(),
         [fd](std::shared_ptr<CgiProcess> process){
-            return (process->get_fd() == fd);
+            return (process->get_read_fd() == fd || \
+			process->get_write_fd() == fd);
         }
     );
 

@@ -19,23 +19,26 @@ class Client;
 class CgiProcess
 {
     private:
-        Server& m_server;
-        bool m_client_connected;
-        bool m_reaped;
-        int m_fd;
-        bool m_is_post;
-        bool m_in_notify;
-        HttpBody& m_http_body; // needed for POST
-        bool m_reading_complete;
-        bool m_writing_complete;
+        Server&		m_server;
+        bool		m_client_connected;
+        bool		m_reaped;
+		int			m_read_fd;
+		int			m_write_fd;
+        bool		m_is_post;
+        bool		m_in_notify;
+        HttpBody&	m_http_body; // needed for POST
+        bool		m_reading_complete;
+        bool		m_writing_complete;
 
         void notify_observer(CgiProcessEvent);
         void check_state(void);
         
-        void set_fd(int fd);
+        void set_read_fd(int fd);
+        void set_write_fd(int fd);
     public:
-        CgiProcess(int fd, int client_fd, pid_t pid, const LocationContext* location, \
-            const ServerContext& config, Server& server, HttpBody& http_body);
+        CgiProcess(int read_fd, int write_fd, int client_fd, pid_t pid, \
+			const LocationContext* location, const ServerContext& config, \
+			Server& server, HttpBody& http_body);
         CgiProcess& operator=(const CgiProcess&);
         ~CgiProcess();
 
@@ -55,11 +58,15 @@ class CgiProcess
  
         bool get_client_connected(void) const;
         bool get_reaped(void) const;
-        int  get_fd(void) const;
-
-        void close_fd(Epoll& epoll);
-        void read_fd(Epoll& epoll);
-        void write_fd(Epoll& epoll);
+        int  get_read_fd(void) const;
+		int  get_write_fd(void) const;
+	
+        void close_read_fd(Epoll& epoll);
+		void close_write_fd(Epoll& epoll);
+		void close_read_write_fd(Epoll& epoll);
+	
+        void read_from_fd(Epoll& epoll);
+        void write_to_fd(Epoll& epoll);
         bool response_ready() const;
         bool is_removable() const;
 

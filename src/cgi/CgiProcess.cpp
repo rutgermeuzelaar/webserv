@@ -12,12 +12,14 @@
 #include "Server.hpp"
 #include "Http.hpp"
 
-CgiProcess::CgiProcess(int fd, int client_fd, pid_t pid, const LocationContext* location, \
-    const ServerContext& config, Server& server, HttpBody& http_body)
+CgiProcess::CgiProcess(int read_fd, int write_fd, int client_fd, pid_t pid, \
+	const LocationContext* location, const ServerContext& config, \
+	Server& server, HttpBody& http_body)
     : m_server {server}
     , m_client_connected {true}
     , m_reaped {false}
-    , m_fd {fd}
+    , m_read_fd {read_fd}
+	, m_write_fd {write_fd}
     , m_is_post {false}
     , m_in_notify {false}
     , m_http_body {http_body}
@@ -36,7 +38,8 @@ CgiProcess::CgiProcess(int fd, int client_fd, pid_t pid, const LocationContext* 
 CgiProcess& CgiProcess::operator=(const CgiProcess& other)
 {
     m_reaped = other.m_reaped;
-    m_fd = other.m_fd;
+	m_read_fd = other.m_read_fd;
+	m_write_fd = other.m_write_fd;
     m_is_post = other.m_is_post;
     m_in_notify = other.m_in_notify;
     m_http_body = other.m_http_body;
@@ -56,29 +59,75 @@ CgiProcess::~CgiProcess()
     DEBUG(__func__ << ": " << m_pid); 
 }
 
-void CgiProcess::close_fd(Epoll& epoll)
+void CgiProcess::close_read_fd(Epoll& epoll)
 {
-    if (m_fd == -1)
+    if (m_read_fd == -1)
     {
         return;
     }
-    epoll.removeFD(m_fd);
-    if (close(m_fd) == -1)
+	m_reading_complete = true;
+    epoll.removeFD(m_read_fd);
+    if (close(m_read_fd) == -1)
     {
         perror("close");
     }
-    set_fd(-1);
+	if (!m_is_post)
+	{
+		epoll.removeFD(m_write_fd);
+		if (close(m_write_fd) == -1)
+		{
+			perror("close");
+		}
+	}
+    set_read_fd(-1);
 }
 
-void CgiProcess::read_fd(Epoll& epoll)
+void CgiProcess::close_write_fd(Epoll& epoll)
 {
-    char buffer[RECV_BUFFER_SIZE];
-    
-    if (m_fd == -1)
+    if (m_write_fd == -1)
     {
         return;
     }
-    ssize_t bytes_read = read(m_fd, buffer, RECV_BUFFER_SIZE);
+    epoll.removeFD(m_write_fd);
+    if (close(m_write_fd) == -1)
+    {
+        perror("close");
+    }
+    set_write_fd(-1);
+}
+
+void CgiProcess::close_read_write_fd(Epoll& epoll)
+{
+    if (m_read_fd == -1)
+    {
+        return;
+    }
+	m_reading_complete = true;
+    epoll.removeFD(m_read_fd);
+    if (close(m_read_fd) == -1)
+    {
+        perror("close");
+    }
+	if (m_write_fd != -1)
+	{
+		epoll.removeFD(m_write_fd);
+		if (close(m_write_fd) == -1)
+		{
+			perror("close");
+		}
+	}
+	set_read_fd(-1);
+}
+
+void CgiProcess::read_from_fd(Epoll& epoll)
+{
+    char buffer[RECV_BUFFER_SIZE];
+    
+    if (m_read_fd == -1)
+    {
+        return;
+    }
+    ssize_t bytes_read = read(m_read_fd, buffer, RECV_BUFFER_SIZE);
     if (bytes_read == -1)
     {
         perror("read");
@@ -87,13 +136,9 @@ void CgiProcess::read_fd(Epoll& epoll)
     if (bytes_read == 0)
     {
         m_reading_complete = true;
-        if (shutdown(m_fd, SHUT_RD) == -1)
-        {
-            perror("shutdown");
-        }
         if (io_complete())
         {
-            close_fd(epoll);
+            close_read_fd(epoll);
         }
     }
     else
@@ -104,7 +149,7 @@ void CgiProcess::read_fd(Epoll& epoll)
 
 bool CgiProcess::response_ready() const
 {
-    if (m_fd != -1)
+    if (!io_complete())
     {
         return false;
     }
@@ -121,7 +166,7 @@ bool CgiProcess::response_ready() const
 
 bool CgiProcess::is_removable() const
 {
-    if (m_fd != -1)
+    if (!io_complete())
     {
         return false;
     }
@@ -210,9 +255,15 @@ void CgiProcess::set_reaped(bool status)
     check_state();
 }
 
-void CgiProcess::set_fd(int fd)
+void CgiProcess::set_write_fd(int fd)
 {
-    m_fd = fd;
+	m_write_fd = fd;
+    check_state();
+}
+
+void CgiProcess::set_read_fd(int fd)
+{
+	m_read_fd = fd;
     check_state();
 }
 
@@ -226,17 +277,22 @@ bool CgiProcess::get_reaped(void) const
     return m_reaped;
 }
 
-int CgiProcess::get_fd(void) const
+int CgiProcess::get_read_fd(void) const
 {
-    return m_fd;
+    return m_read_fd;
 }
 
-void CgiProcess::write_fd(Epoll& epoll)
+int CgiProcess::get_write_fd(void) const
+{
+    return m_write_fd;
+}
+
+void CgiProcess::write_to_fd(Epoll& epoll)
 {
     size_t bytes_count;
 
     auto bytes = m_http_body.get_next_bytes(&bytes_count);
-    const ssize_t bytes_sent = write(m_fd, bytes, bytes_count);
+    const ssize_t bytes_sent = write(m_write_fd, bytes, bytes_count);
     if (bytes_sent == -1)
     {
         perror("write");
@@ -245,15 +301,11 @@ void CgiProcess::write_fd(Epoll& epoll)
     m_http_body.increment_bytes_sent(bytes_sent);
     if (m_http_body.fully_sent())
     {
-        epoll.notify(m_fd, ResponseEvent::UnmarkEpollOut);
-        if (shutdown(m_fd, SHUT_WR) == -1)
-        {
-            perror("shutdown");
-        }
+        epoll.notify(m_write_fd, ResponseEvent::UnmarkEpollOut);
         m_writing_complete = true;
         if (io_complete())
         {
-            close_fd(epoll);
+            close_write_fd(epoll);
         }
     }
 }
