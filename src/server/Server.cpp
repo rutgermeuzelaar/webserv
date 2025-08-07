@@ -35,11 +35,11 @@ void Server::epoll_loop(int num_events)
     {
         const epoll_event& event = m_epoll.getEvents()[i];
         DEBUG("Event for fd: " << event.data.fd << ", events: " << event.events);
-        if (event.events & EPOLLIN) { DEBUG("  EPOLLIN") };
-        if (event.events & EPOLLOUT) { DEBUG("  EPOLLOUT") };
-        if (event.events & EPOLLHUP) { DEBUG("  EPOLLHUP") };
-        if (event.events & EPOLLERR) { DEBUG("  EPOLLERR") };
-        if (event.events & EPOLLRDHUP) { DEBUG("  EPOLLRDHUP") };
+        if (event.events & EPOLLIN) { DEBUG("  EPOLLIN") ;}
+        if (event.events & EPOLLOUT) { DEBUG("  EPOLLOUT") ;}
+        if (event.events & EPOLLHUP) { DEBUG("  EPOLLHUP") ;}
+        if (event.events & EPOLLERR) { DEBUG("  EPOLLERR") ;}
+        if (event.events & EPOLLRDHUP) { DEBUG("  EPOLLRDHUP") ;}
         
         int fd = event.data.fd;
         DEBUG("Processing event for fd: " << fd);
