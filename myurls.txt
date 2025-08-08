@@ -2,7 +2,6 @@ http://127.0.0.1:1050/
 http://127.0.0.1:1050/css/stylesheet-wild.css
 http://127.0.0.1:1050/cgi-bin/hello-world.py
 http://127.0.0.1:1050/cgi-bin/hello-world.pl
-http://127.0.0.1:1050/cgi-bin/wallpaper-engine.py
 http://127.0.0.1:1050/images
 http://127.0.0.1:1050/upload
 http://127.0.0.1:1050/upload.html
