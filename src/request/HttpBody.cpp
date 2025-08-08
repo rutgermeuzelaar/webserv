@@ -7,13 +7,12 @@
 #include "Http.hpp"
 
 /**
- * @brief parses the request body based on Content-Length header
- * @param stream string stream containing the complete HTTP request including headers and body
- * @note stream should contain the entire request data, as we need to skip headers to reach the body
- * @note content-length header is required for POST requests to determine body size
- * @return true if parsing succeeded, false if Content-Length is invalid or body is incomplete
+ * @brief constructor that parses the request body by either chunked decoding or content length header
+ * @param headers pointer to HttpHeaders object
+ * @param method specifies the HTTPMethod enum
+ * @param client_max_body_size max bytes a body can contain
+ * 
  */
-
 HttpBody::HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_max_body_size)
 	: PartialWriter()
     , m_index {0}
@@ -186,7 +185,6 @@ bool HttpBody::initialized() const
 // only multipart/form-data
 void HttpBody::parse(void)
 {
-	// make up something better
 	if (!m_boundary.has_value()) {
         std::cerr << "Error: boundary not set in multipart/form-data" << std::endl;
         throw HTTPException(HTTPStatusCode::BadRequest, "Missing boundary in multipart/form-data");
@@ -201,19 +199,13 @@ void HttpBody::parse(void)
 		{
 			return;
 		}
-		// get str
 		std::string str = m_raw.substr(m_index, line_break_pos - m_index + 2);
-		// check if it's a boundary
-		if (str == normal_boundary)
-		{
-			// add new chunk
-		}
-		else if (m_chunk.m_headers.complete())
+		assert("We have not implemented support for multiple file uploads in one POST request" && str != normal_boundary);
+		if (m_chunk.m_headers.complete())
 		{
 			// store raw data
 			if (ends_with(str, final_boundary))
 			{
-				// victory
 				m_chunk.m_data = m_raw.substr(m_data_start, m_raw.size() - final_boundary.size() - m_data_start);
 				m_complete = true;
 				return;
@@ -249,7 +241,6 @@ void ChunkedDecoder::append(const std::string& data)
 	m_buffer.append(data);
     DEBUG("[DEBUG] Appending data, buffer size now: " << m_buffer.size());
 	DEBUG("[DEBUG]m_complete: " << m_complete);
-	// m_complete = false; //? WHY DOES IT TURN INTO TRUE IN THIS FUNCTION?!
 	
 	size_t pos = 0;
 	while (!m_complete && pos < m_buffer.size())
@@ -422,7 +413,6 @@ bool ChunkedDecoder::parse_trailer(size_t& pos)
 			pos += 2;
 			return true;
 		}
-		//? implement process trailer headers?
 		pos = crlf_pos + 2;
 	}
 	return false;

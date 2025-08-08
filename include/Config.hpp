@@ -1,6 +1,7 @@
 #pragma once
 #ifndef CONFIG_HPP
 # define CONFIG_HPP
+# include "Pch.hpp"
 # include <string>
 # include <unordered_map>
 # include <vector>

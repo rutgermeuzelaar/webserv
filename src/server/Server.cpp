@@ -54,10 +54,6 @@ void Server::epoll_loop(int num_events)
                     continue;
                 }
             }
-			if (m_epoll.isTypeEvent(event, EPOLLERR))
-			{
-				std::cout << "check this case\n";
-			}
 			if (m_epoll.isTypeEvent(event, {EPOLLHUP, EPOLLRDHUP, EPOLLERR}))
             {
 				process.close_read_write_fd(m_epoll);
@@ -174,8 +170,8 @@ void Server::addClient(int fd)
 	} catch (const SocketException& e) {
 		std::cerr << "Error setting up client socket: " << e.what() << std::endl;
 		close(fd);
-		throw;
-	} //TODO change later for good exception throwing
+		throw e;
+	}
 }
 
 void Server::removeClient(int fd)
@@ -183,7 +179,6 @@ void Server::removeClient(int fd)
 	auto it = m_clients.find(fd);
 	if (it != m_clients.end())
 	{
-        // auto process = m_cgi.get_child_by_client_fd(fd);
         if (it->second.getProcessPtr().use_count() > 0)
         {
             it->second.getProcessPtr()->set_client_connected(false);
@@ -207,7 +202,7 @@ void Server::setupListeningSockets()
 	m_listening_sockets.reserve(m_configs.size());
 	for (const ServerContext& config : m_configs)
 	{
-		m_listening_sockets.emplace_back(10); //! 10 backlog
+		m_listening_sockets.emplace_back(10);
 		if (!m_listening_sockets.back().initSocket(config))
 			throw SocketException("Failed to init socket");
 	
@@ -221,32 +216,20 @@ void Server::setupListeningSockets()
 	}
 }
 
-Socket& Server::getListeningSocket(size_t index)
-{
-	return m_listening_sockets.at(index); //? check where to utilise
-}
-
-size_t Server::getListeningSocketCount() const
-{
-	return m_listening_sockets.size(); //? need still?
-}
-
 void Server::processRequest(int client_fd, Request& request)
 {
 	//* check which socket to handle
 	size_t socket_index = 0;
 	auto it = m_client_to_socket_index.find(client_fd);
+	assert("If it is end of client to socket index, we made a mistake lol" && (it != m_client_to_socket_index.end()));
 	if (it != m_client_to_socket_index.end())
 		socket_index = it->second;
-	// else
-	// 	socket_index = 0; //! handle error, comment in if it works
 	const ServerContext& config = m_configs[socket_index];
 	RequestHandler handler(config);
-	DEBUG("Handling request for URI: " << request.getStartLine().get_uri()); //! TEST
+	DEBUG("Handling request for URI: " << request.getStartLine().get_uri()); 
 	const std::string& uri = request.getStartLine().get_uri();
 	const LocationContext* location = find_location(uri, config);
     auto session_id_opt = get_header_value(request.getHeaders().get_header("Cookie"), "session");
-
     if (session_id_opt.has_value())
     {
         auto session_it = m_session_handler.find_session(session_id_opt.value());
@@ -282,8 +265,8 @@ void Server::processRequest(int client_fd, Request& request)
     if (route_it == m_routes.end())
     {
         Response response = handler.handle(request, uri, location);
-        DEBUG("Response status: " << response.getStatusCode()); //! TEST
-        DEBUG("Response body length: " << response.getBodySize()); //! TEST
+        DEBUG("Response status: " << response.getStatusCode()); 
+        DEBUG("Response body length: " << response.getBodySize()); 
         m_response_handler.add_response(client_fd, response);
     }
     else
@@ -376,7 +359,6 @@ void Server::setNonBlocking(int fd)
 
 void Server::sendErrorResponse(int client_fd, const HTTPException& e)
 {
-	//! make better later
 	Response errorResponse(e.getStatusCode());
 	errorResponse.setBody(e.what());
     m_response_handler.add_response(client_fd, errorResponse);

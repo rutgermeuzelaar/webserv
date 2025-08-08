@@ -79,8 +79,6 @@ void Client::clearRequest()
 void Client::reset()
 {
 	clearRequest();
-	//! no socket fd or server reference clear
-	//! maybe better to use disconnect to reset connection state
 }
 
 void Client::setProcessPtr(std::shared_ptr<CgiProcess> process_ptr)

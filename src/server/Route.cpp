@@ -1,3 +1,4 @@
+#include "Pch.hpp"
 #include <optional>
 #include "Server.hpp"
 #include "Utilities.hpp"
@@ -56,7 +57,6 @@ Response create_session(Server& server, Request& request, const LocationContext*
 {
     Response response(HTTPStatusCode::OK);
     std::optional<std::string> session_opt = get_header_value(request.getHeaders().get_header("Cookie"), "session");
-    // const std::string post_body = reinterpret_cast<char*>(request.getBody().get_bytes().data());
     const std::string& post_body = request.getBody().get_raw();
     auto attributes = parse_query_string(post_body);
     SessionHandler& session_handler = server.getSessionHandler();

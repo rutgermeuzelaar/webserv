@@ -151,7 +151,6 @@ const std::vector<HTTPMethod> LimitExcept::from_string(const std::vector<std::st
 
     for (auto str: methods_str)
     {
-        // use new branch function later
         if (str == "GET") methods.push_back(HTTPMethod::GET);
         else if (str == "POST") methods.push_back(HTTPMethod::POST);
         else if (str == "DELETE") methods.push_back(HTTPMethod::DELETE);

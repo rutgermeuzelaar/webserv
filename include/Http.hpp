@@ -136,7 +136,7 @@ class HttpRequestStartLine
         std::string m_version;
         bool        m_complete;
 
-        const std::string& parse_uri(const std::string& uri);
+        const std::string& check_uri(const std::string& uri);
     public:
         HttpRequestStartLine(void);
         ~HttpRequestStartLine(void);
@@ -338,13 +338,10 @@ public:
     void setHeader(const std::string& key, const std::string& value);
     void setContentType(const std::string& type, const std::string& charset = "UTF-8");
     void setDate();
-    void setLastModified(const std::string& date);
-    void setCacheControl(const std::string& value);
     void setServer(const std::string& server = "webserv/1.0");
 
     void setBody(const std::string& content);
     void setBodyFromFile(const std::filesystem::path& file_path);
-    void redirect(const std::string& location, HTTPStatusCode status_code = HTTPStatusCode::Found);
     void setClientFD(int client_fd);
     void setStatusLine(HTTPStatusCode status_code);
 

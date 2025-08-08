@@ -191,7 +191,6 @@ void copy_str_bytes(std::vector<std::byte>& bytes, const std::string& str)
     }
 }
 
-// ./root + ./root/css+stylesheet.css
 static std::filesystem::path& resolve_overlap(std::filesystem::path& root, const std::filesystem::path& to_join)
 {
 	std::filesystem::path::iterator root_it = root.begin();

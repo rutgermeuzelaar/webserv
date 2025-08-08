@@ -23,7 +23,6 @@ void Scanner::skip_whitespace()
     }
 }
 
-// empty string would overflow
 char Scanner::advance()
 {
     return (m_in[m_index++]);
