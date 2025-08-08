@@ -30,8 +30,6 @@ static std::string create_table_rows(const std::filesystem::path& directory)
     for (const auto& item: std::filesystem::directory_iterator(directory))
     {
         const std::string item_path = item.path();
-		// file_time is annoying to print if we can't use
-		// C++ 20
 		struct stat attributes;
 
 		std::string time_stamp;

@@ -23,7 +23,7 @@ HttpRequestStartLine::HttpRequestStartLine(std::string str)
     }
     std::vector<std::string> args = split(rtrim(str, LINE_BREAK), ' ');
     m_http_method = StringToMethod(args[0]);
-    m_uri = parse_uri(args[1]);
+    m_uri = check_uri(args[1]);
     if (args[2] == PROTOCOL)
     {
         m_complete = true;
@@ -33,46 +33,17 @@ HttpRequestStartLine::HttpRequestStartLine(std::string str)
 }
 
 /**
- * @brief parses Uniform Resource Identifier (URI) from the request line.
- * @param uri alias of the raw uri to parse
- * @note query is described after the `?`, and a framework after a `#`
- * @note example URI: https://www.example.com/forum/questions/?tag=networking&order=newest#top
- * @return true if URI is valid and parsing succeeded, false if URI is invalid
+ * @brief check if Uniform Resource Identifier (URI) from the request line is valid.
+ * @param uri alias of the raw URI
+ * @return uri return reference to URI if valid
  */
-const std::string& HttpRequestStartLine::parse_uri(const std::string& uri)
+const std::string& HttpRequestStartLine::check_uri(const std::string& uri)
 {
 	if (uri.empty() || uri[0] != '/')
 		throw HTTPException(HTTPStatusCode::BadRequest, "Invalid URI format");
 	if (uri.length() > MAX_URI_SIZE)
 		throw HTTPException(HTTPStatusCode::URITooLong, "URI exceeds maximum length");
 	return uri;
-
-    // Responsibility of the request handler I think?
-	// size_t queryPos = uri.find('?');
-	// if (queryPos != std::string::npos)
-	// {
-	// 	_path = uri.substr(0, queryPos);
-	// 	size_t fragmentPos = uri.find('#', queryPos);
-	// 	if (fragmentPos != std::string::npos)
-	// 	{
-	// 		_query = uri.substr(queryPos + 1, fragmentPos - queryPos - 1);
-	// 		_fragment = uri.substr(fragmentPos + 1);
-	// 	}
-	// 	else
-	// 		_query = uri.substr(queryPos + 1);
-	// }
-	// else
-	// {
-	// 	//* no query string, check for fragment
-	// 	size_t fragmentPos = uri.find('#');
-	// 	if (fragmentPos != std::string::npos)
-	// 	{
-	// 		_path = uri.substr(0, fragmentPos);
-	// 		_fragment = uri.substr(fragmentPos + 1);
-	// 	}
-	// 	else
-	// 		_path = uri;
-	// }
 }
 
 bool HttpRequestStartLine::complete() const

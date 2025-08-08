@@ -130,14 +130,6 @@ void Response::setBodyFromFile(const std::filesystem::path& file_path)
     _body_size = file_size;
 }
 
-void Response::redirect(const std::string& location, HTTPStatusCode status_code)
-{
-    //* create new status line with the given status code
-    _status_line = HTTPStatusLine(status_code);
-    setHeader("Location", location);
-    setBody(""); //* empty body for redirects
-}
-
 void Response::setContentType(const std::string& type, const std::string& charset)
 {
     std::string value = type;
@@ -154,16 +146,6 @@ void Response::setDate()
     std::stringstream ss;
     ss << std::put_time(tm, "%a, %d %b %Y %H:%M:%S GMT");
     setHeader("Date", ss.str());
-}
-
-void Response::setLastModified(const std::string& date)
-{
-    setHeader("Last-Modified", date);
-}
-
-void Response::setCacheControl(const std::string& value)
-{
-    setHeader("Cache-Control", value);
 }
 
 void Response::setServer(const std::string& server)

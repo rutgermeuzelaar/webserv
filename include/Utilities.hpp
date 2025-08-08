@@ -1,5 +1,6 @@
 #ifndef UTILITIES_HPP
 # define UTILITIES_HPP
+# include "Pch.hpp"
 # include <vector>
 # include <algorithm>
 # include <string>

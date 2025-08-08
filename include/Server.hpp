@@ -224,10 +224,6 @@ class Server
         void removeClient(int fd);
         Client& getClient(int fd);
         bool isClient(int fd) const;
-        
-        //* socket management
-        Socket& getListeningSocket(size_t index);
-        size_t getListeningSocketCount() const;
 
         //* request handling
         void processRequest(int client_fd, Request& request);

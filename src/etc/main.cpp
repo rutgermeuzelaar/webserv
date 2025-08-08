@@ -22,17 +22,14 @@ int main(int argc, char **argv, char **envp)
     }
     try
     {
-        //* server init
         std::vector<ServerContext> config = get_server_config(argv[1]);
 
-        //* create + start server
         Server server(config, envp);
         std::cout << "Starting server..." << std::endl;
         server.start();
         std::signal(SIGINT, signal_handler);
 		server.run();
 
-        //* cleanup
         std::cout << "\nShutting down server..." << std::endl;
         server.stop();
         return (EXIT_SUCCESS);

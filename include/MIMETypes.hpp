@@ -1,5 +1,6 @@
 #ifndef MIME_TYPES_HPP
 # define MIME_TYPES_HPP
+# include "Pch.hpp"
 # include <unordered_map>
 # include <vector>
 # include <string>

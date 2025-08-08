@@ -1,5 +1,6 @@
 #ifndef REQUEST_HANDLER_HPP
 # define REQUEST_HANDLER_HPP
+# include "Pch.hpp"
 # include <optional>
 # include <filesystem>
 #include "Config.hpp"

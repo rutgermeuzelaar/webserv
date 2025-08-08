@@ -1,5 +1,6 @@
 #ifndef CGI_HPP
 # define CGI_HPP
+# include "Pch.hpp"
 # include <string>
 # include <filesystem>
 # include <list>
