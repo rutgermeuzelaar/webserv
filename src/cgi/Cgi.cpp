@@ -221,12 +221,12 @@ static void child_process(int read_pipe[2], int write_pipe[2], \
         perror("dup2");
         exit(EXIT_FAILURE);
     }
-	if (close(write_pipe[1]) == -1)
-	{
-		exit(EXIT_FAILURE);
-	}
 	if (http_method == HTTPMethod::POST)
 	{
+		if (close(write_pipe[1]) == -1)
+		{
+			exit(EXIT_FAILURE);
+		}
 		if (dup2(write_pipe[0], STDIN_FILENO) == -1)
 		{
 			perror("dup2");
@@ -284,7 +284,7 @@ void Cgi::add_process(Client& client, Request& request, Epoll& epoll, const Loca
 	int read_pipe[2]; // parent pipefd[0] child pipefd[1]
 	int write_pipe[2]; // parent pipe[1] child pipefd[0]
 
-	if (pipe(read_pipe) == -1 || pipe(write_pipe) == -1)
+	if (pipe(read_pipe) == -1)
 	{
 		perror("pipe");
 		throw HTTPException(HTTPStatusCode::InternalServerError);
@@ -292,12 +292,13 @@ void Cgi::add_process(Client& client, Request& request, Epoll& epoll, const Loca
 	epoll.addFd(read_pipe[0], EPOLLIN | EPOLLHUP | EPOLLRDHUP | EPOLLERR);
     if (http_method == HTTPMethod::POST)
     {
+		if (pipe(write_pipe) == -1)
+		{
+			perror("pipe");
+			throw HTTPException(HTTPStatusCode::InternalServerError);
+		}
         epoll.addFd(write_pipe[1], EPOLLOUT | EPOLLHUP | EPOLLRDHUP | EPOLLERR);
     }
-	else
-	{
-        epoll.addFd(write_pipe[1], EPOLLHUP | EPOLLRDHUP | EPOLLERR);
-	}
     pid_t pid = fork();
     if (pid == 0)
     {
@@ -309,27 +310,46 @@ void Cgi::add_process(Client& client, Request& request, Epoll& epoll, const Loca
         perror("fork");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    if (close(read_pipe[1]) == -1 || close(write_pipe[0]) == -1)
+    if (close(read_pipe[1]) == -1)
     {
-        perror(nullptr);
+        perror("close");
         throw HTTPException(HTTPStatusCode::InternalServerError);
     }
-    auto cgi_process = std::make_shared<CgiProcess>(
-		read_pipe[0],
-		write_pipe[1],
-		client.getSocketFD(),
-		pid,
-		location,
-		config,
-		server,
-		request.getBody()
-	);
+	if (http_method == HTTPMethod::POST)
+	{
+		if (close(write_pipe[0]) == -1)
+		{
+			perror("close");
+			throw HTTPException(HTTPStatusCode::InternalServerError);
+		}
+	}
+	std::shared_ptr<CgiProcess> cgi_process;
     if (http_method == HTTPMethod::POST)
     {
+    	cgi_process = std::make_shared<CgiProcess>(
+			read_pipe[0],
+			write_pipe[1],
+			client.getSocketFD(),
+			pid,
+			location,
+			config,
+			server,
+			request.getBody()
+		);
         cgi_process->set_is_post(true);
     }
     else
     {
+		cgi_process = std::make_shared<CgiProcess>(
+			read_pipe[0],
+			-1,
+			client.getSocketFD(),
+			pid,
+			location,
+			config,
+			server,
+			request.getBody()
+		);
         cgi_process->set_writing_complete(true);
     }
     m_children.push_back(cgi_process);
