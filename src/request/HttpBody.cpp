@@ -210,27 +210,29 @@ void HttpBody::parse(void)
 			return;
 		}
 		std::string str = m_raw.substr(m_index, line_break_pos - m_index + 2);
-		assert("We have not implemented support for multiple file uploads in one POST request" && str != normal_boundary);
-		if (m_chunk.m_headers.complete())
-		{
-			// store raw data
-			if (ends_with(str, final_boundary))
-			{
-				m_chunk.m_data = m_raw.substr(m_data_start, m_raw.size() - final_boundary.size() - m_data_start);
-				m_complete = true;
-				return;
-			}
-		}
-		else
-		{
-			m_chunk.m_headers.add_header(str);
-			if (m_chunk.m_headers.complete())
-			{
-				m_data_start = m_index + 2;
-				m_index += 2;
-				m_chunk.parse_header_attributes();
-			}
-		}
+        if (str != normal_boundary)
+        {
+            if (m_chunk.m_headers.complete())
+            {
+                // store raw data
+                if (ends_with(str, final_boundary))
+                {
+                    m_chunk.m_data = m_raw.substr(m_data_start, m_raw.size() - final_boundary.size() - m_data_start);
+                    m_complete = true;
+                    return;
+                }
+            }
+            else
+            {
+                m_chunk.m_headers.add_header(str);
+                if (m_chunk.m_headers.complete())
+                {
+                    m_data_start = m_index + 2;
+                    m_index += 2;
+                    m_chunk.parse_header_attributes();
+                }
+            }
+        }
 		m_index += str.size();
 		line_break_pos = m_raw.find(LINE_BREAK, m_index);
 	}
