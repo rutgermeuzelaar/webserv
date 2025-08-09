@@ -2,6 +2,7 @@
 #include <optional>
 #include "Server.hpp"
 #include "Utilities.hpp"
+#include "Defines.hpp"
 
 Route::Route(const std::string& url, const std::vector<HTTPMethod>& allowed_methods, route_act_t action)
     : m_url {url}
