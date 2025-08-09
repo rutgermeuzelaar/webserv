@@ -1,6 +1,6 @@
 #ifndef UTILITIES_HPP
 # define UTILITIES_HPP
-# include "Pch.hpp"
+# include "Pch.hpp" // IWYU pragma: keep
 # include <vector>
 # include <algorithm>
 # include <string>

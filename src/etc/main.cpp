@@ -1,6 +1,11 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
+#include <stdlib.h>
 #include <iostream>
 #include <csignal>
+#include <exception>
+#include <filesystem>
+#include <vector>
+
 #include "Server.hpp"
 #include "Config.hpp"
 

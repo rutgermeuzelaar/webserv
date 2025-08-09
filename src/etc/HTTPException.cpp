@@ -1,4 +1,7 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
+#include <stdexcept>
+#include <string>
+
 #include "Http.hpp"
 
 HTTPException::HTTPException(HTTPStatusCode status_code, const std::string& message)

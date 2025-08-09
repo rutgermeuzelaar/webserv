@@ -1,4 +1,7 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
+#include <ostream>
+#include <string>
+
 #include "Http.hpp"
 
 HTTPMethod StringToMethod(const std::string& method)

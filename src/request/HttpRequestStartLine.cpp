@@ -1,5 +1,7 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
 #include <vector>
+#include <string>
+
 #include "Utilities.hpp"
 #include "Defines.hpp"
 #include "Http.hpp"

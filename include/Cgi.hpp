@@ -1,6 +1,6 @@
 #ifndef CGI_HPP
 # define CGI_HPP
-# include "Pch.hpp"
+# include "Pch.hpp" // IWYU pragma: keep
 # include <string>
 # include <filesystem>
 # include <list>

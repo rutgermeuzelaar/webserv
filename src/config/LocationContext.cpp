@@ -1,4 +1,6 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
+#include <string>
+
 #include "Config.hpp"
 
 LocationContext::LocationContext(const std::string& uri)

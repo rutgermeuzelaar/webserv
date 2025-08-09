@@ -1,4 +1,8 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
+#include <cstdlib>
+#include <string>
+#include <unordered_map>
+
 #include "Server.hpp"
 
 std::unordered_map<std::string, Session>::iterator SessionHandler::find_session(const std::string& id)
