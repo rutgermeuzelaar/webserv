@@ -10,6 +10,8 @@ curl POST as multipart/form-data upload
 curl -X POST http://localhost:1050 -F "file=@8bit_luffy_by_kiritomj02_d8w6khy-pre.jpg" --verbose
 ----
 
+Curl wrong method
+curl -verbose -X DELETE http://localhost:1050/whoami
 
 telnet localhost 1050
 -----------------
