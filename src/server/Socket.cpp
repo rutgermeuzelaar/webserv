@@ -122,12 +122,14 @@ bool Socket::initSocket(const ServerContext& config)
         const std::string port = config.m_listen.value().m_port.value().to_string();
         const std::string server_name = config.m_server_name.value().m_name;
 		const std::string ip_address = config.m_listen.value().m_ipv4.value().to_string();
-
-		std::cout << ip_address << '\n';
 		int socketFD = createSocket(port, ip_address);
 		_serverSockets.push_back(socketFD);
 		_socketToServer[socketFD] = server_name;
 		_isRunning = true;
+		std::cout << "Server name: " << server_name << std::endl;
+		std::cout << "Host: " << ip_address << std::endl; 
+		std::cout << "Listening on port: " << port << std::endl;
+		std::cout << std::endl;
 		return true;
 	}
 	catch (const SocketException& e)

@@ -9,6 +9,7 @@
 
 #include "Server.hpp"
 #include "Http.hpp"
+#include "Defines.hpp"
 
 Session::Session(const std::string& id)
 	: m_id {id}
@@ -62,16 +63,18 @@ void Session::add_request(HTTPMethod http_method)
 
 void Session::print(void) const
 {
-    std::cout << "Printing data for session id: " << m_id << '\n';
-    std::cout << "m_data\n"; 
+    DEBUG("Printing data for session id: " << m_id << '\n');
+    DEBUG("m_data\n"); 
     for (const auto& it: m_data)
     {
-        std::cout << it.first << ": " << it.second << '\n';
+        DEBUG(it.first << ": " << it.second << '\n');
+		(void)it;
     }
-    std::cout << "m_request_history\n";
+    DEBUG("m_request_history\n");
     for (const auto& it: m_request_history)
     {
-        std::cout << it.first << ": " << it.second << '\n';
+		DEBUG(it.first << ": " << it.second << '\n');
+		(void)it;
     }
 }
 
