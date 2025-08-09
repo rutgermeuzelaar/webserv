@@ -1,9 +1,13 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
+#include <stddef.h>
 #include <stdexcept>
 #include <fstream>
 #include <iostream>
-#include <algorithm>
-#include <cassert>
+#include <filesystem>
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include "Defines.hpp"
 #include "Config.hpp"
 #include "Utilities.hpp"

@@ -1,6 +1,10 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
 #include <vector>
 #include <algorithm>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+
 #include "Http.hpp"
 
 const char *get_http_status_text(HTTPStatusCode status)

@@ -4,14 +4,21 @@
 // cat include/*.hpp | grep "include <" | sort | uniq -c | sort -nr
 // std
 # ifdef NDEBUG
-#  include <iostream>
-#  include <stdexcept>
+// data structures
 #  include <string>
-#  include <algorithm>
 #  include <vector>
-#  include <cassert>
+#  include <unordered_map>
+#  include <map>
+#  include <optional>
+#  include <tuple>
+#  include <memory>
 
-// maybe
+#  include <iostream>
+#  include <algorithm>
+#  include <stdexcept>
+#  include <cassert>
+#  include <utility>
 #  include <filesystem>
+#  include <cstddef>
 # endif
 #endif

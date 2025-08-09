@@ -1,6 +1,6 @@
 #ifndef DEFINES_HPP
 # define DEFINES_HPP
-# include "Pch.hpp"
+# include "Pch.hpp" // IWYU pragma: keep
 # include <iostream>
 #  define PROTOCOL "HTTP/1.1"
 #  define LINE_BREAK "\r\n" // https://www.rfc-editor.org/rfc/rfc2616#section-2.2

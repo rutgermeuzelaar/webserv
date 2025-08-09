@@ -1,7 +1,7 @@
 #pragma once
 #ifndef CONFIG_HPP
 # define CONFIG_HPP
-# include "Pch.hpp"
+# include "Pch.hpp" // IWYU pragma: keep
 # include <string>
 # include <unordered_map>
 # include <vector>

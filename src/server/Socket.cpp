@@ -1,6 +1,16 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
 #include <unistd.h>
+#include <errno.h>
+#include <netdb.h>
+#include <sys/socket.h>
 #include <cassert>
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <optional>
+#include <string>
+#include <vector>
+
 #include "Config.hpp"
 #include "Server.hpp"
 

@@ -1,8 +1,14 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
 #include <stdexcept>
 #include <iostream>
 #include <filesystem>
-#include <cassert>
+#include <exception>
+#include <sstream>
+#include <stack>
+#include <string>
+#include <system_error>
+#include <vector>
+
 #include "Config.hpp"
 
 Parser::Parser(const std::vector<Token>& tokens, Config& config)

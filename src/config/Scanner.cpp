@@ -1,5 +1,12 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
+#include <stddef.h>
 #include <stdexcept>
+#include <cctype>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include "Config.hpp"
 
 Scanner::Scanner(std::string in)

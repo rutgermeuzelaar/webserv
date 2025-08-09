@@ -1,13 +1,26 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
+#include <ctype.h>
+#include <errno.h>
 #include <ctime>
 #include <iomanip>
 #include <cassert>
-#include <iterator>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
+#include <cstddef>
+#include <cstdio>
+#include <filesystem>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
 #include "Defines.hpp"
 #include "Utilities.hpp"
 #include "Http.hpp"
+
+struct tm;
 
 Response::Response(HTTPStatusCode status_code)
     : PartialWriter()
