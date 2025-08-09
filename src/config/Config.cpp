@@ -106,7 +106,7 @@ std::vector<ServerContext> get_server_config(const std::filesystem::path& path)
 		merge_config(config.m_http_context, config.m_servers[i]);
 		if (!config.m_servers[i].is_valid())
 		{
-			std::cout << "Loading settings from default configuration file\n";
+			std::cout << "Loading settings from default configuration file\n" << std::endl;
 			load_defaults(default_conf, config.m_servers[i]);
 			if (!config.m_servers[i].is_valid())
 			{
