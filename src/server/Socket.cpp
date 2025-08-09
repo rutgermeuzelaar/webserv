@@ -1,6 +1,16 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
 #include <unistd.h>
+#include <errno.h>
+#include <netdb.h>
+#include <sys/socket.h>
 #include <cassert>
+#include <cstring>
+#include <iostream>
+#include <map>
+#include <optional>
+#include <string>
+#include <vector>
+
 #include "Config.hpp"
 #include "Server.hpp"
 
@@ -129,7 +139,7 @@ bool Socket::initSocket(const ServerContext& config)
 
 int Socket::acceptConnection(int serverSocket)
 {
-	assert("Peersize is size of peerAddr" && (_peerSize == sizeof(_peerAddr)));
+    _peerSize = sizeof(_peerAddr);
 	int peerFD = accept(serverSocket, (struct sockaddr*)&_peerAddr, &_peerSize);
 	if (peerFD == -1) 
 		throw SocketException("Accept failed: " + std::string(strerror(errno)));

@@ -1,9 +1,16 @@
-#include "Pch.hpp"
-#include "Server.hpp"
-#include <iostream>
-#include <cstring>
+#include "Pch.hpp" // IWYU pragma: keep
 #include <unistd.h>
 #include <Defines.hpp>
+#include <errno.h>
+#include <iostream>
+#include <cstring>
+#include <chrono>
+#include <memory>
+
+#include "Server.hpp"
+#include "Http.hpp"
+
+class CgiProcess;
 
 Client::Client(int socket_fd) 
 	: m_socket_fd(socket_fd)

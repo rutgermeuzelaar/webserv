@@ -1,9 +1,13 @@
-#include "Pch.hpp"
+#include "Pch.hpp" // IWYU pragma: keep
 #include <unistd.h>
-#include <sys/wait.h>
-#include <iostream>
-#include <optional>
+#include <signal.h>
+#include <stdio.h>
+#include <sys/types.h>
 #include <cassert>
+#include <chrono>
+#include <cstdlib>
+#include <string>
+
 #include "Cgi.hpp"
 #include "Utilities.hpp"
 #include "Defines.hpp"
@@ -11,6 +15,10 @@
 #include "Epoll.hpp"
 #include "Server.hpp"
 #include "Http.hpp"
+#include "ResponseHandler.hpp"
+
+class LocationContext;
+class ServerContext;
 
 CgiProcess::CgiProcess(int read_fd, int write_fd, int client_fd, pid_t pid, \
 	const LocationContext* location, const ServerContext& config, \

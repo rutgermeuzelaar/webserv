@@ -1,6 +1,6 @@
 #ifndef REQUEST_HANDLER_HPP
 # define REQUEST_HANDLER_HPP
-# include "Pch.hpp"
+# include "Pch.hpp" // IWYU pragma: keep
 # include <optional>
 # include <filesystem>
 #include "Config.hpp"
