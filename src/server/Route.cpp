@@ -92,7 +92,7 @@ Response create_session(Server& server, Request& request, const LocationContext*
     auto session_it = session_handler.find_session(session_id);
     session_it->second.set_data_pair("name", attributes.at("name"));
     session_it->second.set_data_pair("favorite-color", attributes.at("favorite-color"));
-    DEBUG(response.print());
+    response.print();
     return response;
 }
 

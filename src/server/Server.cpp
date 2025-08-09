@@ -255,7 +255,7 @@ void Server::processRequest(int client_fd, Request& request)
         if (session_it != m_session_handler.get_sessions().end())
         {
             session_it->second.add_request(request.getStartLine().get_http_method());
-            DEBUG(session_it->second.print());
+            session_it->second.print();
         }
     }
 	if (request_method_allowed(location, request.getStartLine().get_http_method()) && is_cgi_request(config.m_root.value().m_path, uri))
