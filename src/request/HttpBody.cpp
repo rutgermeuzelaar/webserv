@@ -77,10 +77,8 @@ HttpBody::HttpBody(const HttpHeaders* headers, HTTPMethod method, size_t client_
             throw HTTPException(HTTPStatusCode::BadRequest);
         m_initialized = true;
     }
-    else if (std::get<std::string>(content_type) == "application/x-www-form-urlencoded")
-    {
-        m_initialized = true;
-    }
+	else //* other content types (such as x-www-form-urlended)
+		m_initialized = true;
 }
 
 HttpBody::HttpBody(void)
