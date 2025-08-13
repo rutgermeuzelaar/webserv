@@ -6,6 +6,7 @@
 
 #include "Utilities.hpp"
 #include "Http.hpp"
+#include "Defines.hpp"
 
 PartialWriter::PartialWriter()
     : m_bytes_sent {0}
@@ -70,7 +71,7 @@ void PartialWriter::print() const
 {
     for (size_t i = 0; i < m_bytes.size(); ++i)
     {
-        std::putchar(static_cast<char>(m_bytes[i]));
+        DEBUG(std::putchar(static_cast<char>(m_bytes[i])));
     }
 }
 
@@ -78,6 +79,6 @@ void PartialWriter::print(size_t start, size_t end) const
 {
     for (size_t i = start; i < end; ++i)
     {
-        std::putchar(static_cast<char>(m_bytes[i]));
+        DEBUG(std::putchar(static_cast<char>(m_bytes[i])));
     }
 }
