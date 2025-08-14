@@ -5,6 +5,8 @@
 
 #include "Server.hpp"
 
+std::chrono::seconds SessionHandler::m_timeout_s(60);
+
 std::unordered_map<std::string, Session>::iterator SessionHandler::find_session(const std::string& id)
 {
     return m_sessions.find(id);
@@ -61,4 +63,23 @@ bool SessionHandler::has_session(const std::string& id) const
 const std::unordered_map<std::string, Session>& SessionHandler::get_sessions(void) const
 {
     return m_sessions;
+}
+
+void SessionHandler::timeout_sessions()
+{
+	const auto now = std::chrono::steady_clock::now();
+	auto it = m_sessions.begin();
+
+	while (it != m_sessions.end())
+	{
+		if ((now - it->second.get_last_activity()) > m_timeout_s)
+		{
+			std::cout << "Session id: " << it->second.get_id() << " timed out\n";
+			it = m_sessions.erase(it);
+		}
+		else
+		{
+			it++;
+		}
+	}
 }
