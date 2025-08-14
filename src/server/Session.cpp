@@ -6,13 +6,16 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <chrono>
 
 #include "Server.hpp"
 #include "Http.hpp"
 #include "Defines.hpp"
 
+
 Session::Session(const std::string& id)
 	: m_id {id}
+	, m_last_activity {std::chrono::steady_clock::now()}
 {
 
 }
@@ -21,6 +24,7 @@ Session::Session(const Session& other)
     : m_id {other.m_id}
     , m_data {other.m_data}
     , m_request_history {other.m_request_history}
+	, m_last_activity {other.m_last_activity}
 {
 
 }
@@ -81,4 +85,14 @@ void Session::print(void) const
 const std::unordered_map<HTTPMethod, size_t>& Session::get_request_history() const
 {
     return m_request_history;
+}
+
+std::chrono::steady_clock::time_point Session::get_last_activity() const
+{
+	return m_last_activity;
+}
+
+void Session::update_activity()
+{
+	m_last_activity = std::chrono::steady_clock::now();
 }

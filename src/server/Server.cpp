@@ -136,6 +136,7 @@ void Server::run()
             m_cgi.reap();
         }
         timeout_clients();
+		m_session_handler.timeout_sessions();
         epoll_loop(num_events);
   }
 }

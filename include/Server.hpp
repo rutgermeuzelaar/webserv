@@ -132,6 +132,8 @@ class Session
 		const std::string m_id;
 		std::unordered_map<std::string, std::string> m_data;
         std::unordered_map<HTTPMethod, size_t> m_request_history;
+		std::chrono::steady_clock::time_point m_last_activity;
+
 	public:
 		Session(const std::string& id);
         Session& operator=(const Session&) = delete;
@@ -144,6 +146,9 @@ class Session
         const std::unordered_map<HTTPMethod, size_t>& get_request_history() const;
         void add_request(HTTPMethod http_method);
         void print(void) const;
+
+		std::chrono::steady_clock::time_point get_last_activity() const;
+		void update_activity();
 };
 
 class SessionHandler
@@ -151,6 +156,7 @@ class SessionHandler
     private:
         std::unordered_map<std::string, Session> m_sessions;
 		const std::string generate_session_id(void);
+		static std::chrono::seconds m_timeout_s;
 
     public:
         std::unordered_map<std::string, Session>::iterator find_session(const std::string& id);
@@ -160,6 +166,7 @@ class SessionHandler
         const std::string get_cookie(const std::string& id) const;
         bool has_session(const std::string& id) const;
         const std::unordered_map<std::string, Session>& get_sessions(void) const;
+		void timeout_sessions(void);
 };
 
 //-----------------------------------------------------------------------------
